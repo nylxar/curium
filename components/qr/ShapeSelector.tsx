@@ -17,185 +17,212 @@ import { EYE_SHAPES, PIXEL_SHAPES } from "@/constants/qrPresets";
 import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
 
-// ─── Mini SVG previews for each shape ────────────────────────────────────────
+// ─── Eye SVG previews ─────────────────────────────────────────────────────────
 function EyePreview({ shape, color }: { shape: EyeShape; color: string }) {
-  const s = 28;
+  const s = 30;
   switch (shape) {
-    case "square":
+    case "sharp":
       return (
-        <Svg width={s} height={s} viewBox="0 0 28 28">
+        <Svg width={s} height={s} viewBox="0 0 30 30">
           <Rect
             x={1}
             y={1}
-            width={26}
-            height={26}
+            width={28}
+            height={28}
             fill="none"
             stroke={color}
             strokeWidth={3}
           />
-          <Rect x={7} y={7} width={14} height={14} fill={color} />
+          <Rect x={8} y={8} width={14} height={14} fill={color} />
         </Svg>
       );
-    case "circle":
+    case "soft":
       return (
-        <Svg width={s} height={s} viewBox="0 0 28 28">
-          <Circle
-            cx={14}
-            cy={14}
-            r={12}
+        <Svg width={s} height={s} viewBox="0 0 30 30">
+          <Rect
+            x={1}
+            y={1}
+            width={28}
+            height={28}
+            rx={5}
             fill="none"
             stroke={color}
             strokeWidth={3}
           />
-          <Circle cx={14} cy={14} r={6} fill={color} />
+          <Rect x={8} y={8} width={14} height={14} rx={3} fill={color} />
         </Svg>
       );
-    case "rounded":
+    case "round":
       return (
-        <Svg width={s} height={s} viewBox="0 0 28 28">
+        <Svg width={s} height={s} viewBox="0 0 30 30">
           <Rect
             x={1}
             y={1}
-            width={26}
-            height={26}
-            rx={6}
-            fill="none"
-            stroke={color}
-            strokeWidth={3}
-          />
-          <Rect x={7} y={7} width={14} height={14} rx={3} fill={color} />
-        </Svg>
-      );
-    case "extra-rounded":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 28 28">
-          <Rect
-            x={1}
-            y={1}
-            width={26}
-            height={26}
+            width={28}
+            height={28}
             rx={10}
             fill="none"
             stroke={color}
             strokeWidth={3}
           />
-          <Rect x={7} y={7} width={14} height={14} rx={7} fill={color} />
+          <Rect x={8} y={8} width={14} height={14} rx={6} fill={color} />
+        </Svg>
+      );
+    case "pill":
+      return (
+        <Svg width={s} height={s} viewBox="0 0 30 30">
+          <Circle
+            cx={15}
+            cy={15}
+            r={13}
+            fill="none"
+            stroke={color}
+            strokeWidth={3}
+          />
+          <Circle cx={15} cy={15} r={6} fill={color} />
         </Svg>
       );
     case "leaf":
       return (
-        <Svg width={s} height={s} viewBox="0 0 28 28">
+        <Svg width={s} height={s} viewBox="0 0 30 30">
           <Path
-            d="M2 14 Q2 2 14 2 Q26 2 26 14 Q26 26 14 26 Q2 26 2 14Z"
+            d="M2 15 Q2 2 15 2 Q28 15 15 28 Q2 28 2 15Z"
             fill="none"
             stroke={color}
             strokeWidth={3}
           />
-          <Circle cx={14} cy={14} r={6} fill={color} />
+          <Circle cx={15} cy={15} r={5} fill={color} />
         </Svg>
       );
     case "diamond":
       return (
-        <Svg width={s} height={s} viewBox="0 0 28 28">
+        <Svg width={s} height={s} viewBox="0 0 30 30">
           <Path
-            d="M14 2 L26 14 L14 26 L2 14Z"
+            d="M15 2 L28 15 L15 28 L2 15Z"
             fill="none"
             stroke={color}
             strokeWidth={3}
           />
-          <Path d="M14 9 L19 14 L14 19 L9 14Z" fill={color} />
+          <Path d="M15 10 L20 15 L15 20 L10 15Z" fill={color} />
         </Svg>
       );
   }
 }
 
 function PixelPreview({ shape, color }: { shape: PixelShape; color: string }) {
-  const s = 28;
+  const s = 30;
   switch (shape) {
-    case "square":
+    case "sharp":
       return (
-        <Svg width={s} height={s} viewBox="0 0 28 28">
-          <Rect x={2} y={2} width={10} height={10} fill={color} />
-          <Rect x={16} y={2} width={10} height={10} fill={color} />
-          <Rect x={2} y={16} width={10} height={10} fill={color} />
-          <Rect x={16} y={16} width={10} height={10} fill={color} />
+        <Svg width={s} height={s} viewBox="0 0 30 30">
+          <Rect x={1} y={1} width={11} height={11} fill={color} />
+          <Rect x={18} y={1} width={11} height={11} fill={color} />
+          <Rect x={1} y={18} width={11} height={11} fill={color} />
+          <Rect x={18} y={18} width={11} height={11} fill={color} />
         </Svg>
       );
-    case "circle":
+    case "soft":
+      return (
+        <Svg width={s} height={s} viewBox="0 0 30 30">
+          <Rect x={1} y={1} width={11} height={11} rx={3} fill={color} />
+          <Rect x={18} y={1} width={11} height={11} rx={3} fill={color} />
+          <Rect x={1} y={18} width={11} height={11} rx={3} fill={color} />
+          <Rect x={18} y={18} width={11} height={11} rx={3} fill={color} />
+        </Svg>
+      );
+    case "round":
+      return (
+        <Svg width={s} height={s} viewBox="0 0 30 30">
+          <Rect x={1} y={1} width={11} height={11} rx={5} fill={color} />
+          <Rect x={18} y={1} width={11} height={11} rx={5} fill={color} />
+          <Rect x={1} y={18} width={11} height={11} rx={5} fill={color} />
+          <Rect x={18} y={18} width={11} height={11} rx={5} fill={color} />
+        </Svg>
+      );
     case "dots":
       return (
-        <Svg width={s} height={s} viewBox="0 0 28 28">
-          <Circle cx={7} cy={7} r={5} fill={color} />
-          <Circle cx={21} cy={7} r={5} fill={color} />
-          <Circle cx={7} cy={21} r={5} fill={color} />
-          <Circle cx={21} cy={21} r={5} fill={color} />
+        <Svg width={s} height={s} viewBox="0 0 30 30">
+          <Circle cx={6.5} cy={6.5} r={5.5} fill={color} />
+          <Circle cx={23.5} cy={6.5} r={5.5} fill={color} />
+          <Circle cx={6.5} cy={23.5} r={5.5} fill={color} />
+          <Circle cx={23.5} cy={23.5} r={5.5} fill={color} />
         </Svg>
       );
-    case "rounded":
+    case "liquid":
       return (
-        <Svg width={s} height={s} viewBox="0 0 28 28">
-          <Rect x={2} y={2} width={10} height={10} rx={3} fill={color} />
-          <Rect x={16} y={2} width={10} height={10} rx={3} fill={color} />
-          <Rect x={2} y={16} width={10} height={10} rx={3} fill={color} />
-          <Rect x={16} y={16} width={10} height={10} rx={3} fill={color} />
+        <Svg width={s} height={s} viewBox="0 0 30 30">
+          <Rect x={1} y={1} width={11} height={11} rx={7} fill={color} />
+          <Rect x={18} y={1} width={11} height={11} rx={7} fill={color} />
+          <Rect x={1} y={18} width={11} height={11} rx={7} fill={color} />
+          <Rect x={18} y={18} width={11} height={11} rx={7} fill={color} />
         </Svg>
       );
-    case "classy":
+    case "glued":
       return (
-        <Svg width={s} height={s} viewBox="0 0 28 28">
-          <Path d="M2 7 L7 2 L12 2 L12 12 L2 12Z" fill={color} />
-          <Path d="M16 2 L26 2 L26 7 L26 12 L16 12Z" fill={color} />
-          <Rect x={2} y={16} width={10} height={10} fill={color} />
-          <Path d="M16 16 L26 16 L26 26 L21 26 L16 21Z" fill={color} />
-        </Svg>
-      );
-    case "classy-rounded":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 28 28">
-          <Rect x={2} y={2} width={10} height={10} rx={4} fill={color} />
-          <Rect x={16} y={2} width={10} height={10} rx={4} fill={color} />
-          <Rect x={2} y={16} width={10} height={10} rx={4} fill={color} />
+        <Svg width={s} height={s} viewBox="0 0 30 30">
+          <Path
+            d="M1 6 Q1 1 6 1 L24 1 Q29 1 29 6 L29 24 Q29 29 24 29 L6 29 Q1 29 1 24Z"
+            fill={color}
+            opacity={0.25}
+          />
+          <Rect x={4} y={4} width={10} height={10} rx={4} fill={color} />
+          <Rect x={16} y={4} width={10} height={10} rx={4} fill={color} />
+          <Rect x={4} y={16} width={10} height={10} rx={4} fill={color} />
           <Rect x={16} y={16} width={10} height={10} rx={4} fill={color} />
         </Svg>
       );
   }
 }
 
-// ─── Generic shape chip ───────────────────────────────────────────────────────
-function ShapeChip<T extends string>({
-  id,
+// ─── Shape chip — scale only, no color interpolation in worklet ───────────────
+function ShapeChip({
   label,
   selected,
   onPress,
+  color,
   children,
 }: {
-  id: T;
   label: string;
   selected: boolean;
   onPress: () => void;
+  color: string;
   children: React.ReactNode;
 }) {
-  const progress = useSharedValue(selected ? 1 : 0);
+  const scale = useSharedValue(1);
 
   useEffect(() => {
-    progress.value = withSpring(selected ? 1 : 0, {
+    scale.value = withSpring(selected ? 1.06 : 1, {
       damping: 14,
       stiffness: 220,
     });
   }, [selected]);
 
+  // Border/bg color applied via JS style (not Reanimated worklet) — safe from warning
   const animStyle = useAnimatedStyle(() => ({
-    borderColor: progress.value === 1 ? Colors.primary : Colors.border,
-    backgroundColor:
-      progress.value > 0.5 ? Colors.primaryBg : Colors.surfaceOffset,
-    transform: [{ scale: 0.95 + progress.value * 0.05 }],
+    transform: [{ scale: scale.value }],
   }));
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-      <Animated.View style={[styles.chip, animStyle]}>
+      <Animated.View
+        style={[
+          styles.chip,
+          animStyle,
+          selected
+            ? { borderColor: color, backgroundColor: color + "18" }
+            : {
+                borderColor: Colors.border,
+                backgroundColor: Colors.surfaceOffset,
+              },
+        ]}
+      >
         {children}
-        <Text style={[styles.chipLabel, selected && { color: Colors.primary }]}>
+        <Text
+          style={[
+            styles.chipLabel,
+            { color: selected ? color : Colors.textMuted },
+          ]}
+        >
           {label}
         </Text>
       </Animated.View>
@@ -203,7 +230,6 @@ function ShapeChip<T extends string>({
   );
 }
 
-// ─── Exports ──────────────────────────────────────────────────────────────────
 export function EyeShapeSelector({
   selected,
   onChange,
@@ -224,9 +250,9 @@ export function EyeShapeSelector({
         {EYE_SHAPES.map((item) => (
           <ShapeChip
             key={item.id}
-            id={item.id}
             label={item.label}
             selected={selected === item.id}
+            color={fgColor}
             onPress={() => {
               Haptics.selectionAsync();
               onChange(item.id);
@@ -263,9 +289,9 @@ export function PixelShapeSelector({
         {PIXEL_SHAPES.map((item) => (
           <ShapeChip
             key={item.id}
-            id={item.id}
             label={item.label}
             selected={selected === item.id}
+            color={fgColor}
             onPress={() => {
               Haptics.selectionAsync();
               onChange(item.id);
@@ -303,11 +329,10 @@ const styles = StyleSheet.create({
     padding: Spacing.sm + 2,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    minWidth: 64,
+    minWidth: 66,
   },
   chipLabel: {
-    fontSize: 9,
-    color: Colors.textMuted,
+    fontSize: 10,
     fontWeight: "600",
     textAlign: "center",
   },

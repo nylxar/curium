@@ -10,9 +10,70 @@ export type QRType =
 
 export type ECL = "L" | "M" | "Q" | "H";
 
+// Eye border radius presets mapped to qrcode-styled borderRadius numbers
+export type EyeShape = "sharp" | "soft" | "round" | "pill" | "leaf" | "diamond";
+
+// Piece border radius presets
+export type PixelShape =
+  | "sharp"
+  | "soft"
+  | "round"
+  | "dots"
+  | "liquid"
+  | "glued";
+
+export interface QRStyle {
+  colorId: string;
+  fgColor: string;
+  bgColor: string;
+  eyeShape: EyeShape;
+  pixelShape: PixelShape;
+  logoUri?: string;
+  ecl: ECL;
+}
+
+export const DEFAULT_QR_STYLE: QRStyle = {
+  colorId: "ink",
+  fgColor: "#eeeef5",
+  bgColor: "#080810",
+  eyeShape: "sharp",
+  pixelShape: "sharp",
+  logoUri: undefined,
+  ecl: "M",
+};
+
+// Map our EyeShape names → qrcode-styled borderRadius values
+export const EYE_BORDER_RADIUS: Record<EyeShape, number | number[]> = {
+  sharp: 0,
+  soft: 6,
+  round: 12,
+  pill: 50,
+  leaf: [20, 0, 20, 0],
+  diamond: [10, 10, 0, 0],
+};
+
+// Map our PixelShape names → qrcode-styled pieceBorderRadius
+export const PIXEL_BORDER_RADIUS: Record<PixelShape, number> = {
+  sharp: 0,
+  soft: 3,
+  round: 8,
+  dots: 50,
+  liquid: 12,
+  glued: 6,
+};
+
+export const PIXEL_IS_GLUED: Record<PixelShape, boolean> = {
+  sharp: false,
+  soft: false,
+  round: false,
+  dots: false,
+  liquid: true,
+  glued: true,
+};
+
 export interface QRData {
   type: QRType;
-  value: string; // final encoded string fed to QR lib
+  value: string;
 }
 
 export interface URLForm {
@@ -59,38 +120,3 @@ export type AnyForm =
   | WiFiForm
   | ContactForm
   | LocationForm;
-
-export type EyeShape =
-  | "square"
-  | "circle"
-  | "rounded"
-  | "extra-rounded"
-  | "leaf"
-  | "diamond";
-export type PixelShape =
-  | "square"
-  | "circle"
-  | "rounded"
-  | "dots"
-  | "classy"
-  | "classy-rounded";
-
-export interface QRStyle {
-  colorId: string;
-  fgColor: string;
-  bgColor: string;
-  eyeShape: EyeShape;
-  pixelShape: PixelShape;
-  logoUri?: string;
-  ecl: ECL;
-}
-
-export const DEFAULT_QR_STYLE: QRStyle = {
-  colorId: "ink",
-  fgColor: "#f0f0f0",
-  bgColor: "#0a0a0a",
-  eyeShape: "square",
-  pixelShape: "square",
-  logoUri: undefined,
-  ecl: "M",
-};

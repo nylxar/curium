@@ -10,7 +10,6 @@ import Animated, {
   useSharedValue,
   withSpring,
   useAnimatedStyle,
-  interpolateColor,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { QR_COLORS } from "@/constants/theme";
@@ -31,28 +30,18 @@ function ColorSwatch({
   selected: boolean;
   onPress: () => void;
 }) {
-  const progress = useSharedValue(selected ? 1 : 0);
-  const borderScale = useSharedValue(selected ? 1 : 0);
+  const scale = useSharedValue(1);
 
   useEffect(() => {
-    progress.value = withSpring(selected ? 1 : 0, {
-      damping: 14,
-      stiffness: 220,
-    });
-    borderScale.value = withSpring(selected ? 1 : 0, {
+    scale.value = withSpring(selected ? 1.15 : 1, {
       damping: 12,
-      stiffness: 200,
+      stiffness: 220,
     });
   }, [selected]);
 
-  const ringStyle = useAnimatedStyle(() => ({
-    opacity: borderScale.value,
-    transform: [{ scale: 0.85 + borderScale.value * 0.15 }],
-  }));
-
-  const checkStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    transform: [{ scale: progress.value }],
+  // Ring/check visibility via JS conditional — NOT in Reanimated worklet
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
   }));
 
   return (
@@ -61,19 +50,26 @@ function ColorSwatch({
       activeOpacity={0.75}
       style={styles.swatchWrap}
     >
-      {/* Outer glow ring */}
-      <Animated.View
-        style={[styles.ring, { borderColor: item.fg }, ringStyle]}
-      />
-      {/* Swatch */}
-      <View style={[styles.swatch, { backgroundColor: item.bg }]}>
-        <View style={[styles.swatchInner, { backgroundColor: item.fg }]} />
-        {/* Check */}
-        <Animated.View style={[styles.check, checkStyle]}>
-          <Ionicons name="checkmark" size={11} color={item.bg} />
-        </Animated.View>
-      </View>
-      <Text style={styles.swatchLabel} numberOfLines={1}>
+      <Animated.View style={animStyle}>
+        <View
+          style={[
+            styles.swatch,
+            { backgroundColor: item.bg },
+            selected && { borderColor: item.fg, borderWidth: 2.5 },
+          ]}
+        >
+          <View style={[styles.swatchInner, { backgroundColor: item.fg }]} />
+          {selected && (
+            <View style={styles.check}>
+              <Ionicons name="checkmark" size={10} color={item.bg} />
+            </View>
+          )}
+        </View>
+      </Animated.View>
+      <Text
+        style={[styles.swatchLabel, selected && { color: item.fg }]}
+        numberOfLines={1}
+      >
         {item.label}
       </Text>
     </TouchableOpacity>
@@ -120,39 +116,25 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     paddingBottom: Spacing.sm,
   },
-  swatchWrap: { alignItems: "center", gap: 5, width: 56 },
-  ring: {
-    position: "absolute",
-    top: -3,
-    left: -3,
-    width: 56,
-    height: 56,
-    borderRadius: Radius.lg + 4,
-    borderWidth: 2,
-  },
+  swatchWrap: { alignItems: "center", gap: 5, width: 58 },
   swatch: {
-    width: 50,
-    height: 50,
+    width: 52,
+    height: 52,
     borderRadius: Radius.lg,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
     borderWidth: 0.5,
     borderColor: Colors.border,
   },
-  swatchInner: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-  },
+  swatchInner: { width: 22, height: 22, borderRadius: 11 },
   check: {
     position: "absolute",
-    bottom: 4,
-    right: 4,
-    width: 18,
-    height: 18,
+    bottom: 3,
+    right: 3,
+    width: 17,
+    height: 17,
     borderRadius: 9,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.55)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -160,6 +142,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: Colors.textFaint,
     textAlign: "center",
-    width: 50,
+    width: 58,
   },
 });
