@@ -22,6 +22,21 @@ export type PixelShape =
   | "liquid"
   | "glued";
 
+export interface PixelConfig {
+  pieceSize: number;
+  pieceBorderRadius: number;
+  pieceScale: number;
+}
+
+export const PIXEL_CONFIG: Record<PixelShape, PixelConfig> = {
+  sharp: { pieceSize: 9, pieceBorderRadius: 0, pieceScale: 1.0 },
+  soft: { pieceSize: 9, pieceBorderRadius: 2, pieceScale: 0.98 },
+  round: { pieceSize: 9, pieceBorderRadius: 4, pieceScale: 0.95 },
+  dots: { pieceSize: 7, pieceBorderRadius: 3.5, pieceScale: 0.9 }, // perfect circles, gap prevents bleed
+  liquid: { pieceSize: 8, pieceBorderRadius: 3, pieceScale: 0.92 },
+  glued: { pieceSize: 9, pieceBorderRadius: 3, pieceScale: 1.0 },
+};
+
 export interface QRStyle {
   colorId: string;
   fgColor: string;

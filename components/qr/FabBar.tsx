@@ -6,7 +6,6 @@ import {
   Modal,
   StyleSheet,
   Pressable,
-  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,7 +20,7 @@ const NAV_ITEMS = [
   { route: "/settings", label: "Settings", icon: "settings-outline" },
 ] as const;
 
-interface FabBtnProps {
+interface BtnProps {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
@@ -31,7 +30,7 @@ interface FabBtnProps {
   disabled?: boolean;
 }
 
-function FabBtn({
+function Btn({
   icon,
   label,
   onPress,
@@ -39,7 +38,7 @@ function FabBtn({
   tintColor,
   bgColor,
   disabled,
-}: FabBtnProps) {
+}: BtnProps) {
   return (
     <TouchableOpacity
       onPress={() => {
@@ -50,23 +49,25 @@ function FabBtn({
       }}
       activeOpacity={0.75}
       disabled={disabled}
-      style={{ alignItems: "center", gap: 4, opacity: disabled ? 0.4 : 1 }}
+      style={[styles.btnWrap, { opacity: disabled ? 0.4 : 1 }]}
     >
       <View
         style={[
-          styles.fabCircle,
+          styles.btnCircle,
           primary
             ? { backgroundColor: tintColor }
             : {
-                backgroundColor: tintColor + "22",
+                backgroundColor: tintColor + "20",
                 borderWidth: 1,
-                borderColor: tintColor + "40",
+                borderColor: tintColor + "35",
               },
         ]}
       >
-        <Ionicons name={icon} size={22} color={primary ? bgColor : tintColor} />
+        <Ionicons name={icon} size={21} color={primary ? bgColor : tintColor} />
       </View>
-      <Text style={[styles.fabLabel, { color: tintColor }]}>{label}</Text>
+      <Text style={[styles.btnLabel, { color: tintColor + "cc" }]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -92,7 +93,7 @@ export function FabBar({
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const navigate = (route: string) => {
+  const go = (route: string) => {
     setMenuOpen(false);
     setTimeout(() => router.push(route as any), 60);
     Haptics.selectionAsync();
@@ -104,14 +105,15 @@ export function FabBar({
         style={[
           styles.bar,
           {
-            paddingBottom: insets.bottom + Spacing.sm,
             backgroundColor: bgColor,
+            paddingBottom: insets.bottom + Spacing.sm,
+            borderTopColor: tintColor + "20",
           },
         ]}
       >
-        {/* Row 1: 3 action buttons + menu button */}
+        {/* Single row — Copy | Random | Share | Menu */}
         <View style={styles.row}>
-          <FabBtn
+          <Btn
             icon="copy-outline"
             label="Copy"
             tintColor={tintColor}
@@ -119,7 +121,7 @@ export function FabBar({
             onPress={onCopy}
             disabled={disabled}
           />
-          <FabBtn
+          <Btn
             icon="shuffle"
             label="Random"
             tintColor={tintColor}
@@ -128,7 +130,7 @@ export function FabBar({
             disabled={disabled}
             primary
           />
-          <FabBtn
+          <Btn
             icon="share-outline"
             label="Share"
             tintColor={tintColor}
@@ -136,20 +138,16 @@ export function FabBar({
             onPress={onShare}
             disabled={disabled}
           />
-          <FabBtn
+          <Btn
             icon="menu"
             label="Menu"
             tintColor={tintColor}
             bgColor={bgColor}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setMenuOpen(true);
-            }}
+            onPress={() => setMenuOpen(true)}
           />
         </View>
       </View>
 
-      {/* Nav modal */}
       <Modal
         visible={menuOpen}
         transparent
@@ -164,7 +162,7 @@ export function FabBar({
               {
                 backgroundColor: bgColor,
                 borderColor: tintColor + "25",
-                paddingBottom: insets.bottom + Spacing.base,
+                paddingBottom: insets.bottom + Spacing.lg,
               },
             ]}
             onPress={(e) => e.stopPropagation()}
@@ -183,7 +181,7 @@ export function FabBar({
                     borderBottomColor: tintColor + "20",
                   },
                 ]}
-                onPress={() => navigate(item.route)}
+                onPress={() => go(item.route)}
                 activeOpacity={0.7}
               >
                 <View
@@ -204,7 +202,7 @@ export function FabBar({
                 <Ionicons
                   name="chevron-forward"
                   size={16}
-                  color={tintColor + "50"}
+                  color={tintColor + "40"}
                 />
               </TouchableOpacity>
             ))}
@@ -218,27 +216,27 @@ export function FabBar({
 const styles = StyleSheet.create({
   bar: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(0,0,0,0.08)",
-    paddingTop: Spacing.sm,
+    paddingTop: Spacing.md,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "flex-start",
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,
   },
-  fabCircle: {
+  btnWrap: { alignItems: "center", gap: Spacing.xs },
+  btnCircle: {
     width: 52,
     height: 52,
     borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
   },
-  fabLabel: { fontSize: FontSize.xs, fontWeight: "600" },
+  btnLabel: { fontSize: FontSize.xs, fontWeight: "600" },
 
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "flex-end",
   },
   sheet: {
@@ -247,7 +245,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingTop: Spacing.md,
     paddingHorizontal: Spacing.base,
-    gap: Spacing.xs,
   },
   handle: {
     width: 36,
@@ -269,5 +266,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  navLabel: { flex: 1, fontSize: FontSize.md, fontWeight: "600" },
+  navLabel: { flex: 1, fontSize: FontSize.md ?? 15, fontWeight: "600" },
 });
