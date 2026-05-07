@@ -85,24 +85,24 @@ export const Animation = {
 
 // ─── QR Color Presets ─────────────────────────────────────────────────────────
 export const QR_COLORS = [
-  { id: "ink", fg: "#eeeef5", bg: "#080810", label: "Cosmic" },
-  { id: "teal", fg: "#00d4b8", bg: "#030f0e", label: "Teal Night" },
-  { id: "violet", fg: "#a78bfa", bg: "#0d0520", label: "Violet" },
-  { id: "arctic", fg: "#67e8f9", bg: "#041520", label: "Arctic" },
-  { id: "rose", fg: "#fb7185", bg: "#1f0010", label: "Rose" },
-  { id: "amber", fg: "#fbbf24", bg: "#120a00", label: "Amber" },
-  { id: "lime", fg: "#a3e635", bg: "#060f00", label: "Lime" },
-  { id: "emerald", fg: "#34d399", bg: "#021a10", label: "Emerald" },
-  { id: "coral", fg: "#fb923c", bg: "#150600", label: "Ember" },
-  { id: "sky", fg: "#38bdf8", bg: "#040e1a", label: "Sky" },
-  { id: "fuchsia", fg: "#e879f9", bg: "#150020", label: "Fuchsia" },
-  { id: "gold", fg: "#f59e0b", bg: "#0f0800", label: "Gold" },
-  { id: "indigo", fg: "#818cf8", bg: "#06061e", label: "Indigo" },
-  { id: "pink", fg: "#f472b6", bg: "#180010", label: "Pink" },
-  { id: "mint", fg: "#6ee7b7", bg: "#021510", label: "Mint" },
-  { id: "paper", fg: "#1a1a2e", bg: "#f5f0e8", label: "Paper" },
-  { id: "ocean", fg: "#60a5fa", bg: "#020b1a", label: "Ocean" },
-  { id: "lava", fg: "#ff6b6b", bg: "#150505", label: "Lava" },
+  { id: "cosmic", fg: "#eeeef5", bg: "#080810", label: "Cosmic" }, // intentional dark
+  { id: "teal", fg: "#041a18", bg: "#00d4b8", label: "Teal" }, // SWAPPED
+  { id: "violet", fg: "#1a0540", bg: "#c4b5fd", label: "Violet" }, // SWAPPED
+  { id: "arctic", fg: "#041520", bg: "#67e8f9", label: "Arctic" }, // SWAPPED
+  { id: "rose", fg: "#3d0020", bg: "#fda4af", label: "Rose" }, // SWAPPED
+  { id: "amber", fg: "#2d1800", bg: "#fde68a", label: "Amber" }, // SWAPPED
+  { id: "lime", fg: "#0a1f00", bg: "#bef264", label: "Lime" }, // SWAPPED
+  { id: "emerald", fg: "#022010", bg: "#6ee7b7", label: "Emerald" }, // SWAPPED
+  { id: "coral", fg: "#2d0e00", bg: "#fdba74", label: "Coral" }, // SWAPPED
+  { id: "sky", fg: "#040e1a", bg: "#7dd3fc", label: "Sky" }, // SWAPPED
+  { id: "fuchsia", fg: "#2d0040", bg: "#e879f9", label: "Fuchsia" }, // SWAPPED
+  { id: "gold", fg: "#1f0e00", bg: "#fcd34d", label: "Gold" }, // SWAPPED
+  { id: "indigo", fg: "#0a0a2e", bg: "#a5b4fc", label: "Indigo" }, // SWAPPED
+  { id: "pink", fg: "#2d0020", bg: "#f9a8d4", label: "Pink" }, // SWAPPED
+  { id: "mint", fg: "#022010", bg: "#a7f3d0", label: "Mint" }, // SWAPPED
+  { id: "paper", fg: "#1a1a2e", bg: "#f5f0e8", label: "Paper" }, // already correct
+  { id: "ocean", fg: "#020b1a", bg: "#93c5fd", label: "Ocean" }, // SWAPPED
+  { id: "lava", fg: "#2d0000", bg: "#fca5a5", label: "Lava" }, // SWAPPED
 ] as const;
 
 export type QRColorId = (typeof QR_COLORS)[number]["id"];
