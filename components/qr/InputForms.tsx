@@ -15,6 +15,7 @@ import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
 // ─── Shared input component ───────────────────────────────────────────────────
 function Field({
   label,
+  tintColor,
   value,
   onChange,
   placeholder,
@@ -23,6 +24,7 @@ function Field({
   multiline = false,
 }: {
   label: string;
+  tintColor: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
@@ -37,13 +39,17 @@ function Field({
 }) {
   return (
     <View style={styles.fieldWrap}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: tintColor + "bb" }]}>{label}</Text>
       <TextInput
-        style={[styles.input, multiline && styles.inputMulti]}
+        style={[
+          styles.input,
+          multiline && styles.inputMulti,
+          { borderColor: tintColor + "35", color: tintColor },
+        ]}
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor={Colors.textFaint}
+        placeholderTextColor={tintColor + "50"}
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         multiline={multiline}
@@ -59,13 +65,16 @@ function Field({
 export function URLFormView({
   form,
   onChange,
+  tintColor,
 }: {
   form: URLForm;
   onChange: (f: URLForm) => void;
+  tintColor: string;
 }) {
   return (
     <Field
       label="URL"
+      tintColor={tintColor}
       value={form.url}
       onChange={(v) => onChange({ url: v })}
       placeholder="https://example.com"
@@ -78,13 +87,16 @@ export function URLFormView({
 export function TextFormView({
   form,
   onChange,
+  tintColor,
 }: {
   form: TextForm;
   onChange: (f: TextForm) => void;
+  tintColor: string;
 }) {
   return (
     <Field
       label="Text"
+      tintColor={tintColor}
       value={form.text}
       onChange={(v) => onChange({ text: v })}
       placeholder="Enter any text..."
@@ -97,14 +109,17 @@ export function TextFormView({
 export function EmailFormView({
   form,
   onChange,
+  tintColor,
 }: {
   form: EmailForm;
   onChange: (f: EmailForm) => void;
+  tintColor: string;
 }) {
   return (
     <View style={styles.formGroup}>
       <Field
         label="To"
+        tintColor={tintColor}
         value={form.to}
         onChange={(v) => onChange({ ...form, to: v })}
         placeholder="email@example.com"
@@ -112,12 +127,14 @@ export function EmailFormView({
       />
       <Field
         label="Subject"
+        tintColor={tintColor}
         value={form.subject}
         onChange={(v) => onChange({ ...form, subject: v })}
         placeholder="Subject"
       />
       <Field
         label="Body"
+        tintColor={tintColor}
         value={form.body}
         onChange={(v) => onChange({ ...form, body: v })}
         placeholder="Message body..."
@@ -131,13 +148,16 @@ export function EmailFormView({
 export function PhoneFormView({
   form,
   onChange,
+  tintColor,
 }: {
   form: PhoneForm;
   onChange: (f: PhoneForm) => void;
+  tintColor: string;
 }) {
   return (
     <Field
       label="Phone Number"
+      tintColor={tintColor}
       value={form.phone}
       onChange={(v) => onChange({ phone: v })}
       placeholder="+91 00000 00000"
@@ -150,14 +170,17 @@ export function PhoneFormView({
 export function SMSFormView({
   form,
   onChange,
+  tintColor,
 }: {
   form: SMSForm;
   onChange: (f: SMSForm) => void;
+  tintColor: string;
 }) {
   return (
     <View style={styles.formGroup}>
       <Field
         label="Phone Number"
+        tintColor={tintColor}
         value={form.phone}
         onChange={(v) => onChange({ ...form, phone: v })}
         placeholder="+91 00000 00000"
@@ -165,6 +188,7 @@ export function SMSFormView({
       />
       <Field
         label="Message"
+        tintColor={tintColor}
         value={form.message}
         onChange={(v) => onChange({ ...form, message: v })}
         placeholder="Pre-filled message..."
@@ -178,20 +202,24 @@ export function SMSFormView({
 export function WiFiFormView({
   form,
   onChange,
+  tintColor,
 }: {
   form: WiFiForm;
   onChange: (f: WiFiForm) => void;
+  tintColor: string;
 }) {
   return (
     <View style={styles.formGroup}>
       <Field
         label="Network Name (SSID)"
+        tintColor={tintColor}
         value={form.ssid}
         onChange={(v) => onChange({ ...form, ssid: v })}
         placeholder="MyHomeWiFi"
       />
       <Field
         label="Password"
+        tintColor={tintColor}
         value={form.password}
         onChange={(v) => onChange({ ...form, password: v })}
         placeholder="Password"
@@ -226,20 +254,24 @@ export function WiFiFormView({
 export function ContactFormView({
   form,
   onChange,
+  tintColor,
 }: {
   form: ContactForm;
   onChange: (f: ContactForm) => void;
+  tintColor: string;
 }) {
   return (
     <View style={styles.formGroup}>
       <Field
         label="Full Name"
+        tintColor={tintColor}
         value={form.name}
         onChange={(v) => onChange({ ...form, name: v })}
         placeholder="John Doe"
       />
       <Field
         label="Phone"
+        tintColor={tintColor}
         value={form.phone}
         onChange={(v) => onChange({ ...form, phone: v })}
         placeholder="+91 00000 00000"
@@ -247,6 +279,7 @@ export function ContactFormView({
       />
       <Field
         label="Email"
+        tintColor={tintColor}
         value={form.email}
         onChange={(v) => onChange({ ...form, email: v })}
         placeholder="email@example.com"
@@ -254,6 +287,7 @@ export function ContactFormView({
       />
       <Field
         label="Organisation"
+        tintColor={tintColor}
         value={form.org}
         onChange={(v) => onChange({ ...form, org: v })}
         placeholder="Company name"
@@ -266,14 +300,17 @@ export function ContactFormView({
 export function LocationFormView({
   form,
   onChange,
+  tintColor,
 }: {
   form: LocationForm;
   onChange: (f: LocationForm) => void;
+  tintColor: string;
 }) {
   return (
     <View style={styles.formGroup}>
       <Field
         label="Latitude"
+        tintColor={tintColor}
         value={form.lat}
         onChange={(v) => onChange({ ...form, lat: v })}
         placeholder="28.6139"
@@ -281,6 +318,7 @@ export function LocationFormView({
       />
       <Field
         label="Longitude"
+        tintColor={tintColor}
         value={form.lng}
         onChange={(v) => onChange({ ...form, lng: v })}
         placeholder="77.2090"
@@ -288,6 +326,7 @@ export function LocationFormView({
       />
       <Field
         label="Label (optional)"
+        tintColor={tintColor}
         value={form.label}
         onChange={(v) => onChange({ ...form, label: v })}
         placeholder="New Delhi"

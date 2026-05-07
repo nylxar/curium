@@ -1,27 +1,41 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
+  TextInput,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Haptics from "expo-haptics";
 import Animated, {
   useSharedValue,
-  withSpring,
-  useAnimatedStyle,
   withTiming,
+  useAnimatedStyle,
+  interpolateColor,
   Easing,
-  FadeInDown,
 } from "react-native-reanimated";
+import * as Clipboard from "expo-clipboard";
+import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system";
+import * as MediaLibrary from "expo-media-library";
+import * as Haptics from "expo-haptics";
+import { captureRef } from "react-native-view-shot";
 import { Ionicons } from "@expo/vector-icons";
 
-import { TypeSelector } from "@/components/qr/TypeSelector";
-import { QRPreview } from "@/components/qr/QRPreview";
+import { QRCanvas } from "@/components/qr/QRCanvas";
+import { TypePill } from "@/components/qr/TypePill";
+import { OptionRow } from "@/components/qr/OptionRow";
+import { FabBar } from "@/components/qr/FabBar";
+import { ColorPalette } from "@/components/qr/ColorPalette";
+import {
+  EyeShapeSelector,
+  PixelShapeSelector,
+} from "@/components/qr/ShapeSelector";
+import { LogoPicker } from "@/components/qr/LogoPicker";
 import {
   URLFormView,
   TextFormView,
@@ -32,13 +46,18 @@ import {
   ContactFormView,
   LocationFormView,
 } from "@/components/qr/InputForms";
-import { CustomizeSheet } from "@/components/qr/CustomizeSheet";
-import { PressableScale } from "@/components/ui/PressableScale";
 
-import { Colors, Spacing, Radius, FontSize } from "@/constants/theme";
+import {
+  Colors,
+  Spacing,
+  Radius,
+  FontSize,
+  QR_COLORS,
+} from "@/constants/theme";
 import {
   QRType,
-  ECL,
+  QRStyle,
+  DEFAULT_QR_STYLE,
   URLForm,
   TextForm,
   EmailForm,
@@ -47,17 +66,38 @@ import {
   WiFiForm,
   ContactForm,
   LocationForm,
-  QRStyle,
-  DEFAULT_QR_STYLE,
+  ECL,
 } from "@/types/qr";
 
-// ─── Encode each form type into QR string ─────────────────────────────────────
+// ─── Encode ───────────────────────────────────────────────────────────────────
+interface FormState {
+  url: URLForm;
+  text: TextForm;
+  email: EmailForm;
+  phone: PhoneForm;
+  sms: SMSForm;
+  wifi: WiFiForm;
+  contact: ContactForm;
+  location: LocationForm;
+}
+
+const DEFAULT_FORMS: FormState = {
+  url: { url: "" },
+  text: { text: "" },
+  email: { to: "", subject: "", body: "" },
+  phone: { phone: "" },
+  sms: { phone: "", message: "" },
+  wifi: { ssid: "", password: "", encryption: "WPA" },
+  contact: { name: "", phone: "", email: "", org: "" },
+  location: { lat: "", lng: "", label: "" },
+};
+
 function encodeQR(type: QRType, forms: FormState): string {
   switch (type) {
     case "url": {
-      const url = forms.url.url.trim();
-      if (!url) return "";
-      return url.startsWith("http") ? url : `https://${url}`;
+      const u = forms.url.url.trim();
+      if (!u) return "";
+      return u.startsWith("http") ? u : `https://${u}`;
     }
     case "text":
       return forms.text.text.trim();
@@ -95,79 +135,149 @@ function encodeQR(type: QRType, forms: FormState): string {
   }
 }
 
-// ─── Default form states ───────────────────────────────────────────────────────
-interface FormState {
-  url: URLForm;
-  text: TextForm;
-  email: EmailForm;
-  phone: PhoneForm;
-  sms: SMSForm;
-  wifi: WiFiForm;
-  contact: ContactForm;
-  location: LocationForm;
+// ─── Color tint util ──────────────────────────────────────────────────────────
+// Turns a hex fg color into a very dark tinted screen bg
+function fgToScreenBg(hex: string): string {
+  // Take hue from fgColor, return deep dark tint
+  try {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const dr = Math.round(r * 0.07)
+      .toString(16)
+      .padStart(2, "0");
+    const dg = Math.round(g * 0.07)
+      .toString(16)
+      .padStart(2, "0");
+    const db = Math.round(b * 0.07)
+      .toString(16)
+      .padStart(2, "0");
+    return `#${dr}${dg}${db}`;
+  } catch {
+    return Colors.bg;
+  }
 }
 
-const defaultForms: FormState = {
-  url: { url: "" },
-  text: { text: "" },
-  email: { to: "", subject: "", body: "" },
-  phone: { phone: "" },
-  sms: { phone: "", message: "" },
-  wifi: { ssid: "", password: "", encryption: "WPA" },
-  contact: { name: "", phone: "", email: "", org: "" },
-  location: { lat: "", lng: "", label: "" },
-};
-
 const ECL_OPTIONS: ECL[] = ["L", "M", "Q", "H"];
+const RANDOM_STYLE_POOL = QR_COLORS.filter((c) => c.id !== "paper");
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function CreateScreen() {
   const [qrType, setQrType] = useState<QRType>("url");
-  const [forms, setForms] = useState<FormState>(defaultForms);
-  const [ecl, setEcl] = useState<ECL>("M");
+  const [forms, setForms] = useState<FormState>(DEFAULT_FORMS);
   const [qrStyle, setQrStyle] = useState<QRStyle>(DEFAULT_QR_STYLE);
-  const [showCustomize, setShowCustomize] = useState(false);
-  const [showEcl, setShowEcl] = useState(false);
-  const svgRef = useRef<any>(null);
+  const qrRef = useRef<View>(null);
 
   const qrValue = encodeQR(qrType, forms);
+  const hasQR = qrValue.length > 0;
 
-  const handleTypeChange = useCallback((t: QRType) => {
-    Haptics.selectionAsync();
-    setQrType(t);
+  // ── Animated background tint ──────────────────────────────────────────────
+  // We use a numeric progress 0→1 and interpolateColor between two colors.
+  // Both target colors are stored as refs so we can update them before toggling.
+  const tintProgress = useSharedValue(0);
+  const fromBg = useRef(fgToScreenBg(DEFAULT_QR_STYLE.fgColor));
+  const toBg = useRef(fgToScreenBg(DEFAULT_QR_STYLE.fgColor));
+  const currentBg = useRef(fgToScreenBg(DEFAULT_QR_STYLE.fgColor));
+  const isForward = useRef(true);
+
+  const screenStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      tintProgress.value,
+      [0, 1],
+      [fromBg.current, toBg.current],
+    ),
+  }));
+
+  const applyStyle = useCallback((newStyle: QRStyle) => {
+    const newBg = fgToScreenBg(newStyle.fgColor);
+    if (newBg === currentBg.current) {
+      setQrStyle(newStyle);
+      return;
+    }
+
+    // Toggle direction each time so interpolateColor always goes from→to
+    if (isForward.current) {
+      fromBg.current = currentBg.current;
+      toBg.current = newBg;
+      tintProgress.value = 0;
+      tintProgress.value = withTiming(1, {
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
+      });
+    } else {
+      fromBg.current = newBg;
+      toBg.current = currentBg.current;
+      tintProgress.value = 1;
+      tintProgress.value = withTiming(0, {
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
+    isForward.current = !isForward.current;
+    currentBg.current = newBg;
+    setQrStyle(newStyle);
   }, []);
 
   const updateForm = useCallback(
     <K extends keyof FormState>(key: K, value: FormState[K]) => {
-      setForms((prev) => ({ ...prev, [key]: value }));
+      setForms((p) => ({ ...p, [key]: value }));
     },
     [],
   );
 
-  const eclBtnScale = useSharedValue(1);
-  const eclPanelHeight = useSharedValue(0);
-  const eclPanelOpacity = useSharedValue(0);
+  // ── Actions ───────────────────────────────────────────────────────────────
+  const handleCopy = useCallback(async () => {
+    if (!hasQR) return;
+    await Clipboard.setStringAsync(qrValue);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [qrValue, hasQR]);
 
-  const eclPanelStyle = useAnimatedStyle(() => ({
-    height: eclPanelHeight.value,
-    opacity: eclPanelOpacity.value,
-    overflow: "hidden",
-  }));
-
-  const toggleEcl = () => {
-    const next = !showEcl;
-    setShowEcl(next);
-    eclPanelHeight.value = withSpring(next ? 52 : 0, {
-      damping: 16,
-      stiffness: 200,
+  const handleShuffle = useCallback(() => {
+    const pool = RANDOM_STYLE_POOL;
+    const rand = pool[Math.floor(Math.random() * pool.length)];
+    const eyeShapes = [
+      "sharp",
+      "soft",
+      "round",
+      "pill",
+      "leaf",
+      "diamond",
+    ] as const;
+    const pixelShapes = [
+      "sharp",
+      "soft",
+      "round",
+      "dots",
+      "liquid",
+      "glued",
+    ] as const;
+    applyStyle({
+      ...qrStyle,
+      colorId: rand.id,
+      fgColor: rand.fg,
+      bgColor: rand.bg,
+      eyeShape: eyeShapes[Math.floor(Math.random() * eyeShapes.length)],
+      pixelShape: pixelShapes[Math.floor(Math.random() * pixelShapes.length)],
     });
-    eclPanelOpacity.value = withTiming(next ? 1 : 0, {
-      duration: 200,
-      easing: Easing.out(Easing.cubic),
-    });
-    Haptics.selectionAsync();
-  };
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, [qrStyle, applyStyle]);
 
+  const handleShare = useCallback(async () => {
+    if (!hasQR || !qrRef.current) return;
+    try {
+      const uri = await captureRef(qrRef, { format: "png", quality: 1 });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "image/png",
+          dialogTitle: "Share QR Code",
+        });
+      }
+    } catch (e) {
+      Alert.alert("Error", "Could not share QR code.");
+    }
+  }, [hasQR]);
+
+  // ── Form rendering ────────────────────────────────────────────────────────
   const renderForm = () => {
     switch (qrType) {
       case "url":
@@ -175,6 +285,7 @@ export default function CreateScreen() {
           <URLFormView
             form={forms.url}
             onChange={(v) => updateForm("url", v)}
+            tintColor={qrStyle.fgColor}
           />
         );
       case "text":
@@ -182,6 +293,7 @@ export default function CreateScreen() {
           <TextFormView
             form={forms.text}
             onChange={(v) => updateForm("text", v)}
+            tintColor={qrStyle.fgColor}
           />
         );
       case "email":
@@ -189,6 +301,7 @@ export default function CreateScreen() {
           <EmailFormView
             form={forms.email}
             onChange={(v) => updateForm("email", v)}
+            tintColor={qrStyle.fgColor}
           />
         );
       case "phone":
@@ -196,6 +309,7 @@ export default function CreateScreen() {
           <PhoneFormView
             form={forms.phone}
             onChange={(v) => updateForm("phone", v)}
+            tintColor={qrStyle.fgColor}
           />
         );
       case "sms":
@@ -203,6 +317,7 @@ export default function CreateScreen() {
           <SMSFormView
             form={forms.sms}
             onChange={(v) => updateForm("sms", v)}
+            tintColor={qrStyle.fgColor}
           />
         );
       case "wifi":
@@ -210,6 +325,7 @@ export default function CreateScreen() {
           <WiFiFormView
             form={forms.wifi}
             onChange={(v) => updateForm("wifi", v)}
+            tintColor={qrStyle.fgColor}
           />
         );
       case "contact":
@@ -217,6 +333,7 @@ export default function CreateScreen() {
           <ContactFormView
             form={forms.contact}
             onChange={(v) => updateForm("contact", v)}
+            tintColor={qrStyle.fgColor}
           />
         );
       case "location":
@@ -224,291 +341,254 @@ export default function CreateScreen() {
           <LocationFormView
             form={forms.location}
             onChange={(v) => updateForm("location", v)}
+            tintColor={qrStyle.fgColor}
           />
         );
     }
   };
 
+  // ── Color dot preview ─────────────────────────────────────────────────────
+  const colorDot = (
+    <View style={[styles.dotPreview, { backgroundColor: qrStyle.fgColor }]} />
+  );
+
+  // ── ECL preview ───────────────────────────────────────────────────────────
+  const eclPreview = (
+    <Text style={[styles.previewText, { color: qrStyle.fgColor }]}>
+      {qrStyle.ecl}
+    </Text>
+  );
+
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+    <Animated.View style={[styles.screen, screenStyle]}>
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          {/* Header */}
-          <Animated.View
-            entering={FadeInDown.duration(400).springify()}
-            style={styles.header}
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.appTitle}>Curium</Text>
-            <Text style={styles.appSub}>QR Generator</Text>
-          </Animated.View>
+            {/* ── QR Canvas ── */}
+            <View ref={qrRef} style={styles.canvasWrap} collapsable={false}>
+              <QRCanvas value={qrValue} qrStyle={qrStyle} size={260} />
+            </View>
 
-          {/* QR Preview */}
-          <Animated.View
-            entering={FadeInDown.delay(80).duration(400).springify()}
-            style={styles.previewWrap}
-          >
-            <QRPreview
-              value={qrValue}
-              qrStyle={qrStyle}
-              size={200}
-              svgRef={svgRef}
+            {/* ── Type selector ── */}
+            <TypePill
+              selected={qrType}
+              tintColor={qrStyle.fgColor}
+              onChange={setQrType}
             />
-            {qrValue.length > 0 && (
-              <Text style={styles.qrHint}>
-                {qrValue.length} chars · ECL {ecl}
-              </Text>
-            )}
-          </Animated.View>
-          <PressableScale
-            onPress={() => {
-              Haptics.selectionAsync();
-              setShowCustomize(true);
-            }}
-            style={styles.customizeBtn}
-          >
-            <Ionicons
-              name="color-palette-outline"
-              size={16}
-              color={Colors.primary}
-            />
-            <Text style={styles.customizeBtnLabel}>Customise</Text>
-          </PressableScale>
 
-          {/* Type Selector */}
-          <Animated.View
-            entering={FadeInDown.delay(140).duration(400).springify()}
-          >
-            <Text style={styles.sectionLabel}>Type</Text>
-            <TypeSelector selected={qrType} onChange={handleTypeChange} />
-          </Animated.View>
-
-          {/* Input Form */}
-          <Animated.View
-            entering={FadeInDown.delay(200).duration(400).springify()}
-            style={styles.formCard}
-          >
-            {renderForm()}
-          </Animated.View>
-
-          {/* ECL toggle */}
-          <Animated.View
-            entering={FadeInDown.delay(240).duration(400).springify()}
-            style={styles.eclWrap}
-          >
-            <TouchableOpacity
-              onPress={toggleEcl}
-              style={styles.eclToggle}
-              activeOpacity={0.7}
+            {/* ── Input ── */}
+            <View
+              style={[
+                styles.inputWrap,
+                {
+                  borderColor: qrStyle.fgColor + "40",
+                  backgroundColor: qrStyle.fgColor + "0d",
+                },
+              ]}
             >
-              <Ionicons
-                name="shield-checkmark-outline"
-                size={15}
-                color={Colors.textMuted}
-              />
-              <Text style={styles.eclToggleLabel}>Error Correction</Text>
-              <Ionicons
-                name={showEcl ? "chevron-up" : "chevron-down"}
-                size={14}
-                color={Colors.textFaint}
-              />
-            </TouchableOpacity>
-            <Animated.View style={eclPanelStyle}>
-              <View style={styles.eclRow}>
-                {ECL_OPTIONS.map((e) => (
-                  <PressableScale
-                    key={e}
-                    onPress={() => {
-                      setQrStyle((prev) => ({ ...prev, ecl: e }));
-                      Haptics.selectionAsync();
-                    }}
-                    style={[styles.eclBtn, ecl === e && styles.eclBtnActive]}
-                  >
-                    <Text
+              {renderForm()}
+            </View>
+
+            {/* ── Options ── */}
+            <View style={styles.options}>
+              <OptionRow
+                label="Color"
+                iconName="color-palette-outline"
+                preview={colorDot}
+                tintColor={qrStyle.fgColor}
+                defaultOpen
+              >
+                <ColorPalette
+                  selectedId={qrStyle.colorId}
+                  onSelect={(id, fg, bg) =>
+                    applyStyle({
+                      ...qrStyle,
+                      colorId: id,
+                      fgColor: fg,
+                      bgColor: bg,
+                    })
+                  }
+                />
+              </OptionRow>
+
+              <OptionRow
+                label="Eye Style"
+                iconName="eye-outline"
+                tintColor={qrStyle.fgColor}
+                preview={
+                  <Ionicons
+                    name="scan-outline"
+                    size={16}
+                    color={qrStyle.fgColor + "90"}
+                  />
+                }
+              >
+                <EyeShapeSelector
+                  selected={qrStyle.eyeShape}
+                  fgColor={qrStyle.fgColor}
+                  onChange={(s) => applyStyle({ ...qrStyle, eyeShape: s })}
+                />
+              </OptionRow>
+
+              <OptionRow
+                label="Pixel Style"
+                iconName="grid-outline"
+                tintColor={qrStyle.fgColor}
+                preview={
+                  <Ionicons
+                    name="apps-outline"
+                    size={16}
+                    color={qrStyle.fgColor + "90"}
+                  />
+                }
+              >
+                <PixelShapeSelector
+                  selected={qrStyle.pixelShape}
+                  fgColor={qrStyle.fgColor}
+                  onChange={(s) => applyStyle({ ...qrStyle, pixelShape: s })}
+                />
+              </OptionRow>
+
+              <OptionRow
+                label="Logo"
+                iconName="image-outline"
+                tintColor={qrStyle.fgColor}
+                preview={
+                  qrStyle.logoUri ? (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={16}
+                      color={qrStyle.fgColor}
+                    />
+                  ) : (
+                    <Ionicons
+                      name="add-circle-outline"
+                      size={16}
+                      color={qrStyle.fgColor + "90"}
+                    />
+                  )
+                }
+              >
+                <LogoPicker
+                  logoUri={qrStyle.logoUri}
+                  onChange={(uri) => applyStyle({ ...qrStyle, logoUri: uri })}
+                />
+              </OptionRow>
+
+              <OptionRow
+                label="Error Correction"
+                iconName="shield-checkmark-outline"
+                preview={eclPreview}
+                tintColor={qrStyle.fgColor}
+              >
+                <View style={styles.eclRow}>
+                  {ECL_OPTIONS.map((e) => (
+                    <TouchableOpacity
+                      key={e}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        applyStyle({ ...qrStyle, ecl: e });
+                      }}
                       style={[
-                        styles.eclBtnLabel,
-                        ecl === e && styles.eclBtnLabelActive,
+                        styles.eclBtn,
+                        { borderColor: qrStyle.fgColor + "40" },
+                        qrStyle.ecl === e && {
+                          backgroundColor: qrStyle.fgColor + "25",
+                          borderColor: qrStyle.fgColor,
+                        },
                       ]}
                     >
-                      {e}
-                    </Text>
-                  </PressableScale>
-                ))}
-              </View>
-            </Animated.View>
-          </Animated.View>
+                      <Text
+                        style={[
+                          styles.eclLabel,
+                          { color: qrStyle.fgColor },
+                          qrStyle.ecl === e && { fontWeight: "700" },
+                        ]}
+                      >
+                        {e}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </OptionRow>
+            </View>
 
-          {/* Save placeholder — Phase 4 */}
-          <Animated.View
-            entering={FadeInDown.delay(280).duration(400).springify()}
+            <View style={{ height: Spacing["4xl"] }} />
+          </ScrollView>
+
+          {/* ── Sticky FABs ── */}
+          <View
+            style={[
+              styles.fabContainer,
+              {
+                borderTopColor: qrStyle.fgColor + "20",
+                backgroundColor: fgToScreenBg(qrStyle.fgColor) + "ee",
+              },
+            ]}
           >
-            <PressableScale
-              onPress={() =>
-                Haptics.notificationAsync(
-                  Haptics.NotificationFeedbackType.Success,
-                )
-              }
-              style={[styles.saveBtn, !qrValue && styles.saveBtnDisabled]}
-              disabled={!qrValue}
-            >
-              <Ionicons
-                name="download-outline"
-                size={18}
-                color={qrValue ? Colors.textInverse : Colors.textFaint}
-              />
-              <Text
-                style={[
-                  styles.saveBtnLabel,
-                  !qrValue && { color: Colors.textFaint },
-                ]}
-              >
-                Save QR Code
-              </Text>
-            </PressableScale>
-          </Animated.View>
-
-          <View style={{ height: Spacing["3xl"] }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
-      <CustomizeSheet
-        visible={showCustomize}
-        style={qrStyle}
-        onStyleChange={setQrStyle}
-        onClose={() => setShowCustomize(false)}
-      />
-    </SafeAreaView>
+            <FabBar
+              tintColor={qrStyle.fgColor}
+              disabled={!hasQR}
+              onCopy={handleCopy}
+              onShuffle={handleShuffle}
+              onShare={handleShare}
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
+  screen: { flex: 1 },
+  safe: { flex: 1 },
   scroll: { flex: 1 },
-  content: { paddingTop: Spacing.lg, gap: Spacing.lg },
+  content: { paddingTop: Spacing.lg, gap: Spacing.md },
 
-  header: { paddingHorizontal: Spacing.xl },
-  appTitle: {
-    fontSize: FontSize["2xl"],
-    fontWeight: "800",
-    color: Colors.primary,
-    letterSpacing: -1,
-  },
-  appSub: { fontSize: FontSize.sm, color: Colors.textMuted, marginTop: 2 },
-
-  previewWrap: { alignItems: "center", paddingVertical: Spacing.sm },
-  qrHint: {
-    marginTop: Spacing.sm,
-    fontSize: FontSize.xs,
-    color: Colors.textFaint,
-    letterSpacing: 0.4,
+  canvasWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
   },
 
-  sectionLabel: {
-    fontSize: FontSize.xs,
-    fontWeight: "600",
-    color: Colors.textFaint,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-    marginLeft: Spacing.xl,
-    marginBottom: -Spacing.xs,
-  },
-
-  formCard: {
+  inputWrap: {
     marginHorizontal: Spacing.base,
-    backgroundColor: Colors.surface,
+    borderWidth: 1,
     borderRadius: Radius.lg,
-    borderWidth: 0.5,
-    borderColor: Colors.border,
     padding: Spacing.base,
     gap: Spacing.md,
   },
 
-  eclWrap: {
+  options: {
     marginHorizontal: Spacing.base,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    borderWidth: 0.5,
-    borderColor: Colors.border,
-    overflow: "hidden",
-  },
-  eclToggle: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: Spacing.sm,
-    padding: Spacing.md,
-    paddingHorizontal: Spacing.base,
   },
-  eclToggleLabel: {
-    flex: 1,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: "500",
-  },
-  eclRow: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.md,
-  },
+
+  eclRow: { flexDirection: "row", gap: Spacing.sm, paddingTop: Spacing.xs },
   eclBtn: {
     flex: 1,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.sm + 2,
     alignItems: "center",
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surfaceOffset,
   },
-  eclBtnActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primaryBg,
-  },
-  eclBtnLabel: {
-    fontSize: FontSize.sm,
-    fontWeight: "600",
-    color: Colors.textMuted,
-  },
-  eclBtnLabelActive: { color: Colors.primary },
+  eclLabel: { fontSize: FontSize.sm },
 
-  saveBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.sm,
-    marginHorizontal: Spacing.base,
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.lg,
-    paddingVertical: Spacing.md + 2,
-  },
-  saveBtnDisabled: { backgroundColor: Colors.surfaceOffset },
-  saveBtnLabel: {
-    fontSize: FontSize.base,
-    fontWeight: "700",
-    color: Colors.textInverse,
-  },
-  customizeBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    alignSelf: "center",
-    marginTop: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.primaryBg,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.primary + "60",
-  },
-  customizeBtnLabel: {
-    fontSize: FontSize.sm,
-    fontWeight: "600",
-    color: Colors.primary,
+  dotPreview: { width: 18, height: 18, borderRadius: 9 },
+  previewText: { fontSize: FontSize.sm, fontWeight: "700" },
+
+  fabContainer: {
+    borderTopWidth: 0.5,
+    paddingBottom: Platform.OS === "ios" ? Spacing.lg : Spacing.md,
   },
 });
