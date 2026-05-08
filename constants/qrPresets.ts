@@ -7,6 +7,8 @@ export const EYE_SHAPES: { id: EyeShape; label: string }[] = [
   { id: "pill", label: "Pill" },
   { id: "leaf", label: "Leaf" },
   { id: "diamond", label: "Diamond" },
+  { id: "shield", label: "shield" },
+  { id: "dot", label: "dots" },
 ];
 
 export const PIXEL_SHAPES: { id: PixelShape; label: string }[] = [
@@ -16,4 +18,7 @@ export const PIXEL_SHAPES: { id: PixelShape; label: string }[] = [
   { id: "dots", label: "Dots" },
   { id: "liquid", label: "Liquid" },
   { id: "glued", label: "Glued" },
+  { id: "diamond", label: "diamond" },
+  { id: "cross", label: "cross" },
+  { id: "star", label: "star" },
 ];

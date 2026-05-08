@@ -1,28 +1,20 @@
-import { useState, ReactNode } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from "react-native";
+import { ReactNode } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { FontSize, Spacing, Radius } from "@/constants/theme";
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === "android") {
-  UIManager.setLayoutAnimationEnabledExperimental?.(true);
-}
+import * as Haptics from "expo-haptics";
+import { OptionSheet } from "./OptionSheet";
 
 interface Props {
   label: string;
   iconName: keyof typeof Ionicons.glyphMap;
   preview?: ReactNode;
-  children: ReactNode;
+  children: ReactNode; // content shown INSIDE the sheet
   tintColor: string;
-  defaultOpen?: boolean;
+  bgColor: string; // ← add this
+  sheetOpen: boolean; // ← controlled from parent
+  onOpen: () => void;
+  onClose: () => void;
 }
 
 export function OptionRow({
@@ -31,26 +23,19 @@ export function OptionRow({
   preview,
   children,
   tintColor,
-  defaultOpen = false,
+  bgColor,
+  sheetOpen,
+  onOpen,
+  onClose,
 }: Props) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  const toggle = () => {
-    LayoutAnimation.configureNext(
-      LayoutAnimation.create(
-        220,
-        LayoutAnimation.Types.easeInEaseOut,
-        LayoutAnimation.Properties.opacity,
-      ),
-    );
-    setOpen((p) => !p);
-  };
-
   return (
-    <View style={[styles.row, { borderColor: tintColor + "30" }]}>
+    <>
       <TouchableOpacity
-        style={styles.header}
-        onPress={toggle}
+        style={[styles.row, { borderColor: tintColor + "30" }]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          onOpen();
+        }}
         activeOpacity={0.7}
       >
         <View style={[styles.iconWrap, { backgroundColor: tintColor + "20" }]}>
@@ -59,32 +44,33 @@ export function OptionRow({
         <Text style={[styles.label, { color: tintColor }]}>{label}</Text>
         <View style={styles.right}>
           {preview}
-          <Ionicons
-            name={open ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={tintColor + "80"}
-          />
+          <Ionicons name="chevron-forward" size={16} color={tintColor + "50"} />
         </View>
       </TouchableOpacity>
 
-      {open && <View style={styles.body}>{children}</View>}
-    </View>
+      <OptionSheet
+        visible={sheetOpen}
+        onClose={onClose}
+        title={label}
+        tintColor={tintColor}
+        bgColor={bgColor}
+      >
+        {children}
+      </OptionSheet>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    borderWidth: 1,
-    borderRadius: Radius.lg,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    overflow: "hidden",
-  },
-  header: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   iconWrap: {
     width: 30,
@@ -93,18 +79,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  label: {
-    flex: 1,
-    fontSize: FontSize.base,
-    fontWeight: "600",
-  },
-  right: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-  },
-  body: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.base,
-  },
+  label: { flex: 1, fontSize: FontSize.base, fontWeight: "600" },
+  right: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
 });

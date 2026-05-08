@@ -103,6 +103,16 @@ export const QR_COLORS = [
   { id: "paper", fg: "#1a1a2e", bg: "#f5f0e8", label: "Paper" }, // already correct
   { id: "ocean", fg: "#020b1a", bg: "#93c5fd", label: "Ocean" }, // SWAPPED
   { id: "lava", fg: "#2d0000", bg: "#fca5a5", label: "Lava" }, // SWAPPED
+  { id: "slate", fg: "#0f172a", bg: "#cbd5e1", label: "Slate" },
+  { id: "peach", fg: "#3d0e00", bg: "#fed7aa", label: "Peach" },
+  { id: "lavender", fg: "#1e0a40", bg: "#ddd6fe", label: "Lavender" },
+  { id: "forest", fg: "#052010", bg: "#86efac", label: "Forest" },
+  { id: "sunset", fg: "#2d0e00", bg: "#fdba74", label: "Sunset" },
+  { id: "midnight", fg: "#e0e7ff", bg: "#1e1b4b", label: "Midnight" }, // intentional dark
+  { id: "cherry", fg: "#1a0008", bg: "#fda4af", label: "Cherry" },
+  { id: "steel", fg: "#0c1a2e", bg: "#bae6fd", label: "Steel" },
+  { id: "sage", fg: "#0a1f0a", bg: "#bbf7d0", label: "Sage" },
+  { id: "dusk", fg: "#e2e8f0", bg: "#334155", label: "Dusk" }, // intentional dark
 ] as const;
 
 export type QRColorId = (typeof QR_COLORS)[number]["id"];

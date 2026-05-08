@@ -11,7 +11,15 @@ export type QRType =
 export type ECL = "L" | "M" | "Q" | "H";
 
 // Eye border radius presets mapped to qrcode-styled borderRadius numbers
-export type EyeShape = "sharp" | "soft" | "round" | "pill" | "leaf" | "diamond";
+export type EyeShape =
+  | "sharp"
+  | "soft"
+  | "round"
+  | "pill"
+  | "leaf"
+  | "diamond"
+  | "shield"
+  | "dot";
 
 // Piece border radius presets
 export type PixelShape =
@@ -20,7 +28,10 @@ export type PixelShape =
   | "round"
   | "dots"
   | "liquid"
-  | "glued";
+  | "glued"
+  | "diamond"
+  | "cross"
+  | "star";
 
 export interface PixelConfig {
   pieceSize: number;
@@ -29,12 +40,15 @@ export interface PixelConfig {
 }
 
 export const PIXEL_CONFIG: Record<PixelShape, PixelConfig> = {
-  sharp: { pieceSize: 9, pieceBorderRadius: 0, pieceScale: 1.0 },
-  soft: { pieceSize: 9, pieceBorderRadius: 2, pieceScale: 0.98 },
-  round: { pieceSize: 9, pieceBorderRadius: 4, pieceScale: 0.95 },
-  dots: { pieceSize: 7, pieceBorderRadius: 3.5, pieceScale: 0.9 }, // perfect circles, gap prevents bleed
-  liquid: { pieceSize: 8, pieceBorderRadius: 3, pieceScale: 0.92 },
-  glued: { pieceSize: 9, pieceBorderRadius: 3, pieceScale: 1.0 },
+  sharp: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 1.0 },
+  soft: { pieceSize: 10, pieceBorderRadius: 3, pieceScale: 0.96 },
+  round: { pieceSize: 10, pieceBorderRadius: 5, pieceScale: 0.92 },
+  dots: { pieceSize: 8, pieceBorderRadius: 4, pieceScale: 0.88 },
+  liquid: { pieceSize: 10, pieceBorderRadius: 4, pieceScale: 0.9 },
+  glued: { pieceSize: 10, pieceBorderRadius: 2, pieceScale: 1.0 },
+  diamond: { pieceSize: 10, pieceBorderRadius: 2, pieceScale: 0.88 },
+  cross: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.88 },
+  star: { pieceSize: 9, pieceBorderRadius: 1, pieceScale: 0.88 },
 };
 
 export interface QRStyle {
@@ -60,11 +74,13 @@ export const DEFAULT_QR_STYLE: QRStyle = {
 // Map our EyeShape names → qrcode-styled borderRadius values
 export const EYE_BORDER_RADIUS: Record<EyeShape, number | number[]> = {
   sharp: 0,
-  soft: 6,
-  round: 12,
-  pill: 50,
-  leaf: [20, 0, 20, 0],
-  diamond: [10, 10, 0, 0],
+  soft: 4,
+  round: 50,
+  pill: 20,
+  leaf: [16, 0, 16, 0],
+  diamond: [8, 8, 8, 8],
+  shield: [12, 12, 0, 0],
+  dot: 50,
 };
 
 // Map our PixelShape names → qrcode-styled pieceBorderRadius
@@ -75,6 +91,9 @@ export const PIXEL_BORDER_RADIUS: Record<PixelShape, number> = {
   dots: 50,
   liquid: 14,
   glued: 10,
+  diamond: 2,
+  cross: 0,
+  star: 1,
 };
 
 export const PIXEL_IS_GLUED: Record<PixelShape, boolean> = {

@@ -151,7 +151,7 @@ export function FabBar({
       <Modal
         visible={menuOpen}
         transparent
-        animationType="slide"
+        animationType="fade"
         statusBarTranslucent
         onRequestClose={() => setMenuOpen(false)}
       >
