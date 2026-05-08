@@ -220,12 +220,11 @@ export default function CreateScreen() {
   }, [hasQR]);
 
   const renderForm = () => {
-    const p = { tintColor: tint };
     switch (activeType) {
       case "url":
         return (
           <URLFormView
-            {...p}
+            tintColor={tint}
             form={forms.url}
             onChange={(v) => updateForm("url", v)}
           />
@@ -233,7 +232,7 @@ export default function CreateScreen() {
       case "text":
         return (
           <TextFormView
-            {...p}
+            tintColor={tint}
             form={forms.text}
             onChange={(v) => updateForm("text", v)}
           />
@@ -241,7 +240,7 @@ export default function CreateScreen() {
       case "email":
         return (
           <EmailFormView
-            {...p}
+            tintColor={tint}
             form={forms.email}
             onChange={(v) => updateForm("email", v)}
           />
@@ -249,7 +248,7 @@ export default function CreateScreen() {
       case "phone":
         return (
           <PhoneFormView
-            {...p}
+            tintColor={tint}
             form={forms.phone}
             onChange={(v) => updateForm("phone", v)}
           />
@@ -257,7 +256,7 @@ export default function CreateScreen() {
       case "sms":
         return (
           <SMSFormView
-            {...p}
+            tintColor={tint}
             form={forms.sms}
             onChange={(v) => updateForm("sms", v)}
           />
@@ -265,7 +264,7 @@ export default function CreateScreen() {
       case "wifi":
         return (
           <WiFiFormView
-            {...p}
+            tintColor={tint}
             form={forms.wifi}
             onChange={(v) => updateForm("wifi", v)}
           />
@@ -273,7 +272,7 @@ export default function CreateScreen() {
       case "contact":
         return (
           <ContactFormView
-            {...p}
+            tintColor={tint}
             form={forms.contact}
             onChange={(v) => updateForm("contact", v)}
           />
@@ -281,7 +280,7 @@ export default function CreateScreen() {
       case "location":
         return (
           <LocationFormView
-            {...p}
+            tintColor={tint}
             form={forms.location}
             onChange={(v) => updateForm("location", v)}
           />
@@ -307,7 +306,11 @@ export default function CreateScreen() {
           >
             {/* QR Canvas */}
             <View style={styles.canvasWrap}>
-              <View ref={qrRef} collapsable={false}>
+              <View
+                ref={qrRef}
+                collapsable={false}
+                style={{ width: QR_SIZE, height: QR_SIZE }}
+              >
                 <QRCanvas value={qrValue} qrStyle={qrStyle} size={QR_SIZE} />
               </View>
             </View>
@@ -318,17 +321,11 @@ export default function CreateScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.pills}
             >
-              {QR_TYPES.map((t) => (
-                <TypePill
-                  key={t.id}
-                  id={t.id}
-                  label={t.label}
-                  icon={t.icon as any}
-                  active={activeType === t.id}
-                  tintColor={tint}
-                  onPress={() => setActiveType(t.id)}
-                />
-              ))}
+              <TypePill
+                selected={activeType}
+                tintColor={tint}
+                onChange={(t) => setActiveType(t)}
+              />
             </ScrollView>
 
             {/* Input form */}

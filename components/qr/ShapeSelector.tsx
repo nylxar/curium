@@ -1,339 +1,249 @@
-import { useEffect } from "react";
+// components/qr/ShapeSelector.tsx — full rewrite
+
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
+  StyleSheet,
   ScrollView,
 } from "react-native";
-import Animated, {
-  useSharedValue,
-  withSpring,
-  useAnimatedStyle,
-} from "react-native-reanimated";
-import Svg, { Rect, Circle, Path } from "react-native-svg";
-import { EyeShape, PixelShape } from "@/types/qr";
-import { EYE_SHAPES, PIXEL_SHAPES } from "@/constants/qrPresets";
-import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
+import { Spacing, Radius, FontSize } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
+import { EyeShape, PixelShape } from "@/types/qr";
+import Svg, { Rect, Circle, Path } from "react-native-svg";
 
-// ─── Eye SVG previews ─────────────────────────────────────────────────────────
+// ─── Mini QR eye previews via SVG ────────────────────────────────────────────
+
 function EyePreview({ shape, color }: { shape: EyeShape; color: string }) {
-  const s = 30;
-  switch (shape) {
-    case "sharp":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Rect
-            x={1}
-            y={1}
-            width={28}
-            height={28}
-            fill="none"
-            stroke={color}
-            strokeWidth={3}
-          />
-          <Rect x={8} y={8} width={14} height={14} fill={color} />
-        </Svg>
-      );
-    case "soft":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Rect
-            x={1}
-            y={1}
-            width={28}
-            height={28}
-            rx={5}
-            fill="none"
-            stroke={color}
-            strokeWidth={3}
-          />
-          <Rect x={8} y={8} width={14} height={14} rx={3} fill={color} />
-        </Svg>
-      );
-    case "round":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Rect
-            x={1}
-            y={1}
-            width={28}
-            height={28}
-            rx={10}
-            fill="none"
-            stroke={color}
-            strokeWidth={3}
-          />
-          <Rect x={8} y={8} width={14} height={14} rx={6} fill={color} />
-        </Svg>
-      );
-    case "pill":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Circle
-            cx={15}
-            cy={15}
-            r={13}
-            fill="none"
-            stroke={color}
-            strokeWidth={3}
-          />
-          <Circle cx={15} cy={15} r={6} fill={color} />
-        </Svg>
-      );
-    case "leaf":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Path
-            d="M2 15 Q2 2 15 2 Q28 15 15 28 Q2 28 2 15Z"
-            fill="none"
-            stroke={color}
-            strokeWidth={3}
-          />
-          <Circle cx={15} cy={15} r={5} fill={color} />
-        </Svg>
-      );
-    case "diamond":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Path
-            d="M15 2 L28 15 L15 28 L2 15Z"
-            fill="none"
-            stroke={color}
-            strokeWidth={3}
-          />
-          <Path d="M15 10 L20 15 L15 20 L10 15Z" fill={color} />
-        </Svg>
-      );
-  }
-}
-
-function PixelPreview({ shape, color }: { shape: PixelShape; color: string }) {
-  const s = 30;
-  switch (shape) {
-    case "sharp":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Rect x={1} y={1} width={11} height={11} fill={color} />
-          <Rect x={18} y={1} width={11} height={11} fill={color} />
-          <Rect x={1} y={18} width={11} height={11} fill={color} />
-          <Rect x={18} y={18} width={11} height={11} fill={color} />
-        </Svg>
-      );
-    case "soft":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Rect x={1} y={1} width={11} height={11} rx={3} fill={color} />
-          <Rect x={18} y={1} width={11} height={11} rx={3} fill={color} />
-          <Rect x={1} y={18} width={11} height={11} rx={3} fill={color} />
-          <Rect x={18} y={18} width={11} height={11} rx={3} fill={color} />
-        </Svg>
-      );
-    case "round":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Rect x={1} y={1} width={11} height={11} rx={5} fill={color} />
-          <Rect x={18} y={1} width={11} height={11} rx={5} fill={color} />
-          <Rect x={1} y={18} width={11} height={11} rx={5} fill={color} />
-          <Rect x={18} y={18} width={11} height={11} rx={5} fill={color} />
-        </Svg>
-      );
-    case "dots":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Circle cx={6.5} cy={6.5} r={5.5} fill={color} />
-          <Circle cx={23.5} cy={6.5} r={5.5} fill={color} />
-          <Circle cx={6.5} cy={23.5} r={5.5} fill={color} />
-          <Circle cx={23.5} cy={23.5} r={5.5} fill={color} />
-        </Svg>
-      );
-    case "liquid":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Rect x={1} y={1} width={11} height={11} rx={7} fill={color} />
-          <Rect x={18} y={1} width={11} height={11} rx={7} fill={color} />
-          <Rect x={1} y={18} width={11} height={11} rx={7} fill={color} />
-          <Rect x={18} y={18} width={11} height={11} rx={7} fill={color} />
-        </Svg>
-      );
-    case "glued":
-      return (
-        <Svg width={s} height={s} viewBox="0 0 30 30">
-          <Path
-            d="M1 6 Q1 1 6 1 L24 1 Q29 1 29 6 L29 24 Q29 29 24 29 L6 29 Q1 29 1 24Z"
-            fill={color}
-            opacity={0.25}
-          />
-          <Rect x={4} y={4} width={10} height={10} rx={4} fill={color} />
-          <Rect x={16} y={4} width={10} height={10} rx={4} fill={color} />
-          <Rect x={4} y={16} width={10} height={10} rx={4} fill={color} />
-          <Rect x={16} y={16} width={10} height={10} rx={4} fill={color} />
-        </Svg>
-      );
-  }
-}
-
-// ─── Shape chip — scale only, no color interpolation in worklet ───────────────
-function ShapeChip({
-  label,
-  selected,
-  onPress,
-  color,
-  children,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-  color: string;
-  children: React.ReactNode;
-}) {
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    scale.value = withSpring(selected ? 1.06 : 1, {
-      damping: 14,
-      stiffness: 220,
-    });
-  }, [selected]);
-
-  // Border/bg color applied via JS style (not Reanimated worklet) — safe from warning
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
+  const r: Record<EyeShape, number> = {
+    sharp: 0,
+    soft: 3,
+    round: 12,
+    pill: 10,
+    leaf: 8,
+    diamond: 4,
+    shield: 8,
+    dot: 12,
+  };
+  const radius = r[shape];
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-      <Animated.View
-        style={[
-          styles.chip,
-          animStyle,
-          selected
-            ? { borderColor: color, backgroundColor: color + "18" }
-            : {
-                borderColor: Colors.border,
-                backgroundColor: Colors.surfaceOffset,
-              },
-        ]}
-      >
-        {children}
-        <Text
-          style={[
-            styles.chipLabel,
-            { color: selected ? color : Colors.textMuted },
-          ]}
-        >
-          {label}
-        </Text>
-      </Animated.View>
-    </TouchableOpacity>
+    <Svg width={32} height={32} viewBox="0 0 32 32">
+      {/* Outer ring */}
+      <Rect
+        x={2}
+        y={2}
+        width={28}
+        height={28}
+        rx={radius}
+        ry={radius}
+        stroke={color}
+        strokeWidth={3}
+        fill="none"
+      />
+      {/* Inner fill */}
+      <Rect
+        x={9}
+        y={9}
+        width={14}
+        height={14}
+        rx={Math.max(0, radius - 3)}
+        ry={Math.max(0, radius - 3)}
+        fill={color}
+      />
+    </Svg>
   );
 }
 
-export function EyeShapeSelector({
-  selected,
-  onChange,
-  fgColor,
-}: {
+function PixelPreview({ shape, color }: { shape: PixelShape; color: string }) {
+  const configs: Record<PixelShape, { r: number; s: number }> = {
+    sharp: { r: 0, s: 8 },
+    soft: { r: 2, s: 8 },
+    round: { r: 4, s: 8 },
+    dots: { r: 5, s: 7 },
+    liquid: { r: 3, s: 7 },
+    glued: { r: 1, s: 9 },
+    diamond: { r: 2, s: 7 },
+    cross: { r: 0, s: 6 },
+    star: { r: 1, s: 6 },
+  };
+  const { r, s } = configs[shape];
+  // 3x3 grid preview
+  const positions = [0, 1, 2].flatMap((row) =>
+    [0, 1, 2].map((col) => ({ x: col * 10 + 1, y: row * 10 + 1 })),
+  );
+  return (
+    <Svg width={32} height={32} viewBox="0 0 32 32">
+      {positions.map((pos, i) => (
+        <Rect
+          key={i}
+          x={pos.x}
+          y={pos.y}
+          width={s}
+          height={s}
+          rx={r}
+          ry={r}
+          fill={color}
+        />
+      ))}
+    </Svg>
+  );
+}
+
+// ─── Selectors ────────────────────────────────────────────────────────────────
+
+const EYE_OPTIONS: EyeShape[] = [
+  "sharp",
+  "soft",
+  "round",
+  "pill",
+  "leaf",
+  "diamond",
+  "shield",
+  "dot",
+];
+const PIXEL_OPTIONS: PixelShape[] = [
+  "sharp",
+  "soft",
+  "round",
+  "dots",
+  "liquid",
+  "glued",
+  "diamond",
+  "cross",
+  "star",
+];
+
+const EYE_LABELS: Record<EyeShape, string> = {
+  sharp: "Sharp",
+  soft: "Soft",
+  round: "Round",
+  pill: "Pill",
+  leaf: "Leaf",
+  diamond: "Diamond",
+  shield: "Shield",
+  dot: "Dot",
+};
+
+const PIXEL_LABELS: Record<PixelShape, string> = {
+  sharp: "Sharp",
+  soft: "Soft",
+  round: "Round",
+  dots: "Dots",
+  liquid: "Liquid",
+  glued: "Glued",
+  diamond: "Diamond",
+  cross: "Cross",
+  star: "Star",
+};
+
+interface EyeProps {
   selected: EyeShape;
-  onChange: (s: EyeShape) => void;
   fgColor: string;
+  onChange: (s: EyeShape) => void;
+}
+interface PixelProps {
+  selected: PixelShape;
+  fgColor: string;
+  onChange: (s: PixelShape) => void;
+}
+
+function ShapeGrid<T extends string>({
+  options,
+  selected,
+  fgColor,
+  getLabel,
+  renderPreview,
+  onChange,
+}: {
+  options: T[];
+  selected: T;
+  fgColor: string;
+  getLabel: (s: T) => string;
+  renderPreview: (s: T) => React.ReactNode;
+  onChange: (s: T) => void;
 }) {
   return (
-    <View>
-      <Text style={styles.sectionTitle}>Eye Style</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {EYE_SHAPES.map((item) => (
-          <ShapeChip
-            key={item.id}
-            label={item.label}
-            selected={selected === item.id}
-            color={fgColor}
+    <View style={styles.grid}>
+      {options.map((shape) => {
+        const active = shape === selected;
+        return (
+          <TouchableOpacity
+            key={shape}
             onPress={() => {
               Haptics.selectionAsync();
-              onChange(item.id);
+              onChange(shape);
             }}
+            activeOpacity={0.7}
+            style={[
+              styles.cell,
+              { borderColor: active ? fgColor : fgColor + "25" },
+              active && { backgroundColor: fgColor + "18" },
+            ]}
           >
-            <EyePreview
-              shape={item.id}
-              color={selected === item.id ? fgColor : Colors.textMuted}
-            />
-          </ShapeChip>
-        ))}
-      </ScrollView>
+            {renderPreview(shape)}
+            <Text
+              style={[
+                styles.cellLabel,
+                { color: active ? fgColor : fgColor + "90" },
+              ]}
+            >
+              {getLabel(shape)}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
+  );
+}
+
+export function EyeShapeSelector({ selected, fgColor, onChange }: EyeProps) {
+  return (
+    <ShapeGrid
+      options={EYE_OPTIONS}
+      selected={selected}
+      fgColor={fgColor}
+      getLabel={(s) => EYE_LABELS[s]}
+      renderPreview={(s) => <EyePreview shape={s} color={fgColor} />}
+      onChange={onChange}
+    />
   );
 }
 
 export function PixelShapeSelector({
   selected,
-  onChange,
   fgColor,
-}: {
-  selected: PixelShape;
-  onChange: (s: PixelShape) => void;
-  fgColor: string;
-}) {
+  onChange,
+}: PixelProps) {
   return (
-    <View>
-      <Text style={styles.sectionTitle}>Pixel Style</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {PIXEL_SHAPES.map((item) => (
-          <ShapeChip
-            key={item.id}
-            label={item.label}
-            selected={selected === item.id}
-            color={fgColor}
-            onPress={() => {
-              Haptics.selectionAsync();
-              onChange(item.id);
-            }}
-          >
-            <PixelPreview
-              shape={item.id}
-              color={selected === item.id ? fgColor : Colors.textMuted}
-            />
-          </ShapeChip>
-        ))}
-      </ScrollView>
-    </View>
+    <ShapeGrid
+      options={PIXEL_OPTIONS}
+      selected={selected}
+      fgColor={fgColor}
+      getLabel={(s) => PIXEL_LABELS[s]}
+      renderPreview={(s) => <PixelPreview shape={s} color={fgColor} />}
+      onChange={onChange}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: {
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  cell: {
+    width: "30%",
+    aspectRatio: 1,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+  },
+  cellLabel: {
     fontSize: FontSize.xs,
     fontWeight: "600",
-    color: Colors.textFaint,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-    marginLeft: Spacing.base,
-    marginBottom: Spacing.sm,
-  },
-  row: {
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.sm,
-    paddingBottom: Spacing.sm,
-  },
-  chip: {
-    alignItems: "center",
-    gap: Spacing.xs,
-    padding: Spacing.sm + 2,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    minWidth: 66,
-  },
-  chipLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    textAlign: "center",
   },
 });

@@ -1,4 +1,4 @@
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import QRCodeStyled from "react-native-qrcode-styled";
 import { QRStyle, EYE_BORDER_RADIUS, PIXEL_CONFIG } from "@/types/qr";
 
@@ -13,6 +13,11 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
   const eyeBR = EYE_BORDER_RADIUS[qrStyle.eyeShape];
   const pc = PIXEL_CONFIG[qrStyle.pixelShape];
 
+  const innerEyeBR =
+    typeof eyeBR === "number"
+      ? Math.max(0, eyeBR - 4)
+      : (eyeBR as number[]).map((n) => Math.max(0, n - 4));
+
   const qrKey = [
     qrStyle.eyeShape,
     qrStyle.pixelShape,
@@ -23,42 +28,48 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
   ].join("|");
 
   return (
+    // explicit width + height here — this is what was missing
     <View
-      style={[
-        styles.wrap,
-        {
-          width: size,
-          height: size,
-          backgroundColor: qrStyle.bgColor,
-          borderRadius: 28,
-        },
-      ]}
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: qrStyle.bgColor,
+        borderRadius: 24,
+        overflow: "hidden",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
     >
       {isEmpty ? (
-        <View style={styles.inner}>
-          <View style={[styles.dot, { borderColor: qrStyle.fgColor + "50" }]} />
-        </View>
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            borderWidth: 2,
+            borderStyle: "dashed",
+            borderColor: qrStyle.fgColor + "50",
+          }}
+        />
       ) : (
         <QRCodeStyled
           key={qrKey}
           data={value}
-          style={{ backgroundColor: qrStyle.bgColor }}
-          padding={18}
+          style={{
+            width: size,
+            height: size,
+            backgroundColor: qrStyle.bgColor,
+          }}
+          padding={size * 0.05}
           pieceSize={pc.pieceSize}
           pieceScale={pc.pieceScale}
           pieceBorderRadius={pc.pieceBorderRadius}
           isPiecesGlued={false}
           color={qrStyle.fgColor}
           errorCorrectionLevel={qrStyle.ecl}
-          outerEyesOptions={{
-            borderRadius: eyeBR,
-            color: qrStyle.fgColor,
-          }}
+          outerEyesOptions={{ borderRadius: eyeBR, color: qrStyle.fgColor }}
           innerEyesOptions={{
-            borderRadius:
-              typeof eyeBR === "number"
-                ? Math.max(0, (eyeBR as number) - 4)
-                : 4,
+            borderRadius: innerEyeBR,
             color: qrStyle.fgColor,
           }}
           logo={
@@ -76,15 +87,3 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  inner: { flex: 1, alignItems: "center", justifyContent: "center" },
-  dot: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderStyle: "dashed",
-  },
-});
