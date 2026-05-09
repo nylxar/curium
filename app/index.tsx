@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { saveToHistory } from "@/services/history";
 import * as Clipboard from "expo-clipboard";
 import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
@@ -27,6 +28,7 @@ import {
   PixelShapeSelector,
 } from "@/components/qr/ShapeSelector";
 import { LogoPicker } from "@/components/qr/LogoPicker";
+import { ExportSheet } from "@/components/qr/ExportSheet";
 import {
   URLFormView,
   TextFormView,
@@ -164,6 +166,7 @@ export default function CreateScreen() {
   const [qrStyle, setQrStyle] = useState<QRStyle>(DEFAULT_QR_STYLE);
   const [activeSheet, setActiveSheet] = useState<SheetId>(null);
   const qrRef = useRef<View>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Derived — no hooks
   const QR_SIZE = Math.floor(width * 0.85);
@@ -171,6 +174,19 @@ export default function CreateScreen() {
     () => encodeQR(activeType, forms),
     [activeType, forms],
   );
+  useEffect(() => {
+    if (!qrValue) return;
+    // Debounce — save 1.5s after user stops typing
+    const t = setTimeout(() => {
+      saveToHistory({
+        type: activeType,
+        value: qrValue,
+        fgColor: qrStyle.fgColor,
+        bgColor: qrStyle.bgColor,
+      });
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [qrValue]);
   const hasQR = qrValue.length > 0;
   const tint = qrStyle.fgColor;
 
@@ -203,20 +219,9 @@ export default function CreateScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, [qrValue, hasQR]);
 
-  const handleShare = useCallback(async () => {
+  const handleShare = useCallback(() => {
     if (!hasQR) return;
-    if (!qrRef.current) {
-      Alert.alert("Not ready", "Generate a QR code first.");
-      return;
-    }
-    try {
-      const uri = await captureRef(qrRef, { format: "png", quality: 1 });
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: "image/png" });
-      }
-    } catch {
-      Alert.alert("Error", "Could not share QR code.");
-    }
+    setExportOpen(true);
   }, [hasQR]);
 
   const renderForm = () => {
@@ -497,6 +502,14 @@ export default function CreateScreen() {
             onCopy={handleCopy}
             onShuffle={handleShuffle}
             onShare={handleShare}
+          />
+          <ExportSheet
+            visible={exportOpen}
+            onClose={() => setExportOpen(false)}
+            qrRef={qrRef}
+            qrValue={qrValue}
+            tintColor={tint}
+            bgColor={qrStyle.bgColor}
           />
         </KeyboardAvoidingView>
       </SafeAreaView>
