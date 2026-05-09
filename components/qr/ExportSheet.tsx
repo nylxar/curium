@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import * as MediaLibrary from "expo-media-library";
-import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
@@ -20,7 +20,7 @@ interface ExportAction {
 interface Props {
   visible: boolean;
   onClose: () => void;
-  qrRef: React.RefObject<View>;
+  qrRef: React.RefObject<View | null>;
   qrValue: string;
   tintColor: string;
   bgColor: string;
@@ -56,14 +56,15 @@ export function ExportSheet({
   };
 
   const saveAsSVG = async () => {
-    // SVG export: write QR value as a basic SVG text file
-    // For full SVG, react-native-qrcode-svg would be needed separately
-    // We save the raw QR data as a text file noting the content
     try {
-      const path = FileSystem.documentDirectory + `curium_qr_${Date.now()}.txt`;
-      await FileSystem.writeAsStringAsync(path, qrValue);
+      const filename = `curium_qr_${Date.now()}.txt`;
+      // File constructor takes a URI — use cache directory
+      const file = new File(
+        `${require("expo-file-system").cacheDirectory}${filename}`,
+      );
+      await file.write(qrValue);
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(path, {
+        await Sharing.shareAsync(file.uri, {
           mimeType: "text/plain",
           dialogTitle: "Save QR Data",
         });
