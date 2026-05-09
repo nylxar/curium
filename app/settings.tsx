@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { clearHistory } from "@/services/history";
-import { Spacing, Radius, FontSize, Colors } from "@/constants/theme";
+import { Fonts, Spacing, Radius, FontSize, Colors } from "@/constants/theme";
 
 export default function SettingsScreen() {
   const [haptics, setHaptics] = useState(true);
@@ -177,10 +177,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
   },
-  title: { fontSize: FontSize.lg, fontWeight: "700", color: Colors.text },
+  title: {
+    fontFamily: Fonts.bold,
+    fontSize: FontSize.lg,
+    color: Colors.text,
+  },
   sectionTitle: {
+    fontFamily: Fonts.bold,
     fontSize: FontSize.xs,
-    fontWeight: "700",
     color: Colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -203,6 +207,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   rowText: { flex: 1 },
-  rowLabel: { fontSize: FontSize.base, fontWeight: "600", color: Colors.text },
+  rowLabel: {
+    fontFamily: Fonts.medium,
+    fontSize: FontSize.base,
+    fontWeight: "600",
+    color: Colors.text,
+  },
   rowSub: { fontSize: FontSize.xs, color: Colors.textMuted, marginTop: 1 },
 });

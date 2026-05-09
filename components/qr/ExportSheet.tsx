@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import * as MediaLibrary from "expo-media-library";
 import { File } from "expo-file-system";
+import * as FileSystemLegacy from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
@@ -58,19 +59,18 @@ export function ExportSheet({
   const saveAsSVG = async () => {
     try {
       const filename = `curium_qr_${Date.now()}.txt`;
-      // File constructor takes a URI — use cache directory
-      const file = new File(
-        `${require("expo-file-system").cacheDirectory}${filename}`,
-      );
+      const uri = FileSystemLegacy.cacheDirectory + filename; // get URI from legacy
+      const file = new File(uri); // create File from URI
       await file.write(qrValue);
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(file.uri, {
           mimeType: "text/plain",
-          dialogTitle: "Save QR Data",
+          dialogTitle: "Export QR Content",
         });
       }
       onClose();
-    } catch {
+    } catch (e) {
+      console.error("Export error:", e); // now you'll see the real error
       Alert.alert("Error", "Could not export file.");
     }
   };

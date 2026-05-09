@@ -66,6 +66,12 @@ export const Radius = {
   full: 9999,
 } as const;
 
+export const Fonts = {
+  regular: "Sligoil-Regular",
+  medium: "Sligoil-Medium",
+  bold: "Sligoil-Bold",
+};
+
 export const FontSize = {
   xs: 11,
   sm: 13,
