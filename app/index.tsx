@@ -22,6 +22,7 @@ import { QRCanvas } from "@/components/qr/QRCanvas";
 import { TypePill } from "@/components/qr/TypePill";
 import { OptionRow } from "@/components/qr/OptionRow";
 import { FabBar } from "@/components/qr/FabBar";
+import { useTheme } from "@/context/ThemeContext";
 import { ColorPalette } from "@/components/qr/ColorPalette";
 import {
   EyeShapeSelector,
@@ -40,7 +41,7 @@ import {
   LocationFormView,
 } from "@/components/qr/InputForms";
 
-import { Spacing, Radius, FontSize, QR_COLORS } from "@/constants/theme";
+import { Fonts, Spacing, Radius, FontSize, QR_COLORS } from "@/constants/theme";
 import {
   QRType,
   QRStyle,
@@ -167,6 +168,7 @@ export default function CreateScreen() {
   const [activeSheet, setActiveSheet] = useState<SheetId>(null);
   const qrRef = useRef<View>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const { setAccent } = useTheme();
 
   // Derived — no hooks
   const QR_SIZE = Math.floor(width * 0.85);
@@ -174,19 +176,20 @@ export default function CreateScreen() {
     () => encodeQR(activeType, forms),
     [activeType, forms],
   );
+  const lastSaved = useRef<string>("");
   useEffect(() => {
     if (!qrValue) return;
-    // Debounce — save 1.5s after user stops typing
     const t = setTimeout(() => {
-      saveToHistory({
-        type: activeType,
-        value: qrValue,
-        fgColor: qrStyle.fgColor,
-        bgColor: qrStyle.bgColor,
-      });
-    }, 1500);
+      if (qrValue === lastSaved.current) return; // ← don't save duplicates
+      lastSaved.current = qrValue;
+      saveToHistory({ type: activeType, value: qrValue, qrStyle });
+    }, 2000); // ← 2s debounce
     return () => clearTimeout(t);
   }, [qrValue]);
+  useEffect(() => {
+    lastSaved.current = "";
+  }, [activeType]);
+
   const hasQR = qrValue.length > 0;
   const tint = qrStyle.fgColor;
 
@@ -202,15 +205,22 @@ export default function CreateScreen() {
 
   const handleShuffle = useCallback(() => {
     const r = RANDOM_STYLES[Math.floor(Math.random() * RANDOM_STYLES.length)];
+    const eye = EYE_SHAPES[Math.floor(Math.random() * EYE_SHAPES.length)];
+    const pixel = PIXEL_SHAPES[Math.floor(Math.random() * PIXEL_SHAPES.length)];
     setQrStyle((p) => ({
       ...p,
       colorId: r.id,
       fgColor: r.fg,
       bgColor: r.bg,
-      eyeShape: EYE_SHAPES[Math.floor(Math.random() * EYE_SHAPES.length)],
-      pixelShape: PIXEL_SHAPES[Math.floor(Math.random() * PIXEL_SHAPES.length)],
+      eyeShape: eye,
+      pixelShape: pixel,
     }));
+    setAccent(r.fg, r.bg);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, []);
+
+  useEffect(() => {
+    setAccent(DEFAULT_QR_STYLE.fgColor, DEFAULT_QR_STYLE.bgColor);
   }, []);
 
   const handleCopy = useCallback(async () => {
@@ -362,14 +372,15 @@ export default function CreateScreen() {
               >
                 <ColorPalette
                   selectedId={qrStyle.colorId}
-                  onSelect={(id, fg, bg) =>
+                  onSelect={(id, fg, bg) => {
                     setQrStyle((p) => ({
                       ...p,
                       colorId: id,
                       fgColor: fg,
                       bgColor: bg,
-                    }))
-                  }
+                    }));
+                    setAccent(fg, bg);
+                  }}
                 />
               </OptionRow>
 

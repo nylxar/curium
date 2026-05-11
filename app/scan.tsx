@@ -8,6 +8,8 @@ import {
   Linking,
   Platform,
 } from "react-native";
+import { useTheme } from "@/context/ThemeContext";
+import { Fonts } from "@/constants/theme";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,6 +32,7 @@ export default function ScanScreen() {
   const [result, setResult] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { colors } = useTheme();
 
   // Laser animation
   const laserY = useSharedValue(0);
@@ -76,7 +79,7 @@ export default function ScanScreen() {
   if (!permission.granted) {
     return (
       <View
-        style={[styles.screen, styles.center, { backgroundColor: "#0a0a0a" }]}
+        style={[styles.screen, styles.center, { backgroundColor: "colors.bg" }]}
       >
         <Ionicons name="camera-outline" size={56} color="#fff" />
         <Text style={styles.permTitle}>Camera Access Needed</Text>
@@ -131,7 +134,7 @@ export default function ScanScreen() {
             <Ionicons
               name={torch ? "flash" : "flash-outline"}
               size={24}
-              color={torch ? "#facc15" : "#fff"}
+              color={torch ? "colors.warning" : "#fff"}
             />
           </TouchableOpacity>
         </View>
@@ -261,7 +264,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  hint: { color: "#ffffffcc", fontSize: FontSize.sm, textAlign: "center" },
+  hint: {
+    color: "colors.text+'cc'",
+    fontSize: FontSize.sm,
+    textAlign: "center",
+  },
 
   resultPanel: {
     backgroundColor: "rgba(0,0,0,0.85)",

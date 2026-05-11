@@ -1,12 +1,12 @@
+import { QRStyle } from "@/types/qr";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface HistoryItem {
   id: string;
   type: string;
   value: string;
-  fgColor: string;
-  bgColor: string;
   createdAt: number;
+  qrStyle: QRStyle;
 }
 
 const KEY = "curium_history";
@@ -30,7 +30,6 @@ export async function saveToHistory(
       id: Date.now().toString(),
       createdAt: Date.now(),
     };
-    // Keep latest 100
     const updated = [newItem, ...existing].slice(0, 100);
     await AsyncStorage.setItem(KEY, JSON.stringify(updated));
   } catch {}

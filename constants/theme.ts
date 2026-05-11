@@ -1,50 +1,64 @@
-export const Colors = {
-  // === SURFACES — Deep cosmic dark ===
-  bg: "#080810", // near-black with blue tint
-  surface: "#0f0f1a", // cards
-  surface2: "#161625", // elevated cards
-  surfaceOffset: "#1c1c2e", // inputs
-  surfaceActive: "#22223a", // pressed state
-  divider: "#252540",
-  border: "#2e2e50",
+// constants/theme.ts — FULL REPLACEMENT
 
-  // === TEXT ===
-  text: "#eeeef5",
-  textMuted: "#8888aa",
-  textFaint: "#44445a",
-  textInverse: "#080810",
+export const Fonts = {
+  mono: "IBMPlexMono-Regular",
+  monoLight: "IBMPlexMono-Light",
+  monoText: "IBMPlexMono-Text",
+  monoBold: "IBMPlexMono-Bold",
+  monoSemiBold: "IBMPlexMono-SemiBold",
+  monoMedium: "IBMPlexMono-Medium",
+  monoItalic: "IBMPlexMono-Italic",
+};
 
-  // === PRIMARY — Electric Violet-Teal ===
-  primary: "#7c6ffa", // vivid purple-blue
-  primaryDim: "#5a50cc",
-  primaryBg: "#7c6ffa18",
-  primaryGlow: "#7c6ffa50",
+// ─── Slate palette ────────────────────────────────────────────────────────────
+const Slate = {
+  950: "#020617",
+  900: "#0f172a",
+  800: "#1e293b",
+  700: "#334155",
+  600: "#475569",
+  500: "#64748b",
+  400: "#94a3b8",
+  300: "#cbd5e1",
+  200: "#e2e8f0",
+  100: "#f1f5f9",
+  50: "#f8fafc",
+};
 
-  // === ACCENT 2 — Teal ===
-  teal: "#00d4b8",
-  tealBg: "#00d4b815",
+export type AppTheme = "dark" | "light" | "system";
 
-  // === ACCENT 3 — Rose ===
-  rose: "#f472b6",
-  roseBg: "#f472b615",
-
-  // === ACCENT 4 — Amber ===
-  amber: "#fbbf24",
-  amberBg: "#fbbf2415",
-
-  // === SEMANTIC ===
-  success: "#34d399",
-  successBg: "#34d39918",
-  warning: "#fbbf24",
-  warningBg: "#fbbf2418",
+export const DarkColors = {
+  bg: Slate[950],
+  surface: Slate[900],
+  surfaceOffset: Slate[800],
+  border: Slate[700],
+  text: Slate[100],
+  textMuted: Slate[400],
+  textFaint: Slate[600],
+  primary: "#38bdf8", // sky-400
+  primaryBg: "#0c4a6e22",
+  success: "#4ade80",
   error: "#f87171",
-  errorBg: "#f8717118",
+  warning: "#fbbf24",
+};
 
-  // === TAB ===
-  tabActive: "#7c6ffa",
-  tabInactive: "#44445a",
-  tabBg: "#0a0a14",
-} as const;
+export const LightColors = {
+  bg: Slate[50],
+  surface: "#ffffff",
+  surfaceOffset: Slate[100],
+  border: Slate[200],
+  text: Slate[900],
+  textMuted: Slate[500],
+  textFaint: Slate[300],
+  primary: "#0284c7", // sky-600
+  primaryBg: "#0284c722",
+  success: "#16a34a",
+  error: "#dc2626",
+  warning: "#d97706",
+};
+
+// Default export — dark (slate) as default UI theme
+export const Colors = DarkColors;
 
 export const Spacing = {
   xs: 4,
@@ -53,23 +67,16 @@ export const Spacing = {
   base: 16,
   lg: 20,
   xl: 24,
-  "2xl": 32,
-  "3xl": 40,
-  "4xl": 56,
-} as const;
+  xxl: 32,
+  xxxl: 48,
+};
 
 export const Radius = {
   sm: 6,
   md: 10,
-  lg: 16,
-  xl: 24,
+  lg: 14,
+  xl: 20,
   full: 9999,
-} as const;
-
-export const Fonts = {
-  regular: "Sligoil-Regular",
-  medium: "Sligoil-Medium",
-  bold: "Sligoil-Bold",
 };
 
 export const FontSize = {
@@ -79,16 +86,30 @@ export const FontSize = {
   md: 17,
   lg: 20,
   xl: 24,
-  "2xl": 30,
-  "3xl": 38,
-} as const;
+  xxl: 30,
+};
 
-export const Animation = {
-  spring: { damping: 18, stiffness: 200, mass: 0.8 },
-  springBouncy: { damping: 12, stiffness: 180, mass: 0.7 },
-  timing: { duration: 220 },
-} as const;
+// QR color presets
+export const QR_COLORS: {
+  id: string;
+  fg: string;
+  bg: string;
+  label: string;
+}[] = [
+  { id: "slate", fg: "#0f172a", bg: "#e2e8f0", label: "Slate" },
+  { id: "arctic", fg: "#041520", bg: "#67e8f9", label: "Arctic" },
+  { id: "obsidian", fg: "#f8fafc", bg: "#020617", label: "Obsidian" },
+  { id: "forest", fg: "#052e16", bg: "#bbf7d0", label: "Forest" },
+  { id: "ember", fg: "#431407", bg: "#fed7aa", label: "Ember" },
+  { id: "rose", fg: "#4c0519", bg: "#fecdd3", label: "Rose" },
+  { id: "violet", fg: "#2e1065", bg: "#ede9fe", label: "Violet" },
+  { id: "gold", fg: "#451a03", bg: "#fef08a", label: "Gold" },
+  { id: "paper", fg: "#1c1917", bg: "#fafaf9", label: "Paper" },
+  { id: "midnight", fg: "#e2e8f0", bg: "#0f172a", label: "Midnight" },
+];
 
+{
+  /*
 // ─── QR Color Presets ─────────────────────────────────────────────────────────
 export const QR_COLORS = [
   { id: "cosmic", fg: "#eeeef5", bg: "#080810", label: "Cosmic" }, // intentional dark
@@ -109,7 +130,7 @@ export const QR_COLORS = [
   { id: "paper", fg: "#1a1a2e", bg: "#f5f0e8", label: "Paper" }, // already correct
   { id: "ocean", fg: "#020b1a", bg: "#93c5fd", label: "Ocean" }, // SWAPPED
   { id: "lava", fg: "#2d0000", bg: "#fca5a5", label: "Lava" }, // SWAPPED
-  { id: "slate", fg: "#0f172a", bg: "#cbd5e1", label: "Slate" },
+  { id: 'slate',   fg: '#0f172a', bg: '#e2e8f0', label: 'Slate'   },
   { id: "peach", fg: "#3d0e00", bg: "#fed7aa", label: "Peach" },
   { id: "lavender", fg: "#1e0a40", bg: "#ddd6fe", label: "Lavender" },
   { id: "forest", fg: "#052010", bg: "#86efac", label: "Forest" },
@@ -120,16 +141,5 @@ export const QR_COLORS = [
   { id: "sage", fg: "#0a1f0a", bg: "#bbf7d0", label: "Sage" },
   { id: "dusk", fg: "#e2e8f0", bg: "#334155", label: "Dusk" }, // intentional dark
 ] as const;
-
-export type QRColorId = (typeof QR_COLORS)[number]["id"];
-
-export const ACCENT_PALETTE = [
-  "#7c6ffa",
-  "#00d4b8",
-  "#f472b6",
-  "#fbbf24",
-  "#38bdf8",
-  "#a3e635",
-  "#fb923c",
-  "#34d399",
-] as const;
+*/
+}
