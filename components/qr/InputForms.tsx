@@ -1,4 +1,10 @@
-import { View, Text, TextInput, StyleSheet, Switch } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
 import {
   URLForm,
   TextForm,
@@ -8,11 +14,11 @@ import {
   WiFiForm,
   ContactForm,
   LocationForm,
-  QRType,
 } from "@/types/qr";
-import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
+import { Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
 
-// ─── Shared input component ───────────────────────────────────────────────────
+// ─── Shared Field ─────────────────────────────────────────────────────────────
 function Field({
   label,
   tintColor,
@@ -37,23 +43,35 @@ function Field({
   secureTextEntry?: boolean;
   multiline?: boolean;
 }) {
+  const { colors } = useTheme();
   return (
     <View style={styles.fieldWrap}>
-      <Text style={[styles.label, { color: tintColor + "bb" }]}>{label}</Text>
+      <Text
+        style={[
+          styles.label,
+          { color: colors.textMuted, fontFamily: Fonts.mono },
+        ]}
+      >
+        {label}
+      </Text>
       <TextInput
         style={[
           styles.input,
           multiline && styles.inputMulti,
-          { borderColor: tintColor + "35", color: tintColor },
+          {
+            backgroundColor: colors.surfaceOffset,
+            borderColor: colors.border,
+            color: colors.text,
+            fontFamily: Fonts.mono,
+          },
         ]}
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor={tintColor + "50"}
+        placeholderTextColor={colors.textFaint}
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         multiline={multiline}
-        numberOfLines={multiline ? 3 : 1}
         autoCapitalize="none"
         autoCorrect={false}
       />
@@ -115,6 +133,7 @@ export function EmailFormView({
   onChange: (f: EmailForm) => void;
   tintColor: string;
 }) {
+  const { colors } = useTheme();
   return (
     <View style={styles.formGroup}>
       <Field
@@ -133,11 +152,11 @@ export function EmailFormView({
         placeholder="Subject"
       />
       <Field
-        label="Body"
+        label="Message"
         tintColor={tintColor}
         value={form.body}
         onChange={(v) => onChange({ ...form, body: v })}
-        placeholder="Message body..."
+        placeholder="Body..."
         multiline
       />
     </View>
@@ -156,7 +175,7 @@ export function PhoneFormView({
 }) {
   return (
     <Field
-      label="Phone Number"
+      label="Phone"
       tintColor={tintColor}
       value={form.phone}
       onChange={(v) => onChange({ phone: v })}
@@ -179,7 +198,7 @@ export function SMSFormView({
   return (
     <View style={styles.formGroup}>
       <Field
-        label="Phone Number"
+        label="Phone"
         tintColor={tintColor}
         value={form.phone}
         onChange={(v) => onChange({ ...form, phone: v })}
@@ -208,6 +227,7 @@ export function WiFiFormView({
   onChange: (f: WiFiForm) => void;
   tintColor: string;
 }) {
+  const { colors } = useTheme();
   return (
     <View style={styles.formGroup}>
       <Field
@@ -226,24 +246,45 @@ export function WiFiFormView({
         secureTextEntry
       />
       <View style={styles.fieldWrap}>
-        <Text style={styles.label}>Encryption</Text>
+        <Text
+          style={[
+            styles.label,
+            { color: colors.textMuted, fontFamily: Fonts.mono },
+          ]}
+        >
+          Encryption
+        </Text>
         <View style={styles.segRow}>
-          {(["WPA", "WEP", "nopass"] as const).map((enc) => (
-            <View
-              key={enc}
-              style={[styles.seg, form.encryption === enc && styles.segActive]}
-            >
-              <Text
+          {(["WPA", "WEP", "nopass"] as const).map((enc) => {
+            const active = form.encryption === enc;
+            return (
+              <TouchableOpacity
+                key={enc}
                 onPress={() => onChange({ ...form, encryption: enc })}
                 style={[
-                  styles.segLabel,
-                  form.encryption === enc && styles.segLabelActive,
+                  styles.seg,
+                  {
+                    backgroundColor: active
+                      ? tintColor + "22"
+                      : colors.surfaceOffset,
+                    borderColor: active ? tintColor : colors.border,
+                  },
                 ]}
               >
-                {enc === "nopass" ? "None" : enc}
-              </Text>
-            </View>
-          ))}
+                <Text
+                  style={[
+                    styles.segLabel,
+                    {
+                      color: active ? tintColor : colors.textMuted,
+                      fontFamily: Fonts.mono,
+                    },
+                  ]}
+                >
+                  {enc === "nopass" ? "None" : enc}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
     </View>
@@ -286,7 +327,7 @@ export function ContactFormView({
         keyboardType="email-address"
       />
       <Field
-        label="Organisation"
+        label="Organization"
         tintColor={tintColor}
         value={form.org}
         onChange={(v) => onChange({ ...form, org: v })}
@@ -325,7 +366,7 @@ export function LocationFormView({
         keyboardType="decimal-pad"
       />
       <Field
-        label="Label (optional)"
+        label="Label"
         tintColor={tintColor}
         value={form.label}
         onChange={(v) => onChange({ ...form, label: v })}
@@ -338,24 +379,16 @@ export function LocationFormView({
 const styles = StyleSheet.create({
   formGroup: { gap: Spacing.sm },
   fieldWrap: { gap: Spacing.xs },
-  label: {
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: "500",
-    marginLeft: 2,
-  },
+  label: { fontSize: FontSize.xs, marginLeft: 2 },
   input: {
-    backgroundColor: Colors.surfaceOffset,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
-    fontSize: FontSize.base,
-    color: Colors.text,
+    fontSize: FontSize.sm,
   },
   inputMulti: {
-    height: 90,
+    height: 88,
     textAlignVertical: "top",
     paddingTop: Spacing.sm + 2,
   },
@@ -366,14 +399,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surfaceOffset,
   },
-  segActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryBg },
-  segLabel: {
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    fontWeight: "500",
-  },
-  segLabelActive: { color: Colors.primary },
+  segLabel: { fontSize: FontSize.sm },
 });
