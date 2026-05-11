@@ -1,122 +1,197 @@
-import { useEffect } from "react";
-import { ScrollView, View, Text, StyleSheet } from "react-native";
-import Animated, {
-  useSharedValue,
-  withSpring,
-  useAnimatedStyle,
-} from "react-native-reanimated";
+import { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  Pressable,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { PressableScale } from "@/components/ui/PressableScale";
+import * as Haptics from "expo-haptics";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { QRType } from "@/types/qr";
-import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
 const TYPES: {
-  type: QRType;
+  id: QRType;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
-  { type: "url", label: "URL", icon: "link-outline" },
-  { type: "text", label: "Text", icon: "text-outline" },
-  { type: "wifi", label: "WiFi", icon: "wifi-outline" },
-  { type: "email", label: "Email", icon: "mail-outline" },
-  { type: "phone", label: "Phone", icon: "call-outline" },
-  { type: "sms", label: "SMS", icon: "chatbubble-outline" },
-  { type: "contact", label: "Contact", icon: "person-outline" },
-  { type: "location", label: "Location", icon: "location-outline" },
+  { id: "url", label: "URL", icon: "link-outline" },
+  { id: "text", label: "Text", icon: "text-outline" },
+  { id: "wifi", label: "WiFi", icon: "wifi-outline" },
+  { id: "email", label: "Email", icon: "mail-outline" },
+  { id: "phone", label: "Phone", icon: "call-outline" },
+  { id: "sms", label: "SMS", icon: "chatbubble-outline" },
+  { id: "contact", label: "Contact", icon: "person-outline" },
+  { id: "location", label: "Location", icon: "location-outline" },
 ];
-
-function TypeChip({
-  item,
-  selected,
-  onPress,
-}: {
-  item: (typeof TYPES)[0];
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const scale = useSharedValue(selected ? 1 : 0);
-  const bgOpacity = useSharedValue(selected ? 1 : 0);
-
-  useEffect(() => {
-    scale.value = withSpring(selected ? 1 : 0, { damping: 14, stiffness: 200 });
-    bgOpacity.value = withSpring(selected ? 1 : 0, {
-      damping: 14,
-      stiffness: 200,
-    });
-  }, [selected]);
-
-  const pillStyle = useAnimatedStyle(() => ({
-    opacity: bgOpacity.value,
-    transform: [{ scale: 0.92 + scale.value * 0.08 }],
-  }));
-
-  return (
-    <PressableScale onPress={onPress} style={styles.chipWrap}>
-      <Animated.View
-        style={[
-          styles.chip,
-          { borderColor: selected ? Colors.primary : Colors.border },
-          pillStyle,
-        ]}
-      >
-        <Ionicons
-          name={item.icon}
-          size={15}
-          color={selected ? Colors.primary : Colors.textMuted}
-        />
-        <Text
-          style={[
-            styles.chipLabel,
-            { color: selected ? Colors.primary : Colors.textMuted },
-          ]}
-        >
-          {item.label}
-        </Text>
-      </Animated.View>
-    </PressableScale>
-  );
-}
 
 interface Props {
   selected: QRType;
+  tintColor: string;
   onChange: (t: QRType) => void;
 }
 
-export function TypeSelector({ selected, onChange }: Props) {
+export function TypeSelector({ selected, tintColor, onChange }: Props) {
+  const { colors } = useTheme();
+  const [open, setOpen] = useState(false);
+  const insets = useSafeAreaInsets();
+  const current = TYPES.find((t) => t.id === selected)!;
+
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
-    >
-      {TYPES.map((item) => (
-        <TypeChip
-          key={item.type}
-          item={item}
-          selected={selected === item.type}
-          onPress={() => onChange(item.type)}
-        />
-      ))}
-    </ScrollView>
+    <>
+      {/* Option row — tappable */}
+      <TouchableOpacity
+        style={[
+          styles.row,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          setOpen(true);
+        }}
+        activeOpacity={0.75}
+      >
+        <View style={[styles.rowIcon, { backgroundColor: tintColor + "18" }]}>
+          <Ionicons name={current.icon} size={18} color={tintColor} />
+        </View>
+        <View style={styles.rowText}>
+          <Text
+            style={[
+              styles.rowLabel,
+              { color: colors.text, fontFamily: Fonts.monoMedium },
+            ]}
+          >
+            QR Type
+          </Text>
+          <Text
+            style={[
+              styles.rowSub,
+              { color: colors.textMuted, fontFamily: Fonts.mono },
+            ]}
+          >
+            {current.label}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
+      </TouchableOpacity>
+
+      {/* Modal picker */}
+      <Modal
+        visible={open}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setOpen(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
+        <View
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: colors.surface,
+              paddingBottom: insets.bottom + Spacing.lg,
+            },
+          ]}
+        >
+          <View style={[styles.handle, { backgroundColor: colors.border }]} />
+          <Text
+            style={[
+              styles.sheetTitle,
+              { color: colors.text, fontFamily: Fonts.monoBold },
+            ]}
+          >
+            Select QR Type
+          </Text>
+          <View style={styles.grid}>
+            {TYPES.map((t) => {
+              const active = t.id === selected;
+              return (
+                <TouchableOpacity
+                  key={t.id}
+                  style={[
+                    styles.cell,
+                    {
+                      backgroundColor: active
+                        ? tintColor + "18"
+                        : colors.surfaceOffset,
+                      borderColor: active ? tintColor : colors.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    onChange(t.id);
+                    setOpen(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={t.icon}
+                    size={22}
+                    color={active ? tintColor : colors.textMuted}
+                  />
+                  <Text
+                    style={[
+                      styles.cellLabel,
+                      {
+                        color: active ? tintColor : colors.textMuted,
+                        fontFamily: active ? Fonts.monoBold : Fonts.mono,
+                      },
+                    ]}
+                  >
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.sm,
-    paddingVertical: Spacing.sm,
-  },
-  chipWrap: {},
-  chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm - 2,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    backgroundColor: Colors.surface,
+    gap: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  chipLabel: { fontSize: FontSize.sm, fontWeight: "500" },
+  rowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowText: { flex: 1 },
+  rowLabel: { fontSize: FontSize.base },
+  rowSub: { fontSize: FontSize.xs, marginTop: 1 },
+
+  backdrop: { flex: 1, backgroundColor: "#00000066" },
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: Spacing.lg,
+    gap: Spacing.lg,
+  },
+  handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center" },
+  sheetTitle: { fontSize: FontSize.md, textAlign: "center" },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+  cell: {
+    width: "22%",
+    aspectRatio: 1,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    flexGrow: 1,
+  },
+  cellLabel: { fontSize: FontSize.xs },
 });
