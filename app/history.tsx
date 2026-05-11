@@ -111,23 +111,23 @@ export default function HistoryScreen() {
       activeOpacity={0.8}
     >
       {/* Icon instead of QR thumbnail */}
-      <View style={[styles.iconBox, { backgroundColor: item.qrStyle.fgColor }]}>
+      <View style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}>
         <Ionicons
           name={TYPE_ICONS[item.type] ?? "qr-code-outline"}
-          size={24}
-          color={item.qrStyle.fgColor}
+          size={22}
+          color={colors.primary}
         />
       </View>
 
       <View style={styles.info}>
         <View style={styles.row}>
           <View
-            style={[styles.badge, { backgroundColor: item.qrStyle.fgColor }]}
+            style={[styles.badge, { backgroundColor: colors.surfaceOffset }]}
           >
             <Text
               style={[
                 styles.badgeText,
-                { color: item.qrStyle.fgColor, fontFamily: Fonts.monoBold },
+                { color: colors.primary, fontFamily: Fonts.monoBold },
               ]}
             >
               {item.type.toUpperCase()}
