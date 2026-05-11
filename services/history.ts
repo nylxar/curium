@@ -1,4 +1,4 @@
-import { QRStyle } from "@/types/qr";
+import { QRStyle, DEFAULT_QR_STYLE } from "@/types/qr";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface HistoryItem {
@@ -14,7 +14,22 @@ const KEY = "curium_history";
 export async function loadHistory(): Promise<HistoryItem[]> {
   try {
     const raw = await AsyncStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    // Migrate old items that have fgColor/bgColor instead of qrStyle
+    return parsed.map((item: any) => {
+      if (!item.qrStyle) {
+        return {
+          ...item,
+          qrStyle: {
+            ...DEFAULT_QR_STYLE,
+            fgColor: item.fgColor ?? DEFAULT_QR_STYLE.fgColor,
+            bgColor: item.bgColor ?? DEFAULT_QR_STYLE.bgColor,
+          },
+        };
+      }
+      return item;
+    });
   } catch {
     return [];
   }

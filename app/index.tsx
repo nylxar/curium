@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { saveToHistory } from "@/services/history";
 import * as Clipboard from "expo-clipboard";
 import * as Sharing from "expo-sharing";
+import { useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
 import { Ionicons } from "@expo/vector-icons";
@@ -168,7 +169,11 @@ export default function CreateScreen() {
   const [activeSheet, setActiveSheet] = useState<SheetId>(null);
   const qrRef = useRef<View>(null);
   const [exportOpen, setExportOpen] = useState(false);
-  const { setAccent } = useTheme();
+  const { setQRColors } = useTheme();
+  const params = useLocalSearchParams<{
+    loadType?: string;
+    loadData?: string;
+  }>();
 
   // Derived — no hooks
   const QR_SIZE = Math.floor(width * 0.85);
@@ -177,6 +182,7 @@ export default function CreateScreen() {
     [activeType, forms],
   );
   const lastSaved = useRef<string>("");
+
   useEffect(() => {
     if (!qrValue) return;
     const t = setTimeout(() => {
@@ -186,6 +192,7 @@ export default function CreateScreen() {
     }, 2000); // ← 2s debounce
     return () => clearTimeout(t);
   }, [qrValue]);
+
   useEffect(() => {
     lastSaved.current = "";
   }, [activeType]);
@@ -215,13 +222,22 @@ export default function CreateScreen() {
       eyeShape: eye,
       pixelShape: pixel,
     }));
-    setAccent(r.fg, r.bg);
+    setQRColors(r.fg, r.bg);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, []);
 
+  //On mount
   useEffect(() => {
-    setAccent(DEFAULT_QR_STYLE.fgColor, DEFAULT_QR_STYLE.bgColor);
+    setQRColors(DEFAULT_QR_STYLE.fgColor, DEFAULT_QR_STYLE.bgColor);
   }, []);
+  useEffect(() => {
+    if (!params.loadType || !params.loadData) return;
+    try {
+      const parsed = JSON.parse(params.loadData);
+      setActiveType(params.loadType as QRType);
+      setForms((p) => ({ ...p, [params.loadType!]: parsed }));
+    } catch {}
+  }, [params.loadType, params.loadData]);
 
   const handleCopy = useCallback(async () => {
     if (!hasQR) return;
@@ -379,7 +395,7 @@ export default function CreateScreen() {
                       fgColor: fg,
                       bgColor: bg,
                     }));
-                    setAccent(fg, bg);
+                    setQRColors(fg, bg);
                   }}
                 />
               </OptionRow>

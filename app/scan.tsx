@@ -9,7 +9,6 @@ import {
   Platform,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
-import { Fonts } from "@/constants/theme";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,7 +22,63 @@ import Animated, {
   useAnimatedStyle,
   Easing,
 } from "react-native-reanimated";
-import { Spacing, Radius, FontSize } from "@/constants/theme";
+import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
+
+// Add this helper at module level in scan.tsx:
+function detectQRType(data: string): {
+  type: string;
+  parsed: Record<string, string>;
+} {
+  if (/^https?:\/\//i.test(data) || /^www\./i.test(data))
+    return { type: "url", parsed: { url: data } };
+
+  if (/^mailto:/i.test(data)) {
+    const [to, qs] = data.replace(/^mailto:/i, "").split("?");
+    const params = Object.fromEntries(new URLSearchParams(qs ?? ""));
+    return {
+      type: "email",
+      parsed: { to, subject: params.subject ?? "", body: params.body ?? "" },
+    };
+  }
+
+  if (/^tel:/i.test(data))
+    return { type: "phone", parsed: { phone: data.replace(/^tel:/i, "") } };
+
+  if (/^sms:/i.test(data)) {
+    const [phone, qs] = data.replace(/^sms:/i, "").split("?");
+    const params = Object.fromEntries(new URLSearchParams(qs ?? ""));
+    return { type: "sms", parsed: { phone, message: params.body ?? "" } };
+  }
+
+  if (/^WIFI:/i.test(data)) {
+    const ssid = data.match(/S:([^;]*)/)?.[1] ?? "";
+    const password = data.match(/P:([^;]*)/)?.[1] ?? "";
+    const enc = data.match(/T:([^;]*)/)?.[1] ?? "WPA";
+    return { type: "wifi", parsed: { ssid, password, encryption: enc } };
+  }
+
+  if (/^BEGIN:VCARD/i.test(data)) {
+    const name = data.match(/FN:([^\n]*)/)?.[1] ?? "";
+    const phone = data.match(/TEL:([^\n]*)/)?.[1] ?? "";
+    const email = data.match(/EMAIL:([^\n]*)/)?.[1] ?? "";
+    const org = data.match(/ORG:([^\n]*)/)?.[1] ?? "";
+    return { type: "contact", parsed: { name, phone, email, org } };
+  }
+
+  if (/^geo:/i.test(data)) {
+    const coords = data.replace(/^geo:/i, "").split(",");
+    return {
+      type: "location",
+      parsed: {
+        lat: coords[0] ?? "",
+        lng: coords[1]?.split("?")[0] ?? "",
+        label: "",
+      },
+    };
+  }
+
+  return { type: "text", parsed: { text: data } };
+}
 
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -32,7 +87,7 @@ export default function ScanScreen() {
   const [result, setResult] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   // Laser animation
   const laserY = useSharedValue(0);
@@ -216,6 +271,37 @@ export default function ScanScreen() {
               >
                 <Ionicons name="scan-outline" size={18} color="#fff" />
                 <Text style={styles.resultBtnLabel}>Rescan</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.resultBtn,
+                  { backgroundColor: colors.primary, flex: 1.5 },
+                ]}
+                onPress={() => {
+                  if (!result) return;
+                  const { type, parsed } = detectQRType(result);
+                  router.push({
+                    pathname: "/",
+                    params: {
+                      loadType: type,
+                      loadData: JSON.stringify(parsed),
+                    },
+                  });
+                }}
+              >
+                <Ionicons
+                  name="create-outline"
+                  size={18}
+                  color={isDark ? "#000" : "#fff"}
+                />
+                <Text
+                  style={[
+                    styles.resultBtnLabel,
+                    { color: isDark ? "#000" : "#fff" },
+                  ]}
+                >
+                  Load
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

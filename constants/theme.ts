@@ -25,7 +25,7 @@ const Slate = {
   50: "#f8fafc",
 };
 
-export type AppTheme = "dark" | "light" | "system";
+export type AppTheme = "dark" | "light" | "system" | "dynamic";
 
 export const DarkColors = {
   bg: Slate[950],

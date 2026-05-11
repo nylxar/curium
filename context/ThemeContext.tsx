@@ -1,4 +1,3 @@
-// context/ThemeContext.tsx
 import {
   createContext,
   useContext,
@@ -17,9 +16,9 @@ interface ThemeCtx {
   colors: typeof DarkColors;
   isDark: boolean;
   setTheme: (t: AppTheme) => void;
-  accentFg: string;
-  accentBg: string;
-  setAccent: (fg: string, bg: string) => void;
+  qrFg: string;
+  qrBg: string;
+  setQRColors: (fg: string, bg: string) => void;
 }
 
 const ThemeContext = createContext<ThemeCtx>({
@@ -27,42 +26,78 @@ const ThemeContext = createContext<ThemeCtx>({
   colors: DarkColors,
   isDark: true,
   setTheme: () => {},
+  qrFg: "#0f172a",
+  qrBg: "#e2e8f0",
+  setQRColors: () => {},
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
   const [theme, setThemeState] = useState<AppTheme>("dark");
-  const [accentFg, setAccentFg] = useState("#0f172a");
-  const [accentBg, setAccentBg] = useState("#e2e8f0");
-  const setAccent = useCallback((fg: string, bg: string) => {
-    setAccentFg(fg);
-    setAccentBg(bg);
-  }, []);
+  const [qrFg, setQrFg] = useState("#0f172a");
+  const [qrBg, setQrBg] = useState("#e2e8f0");
 
   useEffect(() => {
-    AsyncStorage.getItem("curium_theme").then((v) => {
-      if (v) setThemeState(v as AppTheme);
+    AsyncStorage.multiGet([
+      "curium_theme",
+      "curium_qr_fg",
+      "curium_qr_bg",
+    ]).then((pairs) => {
+      const t = pairs[0][1];
+      const fg = pairs[1][1];
+      const bg = pairs[2][1];
+      if (t) setThemeState(t as AppTheme);
+      if (fg) setQrFg(fg);
+      if (bg) setQrBg(bg);
     });
   }, []);
 
-  const setTheme = (t: AppTheme) => {
+  const setTheme = useCallback((t: AppTheme) => {
     setThemeState(t);
     AsyncStorage.setItem("curium_theme", t);
-  };
+  }, []);
 
-  const isDark = theme === "dark" || (theme === "system" && system === "dark");
-  const colors = useMemo(
-    () => ({
-      ...(isDark ? DarkColors : LightColors),
-      primary: accentFg,
-      primaryBg: accentBg + "22",
-    }),
-    [isDark, accentFg, accentBg],
-  );
+  const setQRColors = useCallback((fg: string, bg: string) => {
+    setQrFg(fg);
+    setQrBg(bg);
+    AsyncStorage.multiSet([
+      ["curium_qr_fg", fg],
+      ["curium_qr_bg", bg],
+    ]);
+  }, []);
+
+  const colors = useMemo(() => {
+    if (theme === "dynamic") {
+      // Build entire palette from QR colors
+      // qrBg = background, qrFg = text/accent
+      const isQrDark = isColorDark(qrBg);
+      const base = isQrDark ? DarkColors : LightColors;
+      return {
+        ...base,
+        bg: qrBg,
+        surface: blendHex(qrBg, isQrDark ? "#ffffff" : "#000000", 0.05),
+        surfaceOffset: blendHex(qrBg, isQrDark ? "#ffffff" : "#000000", 0.1),
+        border: blendHex(qrBg, isQrDark ? "#ffffff" : "#000000", 0.15),
+        text: qrFg,
+        textMuted: blendHex(qrFg, qrBg, 0.45),
+        textFaint: blendHex(qrFg, qrBg, 0.7),
+        primary: qrFg,
+        primaryBg: qrFg + "22",
+      };
+    }
+    const isDark =
+      theme === "dark" || (theme === "system" && system === "dark");
+    return isDark ? DarkColors : LightColors;
+  }, [theme, system, qrFg, qrBg]);
+
+  const isDark =
+    theme === "dynamic"
+      ? isColorDark(qrBg)
+      : theme === "dark" || (theme === "system" && system === "dark");
 
   return (
     <ThemeContext.Provider
-      value={{ theme, colors, isDark, setTheme, accentFg, accentBg, setAccent }}
+      value={{ theme, colors, isDark, setTheme, qrFg, qrBg, setQRColors }}
     >
       {children}
     </ThemeContext.Provider>
@@ -70,3 +105,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 }
 
 export const useTheme = () => useContext(ThemeContext);
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function isColorDark(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  // Perceived luminance
+  return 0.299 * r + 0.587 * g + 0.114 * b < 128;
+}
+
+function blendHex(hex1: string, hex2: string, t: number): string {
+  const r1 = parseInt(hex1.slice(1, 3), 16),
+    g1 = parseInt(hex1.slice(3, 5), 16),
+    b1 = parseInt(hex1.slice(5, 7), 16);
+  const r2 = parseInt(hex2.slice(1, 3), 16),
+    g2 = parseInt(hex2.slice(3, 5), 16),
+    b2 = parseInt(hex2.slice(5, 7), 16);
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const b = Math.round(b1 + (b2 - b1) * t);
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}

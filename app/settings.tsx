@@ -25,6 +25,7 @@ const THEME_OPTIONS: {
   { id: "dark", label: "Dark", icon: "moon-outline" },
   { id: "light", label: "Light", icon: "sunny-outline" },
   { id: "system", label: "System", icon: "phone-portrait-outline" },
+  { id: "dynamic", label: "Dynamic", icon: "color-palette-outline" },
 ];
 
 export default function SettingsScreen() {
@@ -117,17 +118,16 @@ export default function SettingsScreen() {
       color: colors.textFaint,
       fontFamily: Fonts.mono,
     },
-    accentRow: {
+    dynamicNote: {
       flexDirection: "row",
       alignItems: "center",
       gap: Spacing.sm,
-      marginTop: Spacing.sm,
       padding: Spacing.md,
       borderRadius: Radius.md,
-      borderWidth: StyleSheet.hairlineWidth,
+      borderWidth: 1,
+      marginTop: Spacing.sm,
     },
-    accentDot: { width: 12, height: 12, borderRadius: 6 },
-    accentLabel: { flex: 1, fontSize: FontSize.xs, lineHeight: 16 },
+    dynamicNoteText: { flex: 1, fontSize: FontSize.xs, lineHeight: 16 },
   });
 
   const Row = ({
@@ -235,22 +235,31 @@ export default function SettingsScreen() {
             );
           })}
         </View>
-        <View
-          style={[
-            S.accentRow,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <View style={[S.accentDot, { backgroundColor: colors.primary }]} />
-          <Text
+        {theme === "dynamic" && (
+          <View
             style={[
-              S.accentLabel,
-              { color: colors.textMuted, fontFamily: Fonts.mono },
+              S.dynamicNote,
+              {
+                backgroundColor: colors.primary + "15",
+                borderColor: colors.primary + "30",
+              },
             ]}
           >
-            Accent follows your QR color — change it on the Create screen
-          </Text>
-        </View>
+            <Ionicons
+              name="information-circle-outline"
+              size={14}
+              color={colors.primary}
+            />
+            <Text
+              style={[
+                S.dynamicNoteText,
+                { color: colors.primary, fontFamily: Fonts.mono },
+              ]}
+            >
+              App colors match your QR theme. Change it on the Create screen.
+            </Text>
+          </View>
+        )}
 
         {/* Interaction */}
         <Text style={S.sectionTitle}>Interaction</Text>
