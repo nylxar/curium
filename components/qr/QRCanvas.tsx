@@ -43,25 +43,23 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
       {isEmpty ? (
         <View
           style={{
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            borderWidth: 2,
-            borderStyle: "dashed",
-            borderColor: qrStyle.fgColor + "50",
+            width: size,
+            height: size,
+            backgroundColor: qrStyle.bgColor,
+            borderRadius: 20,
+            overflow: "hidden",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: Math.floor(size * 0.04),
           }}
         />
       ) : (
         <QRCodeStyled
           key={qrKey}
           data={value}
-          style={{
-            width: size,
-            height: size,
-            backgroundColor: qrStyle.bgColor,
-          }}
-          padding={size * 0.05}
-          pieceSize={pc.pieceSize}
+          style={{ width: size, height: size }}
+          padding={0}
+          pieceSize={Math.floor(size / 35)}
           pieceScale={pc.pieceScale}
           pieceBorderRadius={pc.pieceBorderRadius}
           isPiecesGlued={false}
