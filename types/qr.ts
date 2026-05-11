@@ -74,12 +74,12 @@ export const DEFAULT_QR_STYLE: QRStyle = {
 // Map our EyeShape names → qrcode-styled borderRadius values
 export const EYE_BORDER_RADIUS: Record<EyeShape, number | number[]> = {
   sharp: 0,
-  soft: 4,
+  soft: 6,
   round: 50,
-  pill: 20,
-  leaf: [16, 0, 16, 0],
-  diamond: [8, 8, 8, 8],
-  shield: [12, 12, 0, 0],
+  pill: 22,
+  leaf: [14, 0, 14, 0],
+  diamond: [10, 10, 10, 10],
+  shield: [10, 10, 0, 0],
   dot: 50,
 };
 
