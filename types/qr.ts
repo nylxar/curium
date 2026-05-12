@@ -63,8 +63,8 @@ export interface QRStyle {
 
 export const DEFAULT_QR_STYLE: QRStyle = {
   colorId: "slate",
-  fgColor: "#0f172a",
-  bgColor: "#e2e8f0",
+  fgColor: "#0d1117",
+  bgColor: "#f0f4f8",
   eyeShape: "round",
   pixelShape: "dots",
   logoUri: undefined,

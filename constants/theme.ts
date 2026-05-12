@@ -28,33 +28,33 @@ const Slate = {
 export type AppTheme = "dark" | "light" | "system" | "dynamic";
 
 export const DarkColors = {
-  bg: Slate[950],
-  surface: Slate[900],
-  surfaceOffset: Slate[800],
-  border: Slate[700],
-  text: Slate[100],
-  textMuted: Slate[400],
-  textFaint: Slate[600],
-  primary: "#38bdf8", // sky-400
-  primaryBg: "#0c4a6e22",
-  success: "#4ade80",
-  error: "#f87171",
-  warning: "#fbbf24",
+  bg: "#0d1117",
+  surface: "#161b22",
+  surfaceOffset: "#21262d",
+  border: "#30363d",
+  text: "#e6edf3",
+  textMuted: "#8b949e",
+  textFaint: "#484f58",
+  primary: "#58a6ff",
+  primaryBg: "#58a6ff22",
+  success: "#3fb950",
+  error: "#f85149",
+  warning: "#d29922",
 };
 
 export const LightColors = {
-  bg: Slate[50],
+  bg: "#f6f8fa",
   surface: "#ffffff",
-  surfaceOffset: Slate[100],
-  border: Slate[200],
-  text: Slate[900],
-  textMuted: Slate[500],
-  textFaint: Slate[300],
-  primary: "#0284c7", // sky-600
-  primaryBg: "#0284c722",
-  success: "#16a34a",
-  error: "#dc2626",
-  warning: "#d97706",
+  surfaceOffset: "#f0f2f5",
+  border: "#d0d7de",
+  text: "#1f2328", // near-black
+  textMuted: "#57606a",
+  textFaint: "#d0d7de",
+  primary: "#0969da", // darker blue
+  primaryBg: "#0969da22",
+  success: "#1a7f37",
+  error: "#cf222e",
+  warning: "#9a6700",
 };
 
 // Default export — dark (slate) as default UI theme
@@ -96,7 +96,7 @@ export const QR_COLORS: {
   bg: string;
   label: string;
 }[] = [
-  { id: "slate", fg: "#0f172a", bg: "#e2e8f0", label: "Slate" },
+  { id: "slate", fg: "#0d1117", bg: "#f0f4f8", label: "Slate" },
   { id: "arctic", fg: "#041520", bg: "#67e8f9", label: "Arctic" },
   { id: "obsidian", fg: "#f8fafc", bg: "#020617", label: "Obsidian" },
   { id: "forest", fg: "#052e16", bg: "#bbf7d0", label: "Forest" },

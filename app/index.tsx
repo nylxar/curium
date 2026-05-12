@@ -178,7 +178,7 @@ export default function CreateScreen() {
   const { colors } = useTheme();
 
   // Derived — no hooks
-  const QR_SIZE = Math.floor(width * 0.85);
+  const QR_SIZE = Math.floor(width * 0.82);
   const qrStyleRef = useRef(qrStyle);
   useEffect(() => {
     qrStyleRef.current = qrStyle;
@@ -591,7 +591,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   appTitle: { fontSize: FontSize.xl },
-  canvasWrap: { alignItems: "center", paddingVertical: Spacing.lg },
+  canvasWrap: {
+    alignItems: "center",
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
+  },
   formWrap: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.md },
   formCard: {
     borderRadius: Radius.lg,
