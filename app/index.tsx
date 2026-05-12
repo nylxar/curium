@@ -179,6 +179,10 @@ export default function CreateScreen() {
 
   // Derived — no hooks
   const QR_SIZE = Math.floor(width * 0.85);
+  const qrStyleRef = useRef(qrStyle);
+  useEffect(() => {
+    qrStyleRef.current = qrStyle;
+  }, [qrStyle]);
   const qrValue = useMemo(
     () => encodeQR(activeType, forms),
     [activeType, forms],
@@ -188,12 +192,18 @@ export default function CreateScreen() {
   useEffect(() => {
     if (!qrValue) return;
     const t = setTimeout(() => {
-      if (qrValue === lastSaved.current) return; // ← don't save duplicates
+      if (qrValue === lastSaved.current) return;
       lastSaved.current = qrValue;
-      saveToHistory({ type: activeType, value: qrValue, qrStyle });
-    }, 2000); // ← 2s debounce
+      // Read qrStyle from ref, not closure
+      saveToHistory({
+        type: activeType,
+        value: qrValue,
+        qrStyle: qrStyleRef.current,
+      });
+    }, 2500);
+
     return () => clearTimeout(t);
-  }, [qrValue]);
+  }, [qrValue, activeType]);
 
   useEffect(() => {
     lastSaved.current = "";
@@ -328,28 +338,6 @@ export default function CreateScreen() {
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* ── STATIC TOP SECTION ── */}
         <View style={styles.staticTop}>
-          {/* App bar */}
-          <View style={[styles.appBar, { borderBottomColor: colors.border }]}>
-            <Text
-              style={[
-                styles.appTitle,
-                { color: colors.text, fontFamily: Fonts.monoBold },
-              ]}
-            >
-              curium
-            </Text>
-            <TouchableOpacity
-              onPress={() => setExportOpen(true)}
-              disabled={!hasQR}
-            >
-              <Ionicons
-                name="share-outline"
-                size={22}
-                color={hasQR ? tint : colors.textFaint}
-              />
-            </TouchableOpacity>
-          </View>
-
           {/* QR canvas — always visible */}
           <View style={styles.canvasWrap}>
             <View
@@ -395,151 +383,148 @@ export default function CreateScreen() {
           />
 
           {/* Option rows */}
-          <View style={styles.options}>
-            <OptionRow
-              label="Color"
-              iconName="color-palette-outline"
-              tintColor={tint}
-              bgColor={qrStyle.bgColor}
-              sheetOpen={activeSheet === "color"}
-              onOpen={() => openSheet("color")}
-              onClose={closeSheet}
-              preview={<View style={[styles.dot, { backgroundColor: tint }]} />}
-            >
-              <ColorPalette
-                selectedId={qrStyle.colorId}
-                onSelect={(id, fg, bg) => {
-                  setQrStyle((p) => ({
-                    ...p,
-                    colorId: id,
-                    fgColor: fg,
-                    bgColor: bg,
-                  }));
-                  setQRColors(fg, bg);
-                }}
-              />
-            </OptionRow>
+          <OptionRow
+            label="Color"
+            iconName="color-palette-outline"
+            tintColor={tint}
+            bgColor={qrStyle.bgColor}
+            sheetOpen={activeSheet === "color"}
+            onOpen={() => openSheet("color")}
+            onClose={closeSheet}
+            preview={<View style={[styles.dot, { backgroundColor: tint }]} />}
+          >
+            <ColorPalette
+              selectedId={qrStyle.colorId}
+              onSelect={(id, fg, bg) => {
+                setQrStyle((p) => ({
+                  ...p,
+                  colorId: id,
+                  fgColor: fg,
+                  bgColor: bg,
+                }));
+                setQRColors(fg, bg);
+              }}
+            />
+          </OptionRow>
 
-            <OptionRow
-              label="Eye Style"
-              iconName="eye-outline"
-              tintColor={tint}
-              bgColor={qrStyle.bgColor}
-              sheetOpen={activeSheet === "eye"}
-              onOpen={() => openSheet("eye")}
-              onClose={closeSheet}
-              preview={
-                <Ionicons name="scan-outline" size={15} color={tint + "90"} />
-              }
-            >
-              <EyeShapeSelector
-                selected={qrStyle.eyeShape}
-                fgColor={tint}
-                onChange={(s) => {
-                  setQrStyle((p) => ({ ...p, eyeShape: s }));
-                  closeSheet();
-                }}
-              />
-            </OptionRow>
+          <OptionRow
+            label="Eye Style"
+            iconName="eye-outline"
+            tintColor={tint}
+            bgColor={qrStyle.bgColor}
+            sheetOpen={activeSheet === "eye"}
+            onOpen={() => openSheet("eye")}
+            onClose={closeSheet}
+            preview={
+              <Ionicons name="scan-outline" size={15} color={tint + "90"} />
+            }
+          >
+            <EyeShapeSelector
+              selected={qrStyle.eyeShape}
+              fgColor={tint}
+              onChange={(s) => {
+                setQrStyle((p) => ({ ...p, eyeShape: s }));
+                closeSheet();
+              }}
+            />
+          </OptionRow>
 
-            <OptionRow
-              label="Pixel Style"
-              iconName="grid-outline"
-              tintColor={tint}
-              bgColor={qrStyle.bgColor}
-              sheetOpen={activeSheet === "pixel"}
-              onOpen={() => openSheet("pixel")}
-              onClose={closeSheet}
-              preview={
-                <Ionicons name="apps-outline" size={15} color={tint + "90"} />
-              }
-            >
-              <PixelShapeSelector
-                selected={qrStyle.pixelShape}
-                fgColor={tint}
-                onChange={(s) => {
-                  setQrStyle((p) => ({ ...p, pixelShape: s }));
-                  closeSheet();
-                }}
-              />
-            </OptionRow>
+          <OptionRow
+            label="Pixel Style"
+            iconName="grid-outline"
+            tintColor={tint}
+            bgColor={qrStyle.bgColor}
+            sheetOpen={activeSheet === "pixel"}
+            onOpen={() => openSheet("pixel")}
+            onClose={closeSheet}
+            preview={
+              <Ionicons name="apps-outline" size={15} color={tint + "90"} />
+            }
+          >
+            <PixelShapeSelector
+              selected={qrStyle.pixelShape}
+              fgColor={tint}
+              onChange={(s) => {
+                setQrStyle((p) => ({ ...p, pixelShape: s }));
+                closeSheet();
+              }}
+            />
+          </OptionRow>
 
-            <OptionRow
-              label="Logo"
-              iconName="image-outline"
-              tintColor={tint}
-              bgColor={qrStyle.bgColor}
-              sheetOpen={activeSheet === "logo"}
-              onOpen={() => openSheet("logo")}
-              onClose={closeSheet}
-              preview={
-                qrStyle.logoUri ? (
-                  <Ionicons name="checkmark-circle" size={15} color={tint} />
-                ) : (
-                  <Ionicons
-                    name="add-circle-outline"
-                    size={15}
-                    color={tint + "80"}
-                  />
-                )
-              }
-            >
-              <LogoPicker
-                logoUri={qrStyle.logoUri}
-                onChange={(uri) => {
-                  setQrStyle((p) => ({ ...p, logoUri: uri }));
-                  closeSheet();
-                }}
-              />
-            </OptionRow>
+          <OptionRow
+            label="Logo"
+            iconName="image-outline"
+            tintColor={tint}
+            bgColor={qrStyle.bgColor}
+            sheetOpen={activeSheet === "logo"}
+            onOpen={() => openSheet("logo")}
+            onClose={closeSheet}
+            preview={
+              qrStyle.logoUri ? (
+                <Ionicons name="checkmark-circle" size={15} color={tint} />
+              ) : (
+                <Ionicons
+                  name="add-circle-outline"
+                  size={15}
+                  color={tint + "80"}
+                />
+              )
+            }
+          >
+            <LogoPicker
+              logoUri={qrStyle.logoUri}
+              onChange={(uri) => {
+                setQrStyle((p) => ({ ...p, logoUri: uri }));
+                closeSheet();
+              }}
+            />
+          </OptionRow>
 
-            <OptionRow
-              label="Error Correction"
-              iconName="shield-checkmark-outline"
-              tintColor={tint}
-              bgColor={qrStyle.bgColor}
-              sheetOpen={activeSheet === "ecl"}
-              onOpen={() => openSheet("ecl")}
-              onClose={closeSheet}
-              preview={
-                <Text style={[styles.eclPreview, { color: tint }]}>
-                  {qrStyle.ecl}
-                </Text>
-              }
-            >
-              <View style={styles.eclRow}>
-                {ECL_OPTIONS.map((e) => (
-                  <TouchableOpacity
-                    key={e}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setQrStyle((p) => ({ ...p, ecl: e }));
-                      closeSheet();
-                    }}
+          <OptionRow
+            label="Error Correction"
+            iconName="shield-checkmark-outline"
+            tintColor={tint}
+            bgColor={qrStyle.bgColor}
+            sheetOpen={activeSheet === "ecl"}
+            onOpen={() => openSheet("ecl")}
+            onClose={closeSheet}
+            preview={
+              <Text style={[styles.eclPreview, { color: tint }]}>
+                {qrStyle.ecl}
+              </Text>
+            }
+          >
+            <View style={styles.eclRow}>
+              {ECL_OPTIONS.map((e) => (
+                <TouchableOpacity
+                  key={e}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setQrStyle((p) => ({ ...p, ecl: e }));
+                    closeSheet();
+                  }}
+                  style={[
+                    styles.eclBtn,
+                    { borderColor: tint + "40" },
+                    qrStyle.ecl === e && {
+                      backgroundColor: tint + "25",
+                      borderColor: tint,
+                    },
+                  ]}
+                >
+                  <Text
                     style={[
-                      styles.eclBtn,
-                      { borderColor: tint + "40" },
-                      qrStyle.ecl === e && {
-                        backgroundColor: tint + "25",
-                        borderColor: tint,
-                      },
+                      styles.eclLabel,
+                      { color: tint },
+                      qrStyle.ecl === e && { fontWeight: "700" },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.eclLabel,
-                        { color: tint },
-                        qrStyle.ecl === e && { fontWeight: "700" },
-                      ]}
-                    >
-                      {e}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </OptionRow>
-          </View>
-          <View style={{ height: Spacing.xl }} />
+                    {e}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </OptionRow>
         </ScrollView>
         <FabBar
           tintColor={tint}
