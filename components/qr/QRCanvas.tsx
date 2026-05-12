@@ -27,14 +27,17 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
     qrStyle.logoUri ?? "none",
   ].join("|");
 
+  // Quiet zone = 4 modules worth of space inside the bg container
+  const quietZone = Math.round(size * 0.035);
+  const innerSize = size - quietZone * 2;
+
   return (
-    // explicit width + height here — this is what was missing
     <View
       style={{
         width: size,
         height: size,
         backgroundColor: qrStyle.bgColor,
-        borderRadius: 24,
+        borderRadius: 20,
         overflow: "hidden",
         alignItems: "center",
         justifyContent: "center",
@@ -43,23 +46,22 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
       {isEmpty ? (
         <View
           style={{
-            width: size,
-            height: size,
-            backgroundColor: qrStyle.bgColor,
-            borderRadius: 20,
-            overflow: "hidden",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: Math.floor(size * 0.04),
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            borderWidth: 2,
+            borderStyle: "dashed",
+            borderColor: qrStyle.fgColor + "50",
           }}
         />
       ) : (
         <QRCodeStyled
           key={qrKey}
           data={value}
-          style={{ width: size, height: size }}
+          width={innerSize}
+          height={innerSize}
           padding={0}
-          pieceSize={Math.floor(size / 35)}
+          pieceSize={10}
           pieceScale={pc.pieceScale}
           pieceBorderRadius={pc.pieceBorderRadius}
           isPiecesGlued={false}
