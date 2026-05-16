@@ -33,7 +33,7 @@ const ThemeContext = createContext<ThemeCtx>({
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
-  const [theme, setThemeState] = useState<AppTheme>("dark");
+  const [theme, setThemeState] = useState<AppTheme>("system");
   const [qrFg, setQrFg] = useState("#0f172a");
   const [qrBg, setQrBg] = useState("#e2e8f0");
 

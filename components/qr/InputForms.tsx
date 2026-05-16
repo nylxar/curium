@@ -16,7 +16,58 @@ import {
   LocationForm,
 } from "@/types/qr";
 import { Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
+import { ExpandableField } from "./ExpandableField";
 import { useTheme } from "@/context/ThemeContext";
+
+// At top of InputForms.tsx — add explicit interfaces:
+
+interface URLFormProps {
+  form: URLForm;
+  onChange: (f: URLForm) => void;
+  tintColor: string;
+}
+
+interface TextFormProps {
+  form: TextForm;
+  onChange: (f: TextForm) => void;
+  tintColor: string;
+}
+
+interface EmailFormProps {
+  form: EmailForm;
+  onChange: (f: EmailForm) => void;
+  tintColor: string;
+}
+
+interface PhoneFormProps {
+  form: PhoneForm;
+  onChange: (f: PhoneForm) => void;
+  tintColor: string;
+}
+
+interface SMSFormProps {
+  form: SMSForm;
+  onChange: (f: SMSForm) => void;
+  tintColor: string;
+}
+
+interface WiFiFormProps {
+  form: WiFiForm;
+  onChange: (f: WiFiForm) => void;
+  tintColor: string;
+}
+
+interface ContactFormProps {
+  form: ContactForm;
+  onChange: (f: ContactForm) => void;
+  tintColor: string;
+}
+
+interface LocationFormProps {
+  form: LocationForm;
+  onChange: (f: LocationForm) => void;
+  tintColor: string;
+}
 
 // ─── Shared Field ─────────────────────────────────────────────────────────────
 function Field({
@@ -80,15 +131,7 @@ function Field({
 }
 
 // ─── URL ──────────────────────────────────────────────────────────────────────
-export function URLFormView({
-  form,
-  onChange,
-  tintColor,
-}: {
-  form: URLForm;
-  onChange: (f: URLForm) => void;
-  tintColor: string;
-}) {
+export function URLFormView({ form, onChange, tintColor }: URLFormProps) {
   return (
     <Field
       label="URL"
@@ -102,45 +145,27 @@ export function URLFormView({
 }
 
 // ─── Text ─────────────────────────────────────────────────────────────────────
-export function TextFormView({
-  form,
-  onChange,
-  tintColor,
-}: {
-  form: TextForm;
-  onChange: (f: TextForm) => void;
-  tintColor: string;
-}) {
+export function TextFormView({ form, onChange, tintColor }: TextFormProps) {
   return (
-    <Field
+    <ExpandableField
       label="Text"
       tintColor={tintColor}
       value={form.text}
-      onChange={(v) => onChange({ text: v })}
+      onChange={(v: string) => onChange({ text: v })}
       placeholder="Enter any text..."
-      multiline
     />
   );
 }
 
 // ─── Email ────────────────────────────────────────────────────────────────────
-export function EmailFormView({
-  form,
-  onChange,
-  tintColor,
-}: {
-  form: EmailForm;
-  onChange: (f: EmailForm) => void;
-  tintColor: string;
-}) {
-  const { colors } = useTheme();
+export function EmailFormView({ form, onChange, tintColor }: EmailFormProps) {
   return (
     <View style={styles.formGroup}>
       <Field
         label="To"
         tintColor={tintColor}
         value={form.to}
-        onChange={(v) => onChange({ ...form, to: v })}
+        onChange={(v: string) => onChange({ ...form, to: v })}
         placeholder="email@example.com"
         keyboardType="email-address"
       />
@@ -148,31 +173,22 @@ export function EmailFormView({
         label="Subject"
         tintColor={tintColor}
         value={form.subject}
-        onChange={(v) => onChange({ ...form, subject: v })}
+        onChange={(v: string) => onChange({ ...form, subject: v })}
         placeholder="Subject"
       />
-      <Field
+      <ExpandableField // ← body opens modal
         label="Message"
         tintColor={tintColor}
         value={form.body}
-        onChange={(v) => onChange({ ...form, body: v })}
-        placeholder="Body..."
-        multiline
+        onChange={(v: string) => onChange({ ...form, body: v })}
+        placeholder="Message body..."
       />
     </View>
   );
 }
 
 // ─── Phone ────────────────────────────────────────────────────────────────────
-export function PhoneFormView({
-  form,
-  onChange,
-  tintColor,
-}: {
-  form: PhoneForm;
-  onChange: (f: PhoneForm) => void;
-  tintColor: string;
-}) {
+export function PhoneFormView({ form, onChange, tintColor }: PhoneFormProps) {
   return (
     <Field
       label="Phone"
@@ -186,47 +202,30 @@ export function PhoneFormView({
 }
 
 // ─── SMS ──────────────────────────────────────────────────────────────────────
-export function SMSFormView({
-  form,
-  onChange,
-  tintColor,
-}: {
-  form: SMSForm;
-  onChange: (f: SMSForm) => void;
-  tintColor: string;
-}) {
+export function SMSFormView({ form, onChange, tintColor }: SMSFormProps) {
   return (
     <View style={styles.formGroup}>
       <Field
         label="Phone"
         tintColor={tintColor}
         value={form.phone}
-        onChange={(v) => onChange({ ...form, phone: v })}
+        onChange={(v: string) => onChange({ ...form, phone: v })}
         placeholder="+91 00000 00000"
         keyboardType="phone-pad"
       />
-      <Field
+      <ExpandableField // ← message opens modal
         label="Message"
         tintColor={tintColor}
         value={form.message}
-        onChange={(v) => onChange({ ...form, message: v })}
+        onChange={(v: string) => onChange({ ...form, message: v })}
         placeholder="Pre-filled message..."
-        multiline
       />
     </View>
   );
 }
 
 // ─── WiFi ─────────────────────────────────────────────────────────────────────
-export function WiFiFormView({
-  form,
-  onChange,
-  tintColor,
-}: {
-  form: WiFiForm;
-  onChange: (f: WiFiForm) => void;
-  tintColor: string;
-}) {
+export function WiFiFormView({ form, onChange, tintColor }: WiFiFormProps) {
   const { colors } = useTheme();
   return (
     <View style={styles.formGroup}>
@@ -296,11 +295,7 @@ export function ContactFormView({
   form,
   onChange,
   tintColor,
-}: {
-  form: ContactForm;
-  onChange: (f: ContactForm) => void;
-  tintColor: string;
-}) {
+}: ContactFormProps) {
   return (
     <View style={styles.formGroup}>
       <Field
@@ -342,11 +337,7 @@ export function LocationFormView({
   form,
   onChange,
   tintColor,
-}: {
-  form: LocationForm;
-  onChange: (f: LocationForm) => void;
-  tintColor: string;
-}) {
+}: LocationFormProps) {
   return (
     <View style={styles.formGroup}>
       <Field

@@ -116,6 +116,9 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
   { id: "location", label: "Location", icon: "location-outline" },
 ];
 
+const { width } = useWindowDimensions();
+const QR_SIZE = Math.floor(width * 0.88);
+
 // ─── Encoder — module level pure function ────────────────────────────────────
 function encodeQR(type: QRType, forms: FormState): string {
   switch (type) {
@@ -163,7 +166,6 @@ function encodeQR(type: QRType, forms: FormState): string {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function CreateScreen() {
   // ALL hooks at top, unconditionally, always same order
-  const { width } = useWindowDimensions();
   const [activeType, setActiveType] = useState<QRType>("url");
   const [forms, setForms] = useState<FormState>(DEFAULT_FORMS);
   const [qrStyle, setQrStyle] = useState<QRStyle>(DEFAULT_QR_STYLE);
@@ -178,7 +180,6 @@ export default function CreateScreen() {
   const { colors } = useTheme();
 
   // Derived — no hooks
-  const QR_SIZE = Math.floor(width * 0.82);
   const qrStyleRef = useRef(qrStyle);
   useEffect(() => {
     qrStyleRef.current = qrStyle;
@@ -593,8 +594,9 @@ const styles = StyleSheet.create({
   appTitle: { fontSize: FontSize.xl },
   canvasWrap: {
     alignItems: "center",
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.md,
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    height: QR_SIZE + Spacing.xl * 2,
   },
   formWrap: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.md },
   formCard: {
