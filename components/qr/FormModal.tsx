@@ -4,10 +4,11 @@ import {
   Modal,
   Pressable,
   TouchableOpacity,
-  ScrollView,
+  TextInput,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,7 +25,6 @@ import {
   ContactForm,
   LocationForm,
 } from "@/types/qr";
-import { ExpandableField } from "./ExpandableField";
 
 type FormState = {
   url: URLForm;
@@ -46,28 +46,99 @@ interface Props {
   tintColor: string;
 }
 
-const TYPE_LABELS: Record<QRType, string> = {
-  url: "URL",
-  text: "Text",
-  email: "Email",
-  phone: "Phone",
-  sms: "SMS",
-  wifi: "Wi-Fi",
-  contact: "Contact",
-  location: "Location",
+const TYPE_META: Record<
+  QRType,
+  { label: string; icon: keyof typeof Ionicons.glyphMap }
+> = {
+  url: { label: "URL", icon: "link-outline" },
+  text: { label: "Text", icon: "text-outline" },
+  email: { label: "Email", icon: "mail-outline" },
+  phone: { label: "Phone", icon: "call-outline" },
+  sms: { label: "SMS", icon: "chatbubble-outline" },
+  wifi: { label: "Wi-Fi", icon: "wifi-outline" },
+  contact: { label: "Contact", icon: "person-outline" },
+  location: { label: "Location", icon: "location-outline" },
 };
 
-const TYPE_ICONS: Record<QRType, keyof typeof Ionicons.glyphMap> = {
-  url: "link-outline",
-  text: "text-outline",
-  email: "mail-outline",
-  phone: "call-outline",
-  sms: "chatbubble-outline",
-  wifi: "wifi-outline",
-  contact: "person-outline",
-  location: "location-outline",
-};
+// ─── Shared inline Field ──────────────────────────────────────────────────────
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  tintColor,
+  keyboardType = "default",
+  secureTextEntry = false,
+  multiline = false,
+  autoFocus = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  tintColor: string;
+  keyboardType?:
+    | "default"
+    | "email-address"
+    | "phone-pad"
+    | "decimal-pad"
+    | "url";
+  secureTextEntry?: boolean;
+  multiline?: boolean;
+  autoFocus?: boolean;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View style={fStyles.wrap}>
+      <Text
+        style={[
+          fStyles.label,
+          { color: colors.textMuted, fontFamily: Fonts.mono },
+        ]}
+      >
+        {label}
+      </Text>
+      <TextInput
+        style={[
+          fStyles.input,
+          {
+            backgroundColor: colors.surfaceOffset,
+            borderColor: colors.border,
+            color: colors.text,
+            fontFamily: Fonts.mono,
+            height: multiline ? 88 : 48,
+          },
+        ]}
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textFaint}
+        keyboardType={keyboardType}
+        secureTextEntry={secureTextEntry}
+        multiline={multiline}
+        autoFocus={autoFocus}
+        autoCapitalize="none"
+        autoCorrect={false}
+        textAlignVertical={multiline ? "top" : "center"}
+        selectionColor={tintColor}
+      />
+    </View>
+  );
+}
 
+const fStyles = StyleSheet.create({
+  wrap: { gap: 6 },
+  label: { fontSize: FontSize.xs, marginLeft: 2 },
+  input: {
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.md,
+    fontSize: FontSize.base,
+    paddingTop: Spacing.sm,
+  },
+});
+
+// ─── FormModal ────────────────────────────────────────────────────────────────
 export function FormModal({
   visible,
   onClose,
@@ -78,72 +149,75 @@ export function FormModal({
 }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const meta = TYPE_META[activeType];
 
   const renderFields = () => {
     switch (activeType) {
       case "url":
         return (
-          <ExpandableField
+          <Field
             label="URL"
             value={forms.url.url}
-            onChange={(v: string) => onUpdateForm("url", { url: v })}
-            placeholder="https://example.com"
             tintColor={tintColor}
+            onChange={(v) => onUpdateForm("url", { url: v })}
+            placeholder="https://example.com"
             keyboardType="url"
+            autoFocus
           />
         );
       case "text":
         return (
-          <ExpandableField
+          <Field
             label="Text"
             value={forms.text.text}
-            onChange={(v: string) => onUpdateForm("text", { text: v })}
-            placeholder="Enter any text..."
             tintColor={tintColor}
+            onChange={(v) => onUpdateForm("text", { text: v })}
+            placeholder="Enter any text..."
             multiline
+            autoFocus
           />
         );
       case "phone":
         return (
-          <ExpandableField
+          <Field
             label="Phone Number"
             value={forms.phone.phone}
-            onChange={(v: string) => onUpdateForm("phone", { phone: v })}
-            placeholder="+91 00000 00000"
             tintColor={tintColor}
+            onChange={(v) => onUpdateForm("phone", { phone: v })}
+            placeholder="+91 00000 00000"
             keyboardType="phone-pad"
+            autoFocus
           />
         );
       case "email":
         return (
           <View style={{ gap: Spacing.sm }}>
-            <ExpandableField
+            <Field
               label="To"
               value={forms.email.to}
-              onChange={(v: string) =>
-                onUpdateForm("email", { ...forms.email, to: v })
-              }
-              placeholder="email@example.com"
               tintColor={tintColor}
+              onChange={(v) => onUpdateForm("email", { ...forms.email, to: v })}
+              placeholder="email@example.com"
               keyboardType="email-address"
+              autoFocus
             />
-            <ExpandableField
+            <Field
               label="Subject"
               value={forms.email.subject}
-              onChange={(v: string) =>
+              tintColor={tintColor}
+              onChange={(v) =>
                 onUpdateForm("email", { ...forms.email, subject: v })
               }
               placeholder="Subject line"
-              tintColor={tintColor}
             />
-            <ExpandableField
+            <Field
               label="Message"
               value={forms.email.body}
-              onChange={(v: string) =>
+              tintColor={tintColor}
+              onChange={(v) =>
                 onUpdateForm("email", { ...forms.email, body: v })
               }
               placeholder="Message body..."
-              tintColor={tintColor}
               multiline
             />
           </View>
@@ -151,24 +225,23 @@ export function FormModal({
       case "sms":
         return (
           <View style={{ gap: Spacing.sm }}>
-            <ExpandableField
+            <Field
               label="Phone"
               value={forms.sms.phone}
-              onChange={(v: string) =>
-                onUpdateForm("sms", { ...forms.sms, phone: v })
-              }
-              placeholder="+91 00000 00000"
               tintColor={tintColor}
+              onChange={(v) => onUpdateForm("sms", { ...forms.sms, phone: v })}
+              placeholder="+91 00000 00000"
               keyboardType="phone-pad"
+              autoFocus
             />
-            <ExpandableField
+            <Field
               label="Message"
               value={forms.sms.message}
-              onChange={(v: string) =>
+              tintColor={tintColor}
+              onChange={(v) =>
                 onUpdateForm("sms", { ...forms.sms, message: v })
               }
               placeholder="Pre-filled message..."
-              tintColor={tintColor}
               multiline
             />
           </View>
@@ -176,29 +249,28 @@ export function FormModal({
       case "wifi":
         return (
           <View style={{ gap: Spacing.sm }}>
-            <ExpandableField
+            <Field
               label="Network Name (SSID)"
               value={forms.wifi.ssid}
-              onChange={(v: string) =>
-                onUpdateForm("wifi", { ...forms.wifi, ssid: v })
-              }
-              placeholder="MyHomeWiFi"
               tintColor={tintColor}
+              onChange={(v) => onUpdateForm("wifi", { ...forms.wifi, ssid: v })}
+              placeholder="MyHomeWiFi"
+              autoFocus
             />
-            <ExpandableField
+            <Field
               label="Password"
               value={forms.wifi.password}
-              onChange={(v: string) =>
+              tintColor={tintColor}
+              onChange={(v) =>
                 onUpdateForm("wifi", { ...forms.wifi, password: v })
               }
               placeholder="Wi-Fi password"
-              tintColor={tintColor}
               secureTextEntry
             />
-            <View style={{ gap: Spacing.xs }}>
+            <View style={{ gap: 6 }}>
               <Text
                 style={[
-                  styles.segLabel,
+                  fStyles.label,
                   { color: colors.textMuted, fontFamily: Fonts.mono },
                 ]}
               >
@@ -214,22 +286,23 @@ export function FormModal({
                         onUpdateForm("wifi", { ...forms.wifi, encryption: enc })
                       }
                       style={[
-                        styles.segBtn,
+                        mStyles.segBtn,
                         {
                           flex: 1,
                           backgroundColor: active
                             ? tintColor + "20"
-                            : "transparent",
+                            : colors.surfaceOffset,
                           borderColor: active ? tintColor : colors.border,
                         },
                       ]}
                     >
                       <Text
                         style={[
-                          styles.segText,
+                          mStyles.segText,
                           {
                             color: active ? tintColor : colors.textMuted,
                             fontFamily: Fonts.mono,
+                            fontWeight: active ? "700" : "400",
                           },
                         ]}
                       >
@@ -245,77 +318,85 @@ export function FormModal({
       case "contact":
         return (
           <View style={{ gap: Spacing.sm }}>
-            <ExpandableField
+            <Field
               label="Full Name"
               value={forms.contact.name}
-              onChange={(v: string) =>
+              tintColor={tintColor}
+              onChange={(v) =>
                 onUpdateForm("contact", { ...forms.contact, name: v })
               }
               placeholder="John Doe"
-              tintColor={tintColor}
+              autoFocus
             />
-            <ExpandableField
+            <Field
               label="Phone"
               value={forms.contact.phone}
-              onChange={(v: string) =>
+              tintColor={tintColor}
+              onChange={(v) =>
                 onUpdateForm("contact", { ...forms.contact, phone: v })
               }
               placeholder="+91 00000 00000"
-              tintColor={tintColor}
               keyboardType="phone-pad"
             />
-            <ExpandableField
+            <Field
               label="Email"
               value={forms.contact.email}
-              onChange={(v: string) =>
+              tintColor={tintColor}
+              onChange={(v) =>
                 onUpdateForm("contact", { ...forms.contact, email: v })
               }
               placeholder="email@example.com"
-              tintColor={tintColor}
               keyboardType="email-address"
             />
-            <ExpandableField
+            <Field
               label="Organization"
               value={forms.contact.org}
-              onChange={(v: string) =>
+              tintColor={tintColor}
+              onChange={(v) =>
                 onUpdateForm("contact", { ...forms.contact, org: v })
               }
               placeholder="Company name"
-              tintColor={tintColor}
             />
           </View>
         );
       case "location":
         return (
           <View style={{ gap: Spacing.sm }}>
-            <ExpandableField
-              label="Latitude"
-              value={forms.location.lat}
-              onChange={(v: string) =>
-                onUpdateForm("location", { ...forms.location, lat: v })
-              }
-              placeholder="28.6139"
-              tintColor={tintColor}
-              keyboardType="decimal-pad"
-            />
-            <ExpandableField
-              label="Longitude"
-              value={forms.location.lng}
-              onChange={(v: string) =>
-                onUpdateForm("location", { ...forms.location, lng: v })
-              }
-              placeholder="77.2090"
-              tintColor={tintColor}
-              keyboardType="decimal-pad"
-            />
-            <ExpandableField
+            <View style={{ flexDirection: "row", gap: Spacing.sm }}>
+              <View style={{ flex: 1 }}>
+                <Field
+                  label="Latitude"
+                  value={forms.location.lat}
+                  tintColor={tintColor}
+                  onChange={(v) =>
+                    onUpdateForm("location", { ...forms.location, lat: v })
+                  }
+                  placeholder="28.6139"
+                  keyboardType="decimal-pad"
+                  autoFocus
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field
+                  label="Longitude"
+                  value={forms.location.lng}
+                  tintColor={tintColor}
+                  onChange={(v) =>
+                    onUpdateForm("location", { ...forms.location, lng: v })
+                  }
+                  placeholder="77.2090"
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
+            <Field
               label="Label (optional)"
               value={forms.location.label}
-              onChange={(v: string) =>
+              tintColor={tintColor}
+              onChange={(v) =>
                 onUpdateForm("location", { ...forms.location, label: v })
               }
               placeholder="New Delhi"
-              tintColor={tintColor}
             />
           </View>
         );
@@ -331,73 +412,69 @@ export function FormModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.backdrop} onPress={onClose} />
+      <Pressable style={mStyles.backdrop} onPress={onClose} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={mStyles.kav}
       >
         <View
           style={[
-            styles.sheet,
+            mStyles.sheet,
             {
               backgroundColor: colors.surface,
-              paddingBottom: insets.bottom + Spacing.lg,
               borderTopColor: colors.border,
+              paddingBottom: insets.bottom + Spacing.lg,
             },
           ]}
         >
-          <View style={[styles.handle, { backgroundColor: colors.border }]} />
-          <View style={styles.header}>
+          {/* Handle */}
+          <View style={[mStyles.handle, { backgroundColor: colors.border }]} />
+
+          {/* Header */}
+          <View style={mStyles.header}>
             <View
-              style={[styles.iconBox, { backgroundColor: tintColor + "18" }]}
+              style={[mStyles.iconBox, { backgroundColor: tintColor + "18" }]}
             >
-              <Ionicons
-                name={TYPE_ICONS[activeType]}
-                size={18}
-                color={tintColor}
-              />
+              <Ionicons name={meta.icon} size={18} color={tintColor} />
             </View>
             <Text
               style={[
-                styles.title,
+                mStyles.title,
                 { color: colors.text, fontFamily: Fonts.monoBold },
               ]}
             >
-              {TYPE_LABELS[activeType]}
+              {meta.label}
             </Text>
             <TouchableOpacity
               onPress={onClose}
-              style={[styles.doneBtn, { backgroundColor: tintColor }]}
+              style={[mStyles.doneBtn, { backgroundColor: tintColor }]}
+              activeOpacity={0.8}
             >
               <Text
-                style={[styles.doneBtnText, { fontFamily: Fonts.monoBold }]}
+                style={[mStyles.doneBtnText, { fontFamily: Fonts.monoBold }]}
               >
                 Done
               </Text>
             </TouchableOpacity>
           </View>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={{ gap: Spacing.sm, paddingBottom: Spacing.lg }}>
-              {renderFields()}
-            </View>
-          </ScrollView>
+
+          {/* Fields — no ScrollView needed, modal expands to fit */}
+          <View style={{ gap: Spacing.sm }}>{renderFields()}</View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
 
-const styles = StyleSheet.create({
+const mStyles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "#00000066" },
+  kav: { justifyContent: "flex-end" },
   sheet: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderTopWidth: StyleSheet.hairlineWidth,
     padding: Spacing.lg,
     gap: Spacing.md,
-    maxHeight: "90%",
   },
   handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center" },
   header: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
@@ -410,14 +487,13 @@ const styles = StyleSheet.create({
   },
   title: { flex: 1, fontSize: FontSize.md },
   doneBtn: {
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.md + 4,
     paddingVertical: Spacing.sm,
     borderRadius: Radius.full,
   },
   doneBtnText: { fontSize: FontSize.sm, color: "#fff" },
-  segLabel: { fontSize: FontSize.xs },
   segBtn: {
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.sm + 2,
     alignItems: "center",
     borderRadius: Radius.md,
     borderWidth: 1,
