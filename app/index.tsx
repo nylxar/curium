@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { saveToHistory } from "@/services/history";
 import * as Clipboard from "expo-clipboard";
+import * as ImagePicker from "expo-image-picker";
 import * as Sharing from "expo-sharing";
 import { useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -24,6 +25,7 @@ import { TypePill } from "@/components/qr/TypePill";
 import { OptionRow } from "@/components/qr/OptionRow";
 import { FabBar } from "@/components/qr/FabBar";
 import { useTheme } from "@/context/ThemeContext";
+import { LogoOverlay } from "@/components/qr/LogoOverlay";
 import { ColorPalette } from "@/components/qr/ColorPalette";
 import {
   EyeShapeSelector,
@@ -31,6 +33,7 @@ import {
 } from "@/components/qr/ShapeSelector";
 import { LogoPicker } from "@/components/qr/LogoPicker";
 import { TypeSelector } from "@/components/qr/TypeSelector";
+import { ColorPicker } from "@/components/qr/ColorPicker";
 import { ExportSheet } from "@/components/qr/ExportSheet";
 import {
   URLFormView,
@@ -117,7 +120,7 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
 ];
 
 const { width } = useWindowDimensions();
-const QR_SIZE = Math.floor(width * 0.88);
+const QR_SIZE = width - Spacing.base * 2;
 
 // ─── Encoder — module level pure function ────────────────────────────────────
 function encodeQR(type: QRType, forms: FormState): string {
@@ -173,10 +176,14 @@ export default function CreateScreen() {
   const qrRef = useRef<View>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const { setQRColors } = useTheme();
+  const [colorTarget, setColorTarget] = useState<"fg" | "bg" | null>(null);
   const params = useLocalSearchParams<{
     loadType?: string;
     loadData?: string;
   }>();
+  const [colorPickerTarget, setColorPickerTarget] = useState<
+    "fg" | "bg" | null
+  >(null);
   const { colors } = useTheme();
 
   // Derived — no hooks
@@ -333,6 +340,24 @@ export default function CreateScreen() {
         return null;
     }
   };
+  const handlePickLogo = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") return;
+    await new Promise<void>((r) => setTimeout(r, 150));
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setQrStyle((p: QRStyle) => ({ ...p, logoUri: result.assets[0].uri }));
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  }, []);
 
   return (
     <View style={[styles.screen, { backgroundColor: qrStyle.bgColor }]}>
@@ -346,7 +371,21 @@ export default function CreateScreen() {
               collapsable={false}
               style={{ width: QR_SIZE, height: QR_SIZE }}
             >
-              <QRCanvas value={qrValue} qrStyle={qrStyle} size={QR_SIZE} />
+              <QRCanvas
+                value={qrValue}
+                qrStyle={{ ...qrStyle, logoUri: undefined }}
+                size={QR_SIZE}
+              />
+              {qrStyle.logoUri && (
+                <LogoOverlay
+                  uri={qrStyle.logoUri}
+                  containerSize={QR_SIZE}
+                  logoSize={Math.round(QR_SIZE * 0.18)}
+                  onRemove={() =>
+                    setQrStyle((p) => ({ ...p, logoUri: undefined }))
+                  }
+                />
+              )}
             </View>
           </View>
 
@@ -406,6 +445,68 @@ export default function CreateScreen() {
                 setQRColors(fg, bg);
               }}
             />
+            <View
+              style={{
+                flexDirection: "row",
+                gap: Spacing.sm,
+                marginTop: Spacing.sm,
+              }}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.customBtn,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.surfaceOffset,
+                  },
+                ]}
+                onPress={() => setColorTarget("fg")}
+              >
+                <View
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: qrStyle.fgColor,
+                  }}
+                />
+                <Text
+                  style={[
+                    styles.customBtnText,
+                    { color: colors.textMuted, fontFamily: Fonts.mono },
+                  ]}
+                >
+                  Custom FG
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.customBtn,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.surfaceOffset,
+                  },
+                ]}
+                onPress={() => setColorTarget("bg")}
+              >
+                <View
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: qrStyle.bgColor,
+                  }}
+                />
+                <Text
+                  style={[
+                    styles.customBtnText,
+                    { color: colors.textMuted, fontFamily: Fonts.mono },
+                  ]}
+                >
+                  Custom BG
+                </Text>
+              </TouchableOpacity>
+            </View>
           </OptionRow>
 
           <OptionRow
@@ -543,6 +644,21 @@ export default function CreateScreen() {
           tintColor={tint}
           bgColor={qrStyle.bgColor}
         />
+        <ColorPicker
+          visible={colorTarget !== null}
+          initialColor={
+            colorTarget === "fg" ? qrStyle.fgColor : qrStyle.bgColor
+          }
+          title={colorTarget === "fg" ? "Foreground Color" : "Background Color"}
+          onConfirm={(hex: string) => {
+            setQrStyle((p: QRStyle) =>
+              colorTarget === "fg"
+                ? { ...p, colorId: "custom", fgColor: hex }
+                : { ...p, colorId: "custom", bgColor: hex },
+            );
+          }}
+          onClose={() => setColorTarget(null)}
+        />
       </SafeAreaView>
     </View>
   );
@@ -596,7 +712,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: Spacing.md,
-    height: QR_SIZE + Spacing.xl * 2,
   },
   formWrap: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.md },
   formCard: {
@@ -606,4 +721,30 @@ const styles = StyleSheet.create({
   },
   scroll: { flex: 1 },
   scrollContent: { padding: Spacing.base, gap: Spacing.sm },
+  customColorRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  customColorBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  customBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  customBtnText: { fontSize: FontSize.xs },
+  colorDot: { width: 20, height: 20, borderRadius: 10 },
+  customColorLabel: { fontSize: FontSize.xs },
 });

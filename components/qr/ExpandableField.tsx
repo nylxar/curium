@@ -7,6 +7,7 @@ import {
   Modal,
   Pressable,
   StyleSheet,
+  KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,6 +21,14 @@ interface Props {
   onChange: (v: string) => void;
   placeholder?: string;
   tintColor: string;
+  multiline?: boolean;
+  keyboardType?:
+    | "default"
+    | "email-address"
+    | "phone-pad"
+    | "decimal-pad"
+    | "url";
+  secureTextEntry?: boolean;
 }
 
 export function ExpandableField({
@@ -28,32 +37,29 @@ export function ExpandableField({
   onChange,
   placeholder,
   tintColor,
+  multiline = false,
+  keyboardType = "default",
+  secureTextEntry = false,
 }: Props) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const insets = useSafeAreaInsets();
-
-  const preview = value.trim() || placeholder;
   const hasValue = value.trim().length > 0;
 
   return (
     <>
-      {/* Single-line preview row — always fixed height */}
       <TouchableOpacity
         style={[
           styles.row,
-          {
-            backgroundColor: colors.surfaceOffset,
-            borderColor: open ? tintColor : colors.border,
-          },
+          { backgroundColor: colors.surfaceOffset, borderColor: colors.border },
         ]}
         onPress={() => setOpen(true)}
-        activeOpacity={0.75}
+        activeOpacity={0.7}
       >
         <View style={styles.rowContent}>
           <Text
             style={[
-              styles.label,
+              styles.fieldLabel,
               { color: colors.textMuted, fontFamily: Fonts.mono },
             ]}
           >
@@ -69,17 +75,16 @@ export function ExpandableField({
             ]}
             numberOfLines={1}
           >
-            {preview}
+            {hasValue ? value : (placeholder ?? "Tap to enter...")}
           </Text>
         </View>
         <Ionicons
-          name={hasValue ? "create-outline" : "add-outline"}
+          name={hasValue ? "create-outline" : "add-circle-outline"}
           size={16}
           color={tintColor}
         />
       </TouchableOpacity>
 
-      {/* Full editor modal */}
       <Modal
         visible={open}
         transparent
@@ -87,59 +92,64 @@ export function ExpandableField({
         onRequestClose={() => setOpen(false)}
       >
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
-        <View
-          style={[
-            styles.sheet,
-            {
-              backgroundColor: colors.surface,
-              paddingBottom: insets.bottom + Spacing.lg,
-            },
-          ]}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View style={[styles.handle, { backgroundColor: colors.border }]} />
-
-          {/* Sheet header */}
-          <View style={styles.sheetHeader}>
-            <Text
-              style={[
-                styles.sheetTitle,
-                { color: colors.text, fontFamily: Fonts.monoBold },
-              ]}
-            >
-              {label}
-            </Text>
-            <TouchableOpacity
-              style={[styles.doneBtn, { backgroundColor: tintColor }]}
-              onPress={() => setOpen(false)}
-            >
-              <Text
-                style={[styles.doneBtnText, { fontFamily: Fonts.monoBold }]}
-              >
-                Done
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Full text input */}
-          <TextInput
+          <View
             style={[
-              styles.input,
+              styles.sheet,
               {
-                backgroundColor: colors.surfaceOffset,
-                borderColor: colors.border,
-                color: colors.text,
-                fontFamily: Fonts.mono,
+                backgroundColor: colors.surface,
+                paddingBottom: insets.bottom + Spacing.lg,
               },
             ]}
-            value={value}
-            onChangeText={onChange}
-            placeholder={placeholder}
-            placeholderTextColor={colors.textFaint}
-            multiline
-            autoFocus
-            textAlignVertical="top"
-          />
-        </View>
+          >
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
+            <View style={styles.sheetHeader}>
+              <Text
+                style={[
+                  styles.sheetTitle,
+                  { color: colors.text, fontFamily: Fonts.monoBold },
+                ]}
+              >
+                {label}
+              </Text>
+              <TouchableOpacity
+                style={[styles.doneBtn, { backgroundColor: tintColor }]}
+                onPress={() => setOpen(false)}
+              >
+                <Text
+                  style={[styles.doneBtnText, { fontFamily: Fonts.monoBold }]}
+                >
+                  Done
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.surfaceOffset,
+                  borderColor: colors.border,
+                  color: colors.text,
+                  fontFamily: Fonts.mono,
+                  height: multiline ? 140 : 52,
+                },
+              ]}
+              value={value}
+              onChangeText={onChange}
+              placeholder={placeholder}
+              placeholderTextColor={colors.textFaint}
+              multiline={multiline}
+              autoFocus
+              textAlignVertical={multiline ? "top" : "center"}
+              keyboardType={keyboardType}
+              secureTextEntry={secureTextEntry}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );
@@ -154,11 +164,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
     gap: Spacing.sm,
+    minHeight: 52,
   },
   rowContent: { flex: 1, gap: 2 },
-  label: { fontSize: FontSize.xs },
+  fieldLabel: { fontSize: FontSize.xs },
   preview: { fontSize: FontSize.sm },
-
   backdrop: { flex: 1, backgroundColor: "#00000066" },
   sheet: {
     borderTopLeftRadius: 24,
@@ -182,9 +192,8 @@ const styles = StyleSheet.create({
   input: {
     borderRadius: Radius.lg,
     borderWidth: 1,
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     fontSize: FontSize.base,
-    minHeight: 160,
-    maxHeight: 280,
   },
 });
