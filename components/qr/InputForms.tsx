@@ -130,21 +130,22 @@ function Field({
   );
 }
 
-// ─── URL ──────────────────────────────────────────────────────────────────────
+// components/qr/InputForms.tsx — ALL forms use ExpandableField only
+
+// Single-field forms — one ExpandableField:
 export function URLFormView({ form, onChange, tintColor }: URLFormProps) {
   return (
-    <Field
+    <ExpandableField
       label="URL"
       tintColor={tintColor}
       value={form.url}
-      onChange={(v) => onChange({ url: v })}
+      onChange={(v: string) => onChange({ url: v })}
       placeholder="https://example.com"
       keyboardType="url"
     />
   );
 }
 
-// ─── Text ─────────────────────────────────────────────────────────────────────
 export function TextFormView({ form, onChange, tintColor }: TextFormProps) {
   return (
     <ExpandableField
@@ -153,15 +154,29 @@ export function TextFormView({ form, onChange, tintColor }: TextFormProps) {
       value={form.text}
       onChange={(v: string) => onChange({ text: v })}
       placeholder="Enter any text..."
+      multiline
     />
   );
 }
 
-// ─── Email ────────────────────────────────────────────────────────────────────
+export function PhoneFormView({ form, onChange, tintColor }: PhoneFormProps) {
+  return (
+    <ExpandableField
+      label="Phone Number"
+      tintColor={tintColor}
+      value={form.phone}
+      onChange={(v: string) => onChange({ phone: v })}
+      placeholder="+91 00000 00000"
+      keyboardType="phone-pad"
+    />
+  );
+}
+
+// Multi-field forms — one ExpandableField per field, stacked:
 export function EmailFormView({ form, onChange, tintColor }: EmailFormProps) {
   return (
-    <View style={styles.formGroup}>
-      <Field
+    <View style={{ gap: Spacing.sm }}>
+      <ExpandableField
         label="To"
         tintColor={tintColor}
         value={form.to}
@@ -169,43 +184,29 @@ export function EmailFormView({ form, onChange, tintColor }: EmailFormProps) {
         placeholder="email@example.com"
         keyboardType="email-address"
       />
-      <Field
+      <ExpandableField
         label="Subject"
         tintColor={tintColor}
         value={form.subject}
         onChange={(v: string) => onChange({ ...form, subject: v })}
-        placeholder="Subject"
+        placeholder="Subject line"
       />
-      <ExpandableField // ← body opens modal
+      <ExpandableField
         label="Message"
         tintColor={tintColor}
         value={form.body}
         onChange={(v: string) => onChange({ ...form, body: v })}
         placeholder="Message body..."
+        multiline
       />
     </View>
   );
 }
 
-// ─── Phone ────────────────────────────────────────────────────────────────────
-export function PhoneFormView({ form, onChange, tintColor }: PhoneFormProps) {
-  return (
-    <Field
-      label="Phone"
-      tintColor={tintColor}
-      value={form.phone}
-      onChange={(v) => onChange({ phone: v })}
-      placeholder="+91 00000 00000"
-      keyboardType="phone-pad"
-    />
-  );
-}
-
-// ─── SMS ──────────────────────────────────────────────────────────────────────
 export function SMSFormView({ form, onChange, tintColor }: SMSFormProps) {
   return (
-    <View style={styles.formGroup}>
-      <Field
+    <View style={{ gap: Spacing.sm }}>
+      <ExpandableField
         label="Phone"
         tintColor={tintColor}
         value={form.phone}
@@ -213,154 +214,140 @@ export function SMSFormView({ form, onChange, tintColor }: SMSFormProps) {
         placeholder="+91 00000 00000"
         keyboardType="phone-pad"
       />
-      <ExpandableField // ← message opens modal
+      <ExpandableField
         label="Message"
         tintColor={tintColor}
         value={form.message}
         onChange={(v: string) => onChange({ ...form, message: v })}
         placeholder="Pre-filled message..."
+        multiline
       />
     </View>
   );
 }
 
-// ─── WiFi ─────────────────────────────────────────────────────────────────────
 export function WiFiFormView({ form, onChange, tintColor }: WiFiFormProps) {
-  const { colors } = useTheme();
   return (
-    <View style={styles.formGroup}>
-      <Field
+    <View style={{ gap: Spacing.sm }}>
+      <ExpandableField
         label="Network Name (SSID)"
         tintColor={tintColor}
         value={form.ssid}
-        onChange={(v) => onChange({ ...form, ssid: v })}
+        onChange={(v: string) => onChange({ ...form, ssid: v })}
         placeholder="MyHomeWiFi"
       />
-      <Field
+      <ExpandableField
         label="Password"
         tintColor={tintColor}
         value={form.password}
-        onChange={(v) => onChange({ ...form, password: v })}
-        placeholder="Password"
+        onChange={(v: string) => onChange({ ...form, password: v })}
+        placeholder="Wi-Fi password"
         secureTextEntry
       />
-      <View style={styles.fieldWrap}>
-        <Text
-          style={[
-            styles.label,
-            { color: colors.textMuted, fontFamily: Fonts.mono },
-          ]}
-        >
-          Encryption
-        </Text>
-        <View style={styles.segRow}>
-          {(["WPA", "WEP", "nopass"] as const).map((enc) => {
-            const active = form.encryption === enc;
-            return (
-              <TouchableOpacity
-                key={enc}
-                onPress={() => onChange({ ...form, encryption: enc })}
-                style={[
-                  styles.seg,
-                  {
-                    backgroundColor: active
-                      ? tintColor + "22"
-                      : colors.surfaceOffset,
-                    borderColor: active ? tintColor : colors.border,
-                  },
-                ]}
+      {/* Encryption — segmented control, not expandable */}
+      <View style={{ flexDirection: "row", gap: Spacing.sm }}>
+        {(["WPA", "WEP", "nopass"] as const).map((enc) => {
+          const active = form.encryption === enc;
+          return (
+            <TouchableOpacity
+              key={enc}
+              onPress={() => onChange({ ...form, encryption: enc })}
+              style={{
+                flex: 1,
+                paddingVertical: Spacing.sm,
+                alignItems: "center",
+                borderRadius: Radius.md,
+                borderWidth: 1,
+                backgroundColor: active ? tintColor + "20" : "transparent",
+                borderColor: active ? tintColor : "#ccc",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: FontSize.sm,
+                  fontFamily: Fonts.mono,
+                  color: active ? tintColor : "#888",
+                }}
               >
-                <Text
-                  style={[
-                    styles.segLabel,
-                    {
-                      color: active ? tintColor : colors.textMuted,
-                      fontFamily: Fonts.mono,
-                    },
-                  ]}
-                >
-                  {enc === "nopass" ? "None" : enc}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                {enc === "nopass" ? "None" : enc}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
 }
 
-// ─── Contact ──────────────────────────────────────────────────────────────────
 export function ContactFormView({
   form,
   onChange,
   tintColor,
 }: ContactFormProps) {
   return (
-    <View style={styles.formGroup}>
-      <Field
+    <View style={{ gap: Spacing.sm }}>
+      <ExpandableField
         label="Full Name"
         tintColor={tintColor}
         value={form.name}
-        onChange={(v) => onChange({ ...form, name: v })}
+        onChange={(v: string) => onChange({ ...form, name: v })}
         placeholder="John Doe"
       />
-      <Field
+      <ExpandableField
         label="Phone"
         tintColor={tintColor}
         value={form.phone}
-        onChange={(v) => onChange({ ...form, phone: v })}
+        onChange={(v: string) => onChange({ ...form, phone: v })}
         placeholder="+91 00000 00000"
         keyboardType="phone-pad"
       />
-      <Field
+      <ExpandableField
         label="Email"
         tintColor={tintColor}
         value={form.email}
-        onChange={(v) => onChange({ ...form, email: v })}
+        onChange={(v: string) => onChange({ ...form, email: v })}
         placeholder="email@example.com"
         keyboardType="email-address"
       />
-      <Field
+      <ExpandableField
         label="Organization"
         tintColor={tintColor}
         value={form.org}
-        onChange={(v) => onChange({ ...form, org: v })}
+        onChange={(v: string) => onChange({ ...form, org: v })}
         placeholder="Company name"
       />
     </View>
   );
 }
 
-// ─── Location ─────────────────────────────────────────────────────────────────
 export function LocationFormView({
   form,
   onChange,
   tintColor,
 }: LocationFormProps) {
   return (
-    <View style={styles.formGroup}>
-      <Field
+    <View style={{ gap: Spacing.sm }}>
+      <ExpandableField
         label="Latitude"
         tintColor={tintColor}
         value={form.lat}
-        onChange={(v) => onChange({ ...form, lat: v })}
+        onChange={(v: string) => onChange({ ...form, lat: v })}
         placeholder="28.6139"
         keyboardType="decimal-pad"
       />
-      <Field
+      <ExpandableField
         label="Longitude"
         tintColor={tintColor}
         value={form.lng}
-        onChange={(v) => onChange({ ...form, lng: v })}
+        onChange={(v: string) => onChange({ ...form, lng: v })}
         placeholder="77.2090"
         keyboardType="decimal-pad"
       />
-      <Field
-        label="Label"
+      <ExpandableField
+        label="Label (optional)"
         tintColor={tintColor}
         value={form.label}
-        onChange={(v) => onChange({ ...form, label: v })}
+        onChange={(v: string) => onChange({ ...form, label: v })}
         placeholder="New Delhi"
       />
     </View>

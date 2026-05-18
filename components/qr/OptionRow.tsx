@@ -1,84 +1,97 @@
 import { ReactNode } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { FontSize, Spacing, Radius } from "@/constants/theme";
-import * as Haptics from "expo-haptics";
-import { OptionSheet } from "./OptionSheet";
+import { useTheme } from "@/context/ThemeContext";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
-interface Props {
+interface OptionRowProps {
   label: string;
-  iconName: keyof typeof Ionicons.glyphMap;
+  iconName: keyof typeof Ionicons.glyphMap; // matches existing index.tsx usage
   preview?: ReactNode;
-  children: ReactNode; // content shown INSIDE the sheet
   tintColor: string;
-  bgColor: string; // ← add this
-  sheetOpen: boolean; // ← controlled from parent
+  bgColor?: string;
   onOpen: () => void;
   onClose: () => void;
+  sheetOpen: boolean;
+  children?: ReactNode;
 }
 
 export function OptionRow({
   label,
   iconName,
   preview,
-  children,
   tintColor,
   bgColor,
-  sheetOpen,
   onOpen,
   onClose,
-}: Props) {
+  sheetOpen,
+  children,
+}: OptionRowProps) {
+  const { colors } = useTheme();
+  const bg = bgColor ?? colors.surface;
+
   return (
-    <>
+    <View
+      style={[
+        styles.wrapper,
+        { backgroundColor: bg, borderColor: colors.border },
+      ]}
+    >
       <TouchableOpacity
-        style={[styles.row, { borderColor: tintColor + "30" }]}
-        onPress={() => {
-          Haptics.selectionAsync();
-          onOpen();
-        }}
+        style={styles.row}
+        onPress={sheetOpen ? onClose : onOpen}
         activeOpacity={0.7}
       >
-        <View style={[styles.iconWrap, { backgroundColor: tintColor + "20" }]}>
-          <Ionicons name={iconName} size={16} color={tintColor} />
+        <View style={[styles.iconBox, { backgroundColor: tintColor + "18" }]}>
+          <Ionicons name={iconName} size={18} color={tintColor} />
         </View>
-        <Text style={[styles.label, { color: tintColor }]}>{label}</Text>
+        <Text
+          style={[
+            styles.label,
+            { color: colors.text, fontFamily: Fonts.monoMedium },
+          ]}
+        >
+          {label}
+        </Text>
         <View style={styles.right}>
-          {preview}
-          <Ionicons name="chevron-forward" size={16} color={tintColor + "50"} />
+          {preview && <View>{preview}</View>}
+          <Ionicons
+            name={sheetOpen ? "chevron-up" : "chevron-down"}
+            size={14}
+            color={colors.textFaint}
+          />
         </View>
       </TouchableOpacity>
 
-      <OptionSheet
-        visible={sheetOpen}
-        onClose={onClose}
-        title={label}
-        tintColor={tintColor}
-        bgColor={bgColor}
-      >
-        {children}
-      </OptionSheet>
-    </>
+      {sheetOpen && children && (
+        <View style={[styles.expanded, { borderTopColor: colors.border }]}>
+          {children}
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: "hidden",
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    borderWidth: 1,
-    borderRadius: Radius.lg,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    padding: Spacing.md,
+    gap: Spacing.md,
   },
-  iconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: Radius.sm,
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
-  label: { flex: 1, fontSize: FontSize.base, fontWeight: "600" },
+  label: { flex: 1, fontSize: FontSize.base },
   right: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+  expanded: { padding: Spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
 });
