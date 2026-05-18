@@ -24,6 +24,7 @@ import { QRCanvas } from "@/components/qr/QRCanvas";
 import { TypePill } from "@/components/qr/TypePill";
 import { OptionRow } from "@/components/qr/OptionRow";
 import { FabBar } from "@/components/qr/FabBar";
+import { FormModal } from "@/components/qr/FormModal";
 import { useTheme } from "@/context/ThemeContext";
 import { LogoOverlay } from "@/components/qr/LogoOverlay";
 import { ColorPalette } from "@/components/qr/ColorPalette";
@@ -185,6 +186,7 @@ export default function CreateScreen() {
     "fg" | "bg" | null
   >(null);
   const { colors } = useTheme();
+  const [formModalOpen, setFormModalOpen] = useState(false);
 
   // Derived — no hooks
   const qrStyleRef = useRef(qrStyle);
@@ -394,14 +396,53 @@ export default function CreateScreen() {
             behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={styles.formWrap}
           >
-            <View
+            <TouchableOpacity
               style={[
-                styles.formCard,
-                { backgroundColor: colors.surface, borderColor: colors.border },
+                styles.formTrigger,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
               ]}
+              onPress={() => setFormModalOpen(true)}
+              activeOpacity={0.7}
             >
-              {renderForm()}
-            </View>
+              <View
+                style={[
+                  styles.formTriggerIcon,
+                  { backgroundColor: tint + "18" },
+                ]}
+              >
+                <Ionicons
+                  name={QR_TYPES.find((t) => t.id === activeType)?.icon as any}
+                  size={18}
+                  color={tint}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    styles.formTriggerLabel,
+                    { color: colors.textMuted, fontFamily: Fonts.mono },
+                  ]}
+                >
+                  {QR_TYPES.find((t) => t.id === activeType)?.label}
+                </Text>
+                <Text
+                  style={[
+                    styles.formTriggerValue,
+                    {
+                      color: qrValue ? colors.text : colors.textFaint,
+                      fontFamily: Fonts.mono,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {qrValue || "Tap to enter data..."}
+                </Text>
+              </View>
+              <Ionicons name="create-outline" size={16} color={tint} />
+            </TouchableOpacity>
           </KeyboardAvoidingView>
         </View>
         <ScrollView
@@ -644,6 +685,14 @@ export default function CreateScreen() {
           tintColor={tint}
           bgColor={qrStyle.bgColor}
         />
+        <FormModal
+          visible={formModalOpen}
+          onClose={() => setFormModalOpen(false)}
+          activeType={activeType as QRType}
+          forms={forms}
+          onUpdateForm={updateForm}
+          tintColor={tint}
+        />
         <ColorPicker
           visible={colorTarget !== null}
           initialColor={
@@ -747,4 +796,23 @@ const styles = StyleSheet.create({
   customBtnText: { fontSize: FontSize.xs },
   colorDot: { width: 20, height: 20, borderRadius: 10 },
   customColorLabel: { fontSize: FontSize.xs },
+  formTrigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: Spacing.base,
+    marginBottom: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.md,
+    gap: Spacing.md,
+  },
+  formTriggerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  formTriggerLabel: { fontSize: FontSize.xs },
+  formTriggerValue: { fontSize: FontSize.sm },
 });

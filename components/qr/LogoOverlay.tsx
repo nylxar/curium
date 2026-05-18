@@ -1,11 +1,11 @@
-import React, { useRef } from "react";
+import { useRef } from "react";
 import {
   View,
   Image,
   PanResponder,
   Animated,
-  StyleSheet,
   TouchableOpacity,
+  StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
@@ -20,39 +20,47 @@ interface Props {
 export function LogoOverlay({
   uri,
   containerSize,
-  logoSize = 56,
+  logoSize = 60,
   onRemove,
 }: Props) {
   const { colors } = useTheme();
-  // Start at center
-  const center = (containerSize - logoSize) / 2;
-  const pan = useRef(new Animated.ValueXY({ x: center, y: center })).current;
-  const offset = useRef({ x: center, y: center });
 
-  const responder = useRef(
+  // Start at center
+  const startX = (containerSize - logoSize) / 2;
+  const startY = (containerSize - logoSize) / 2;
+
+  const pos = useRef(new Animated.ValueXY({ x: startX, y: startY })).current;
+  const posRef = useRef({ x: startX, y: startY });
+
+  // Bounds: logo must stay inside container
+  const MAX_X = containerSize - logoSize;
+  const MAX_Y = containerSize - logoSize;
+
+  const pan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
-        pan.setOffset({ x: offset.current.x, y: offset.current.y });
-        pan.setValue({ x: 0, y: 0 });
+        // Stop any spring in progress
+        pos.stopAnimation();
       },
-      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
-        useNativeDriver: false,
-      }),
+      onPanResponderMove: (_, g) => {
+        const nx = Math.max(0, Math.min(MAX_X, posRef.current.x + g.dx));
+        const ny = Math.max(0, Math.min(MAX_Y, posRef.current.y + g.dy));
+        pos.setValue({ x: nx, y: ny });
+      },
       onPanResponderRelease: (_, g) => {
-        pan.flattenOffset();
-        // Clamp to container bounds
-        const maxX = containerSize - logoSize;
-        const maxY = containerSize - logoSize;
-        const nx = Math.max(0, Math.min(maxX, offset.current.x + g.dx));
-        const ny = Math.max(0, Math.min(maxY, offset.current.y + g.dy));
-        offset.current = { x: nx, y: ny };
-        Animated.spring(pan, {
-          toValue: { x: nx, y: ny },
+        // Commit final clamped position
+        posRef.current = {
+          x: Math.max(0, Math.min(MAX_X, posRef.current.x + g.dx)),
+          y: Math.max(0, Math.min(MAX_Y, posRef.current.y + g.dy)),
+        };
+        // Snap with spring to clamped value (snaps back if dragged outside)
+        Animated.spring(pos, {
+          toValue: posRef.current,
           useNativeDriver: false,
-          tension: 100,
-          friction: 8,
+          speed: 30,
+          bounciness: 4,
         }).start();
       },
     }),
@@ -60,41 +68,47 @@ export function LogoOverlay({
 
   return (
     <Animated.View
+      {...pan.panHandlers}
       style={[
         styles.wrapper,
         {
-          width: logoSize + 16,
-          height: logoSize + 16,
-          transform: pan.getTranslateTransform(),
+          width: logoSize,
+          height: logoSize,
+          left: pos.x,
+          top: pos.y,
         },
       ]}
-      {...responder.panHandlers}
     >
-      {/* White bg plate behind logo */}
       <View
         style={[
           styles.plate,
-          { width: logoSize, height: logoSize, borderRadius: logoSize * 0.2 },
+          {
+            width: logoSize,
+            height: logoSize,
+            borderRadius: logoSize * 0.2,
+          },
         ]}
       >
         <Image
           source={{ uri }}
           style={{
-            width: logoSize - 8,
-            height: logoSize - 8,
+            width: logoSize - 10,
+            height: logoSize - 10,
             borderRadius: logoSize * 0.15,
           }}
           resizeMode="contain"
         />
       </View>
 
-      {/* Remove button */}
       <TouchableOpacity
-        style={[styles.removeBtn, { backgroundColor: colors.error }]}
+        style={[
+          styles.removeBtn,
+          { backgroundColor: colors.error ?? "#e53e3e" },
+        ]}
         onPress={onRemove}
-        hitSlop={8}
+        hitSlop={10}
       >
-        <Ionicons name="close" size={10} color="#fff" />
+        <Ionicons name="close" size={9} color="#fff" />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -103,12 +117,10 @@ export function LogoOverlay({
 const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
     zIndex: 10,
   },
   plate: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -119,12 +131,13 @@ const styles = StyleSheet.create({
   },
   removeBtn: {
     position: "absolute",
-    top: 0,
-    right: 0,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    top: -6,
+    right: -6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
+    elevation: 7,
   },
 });
