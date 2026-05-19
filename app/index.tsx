@@ -121,7 +121,7 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
 ];
 
 const { width } = useWindowDimensions();
-const QR_SIZE = width - Spacing.base * 2;
+const QR_SIZE = Math.floor(width) - 32;
 
 // ─── Encoder — module level pure function ────────────────────────────────────
 function encodeQR(type: QRType, forms: FormState): string {
@@ -373,18 +373,13 @@ export default function CreateScreen() {
               collapsable={false}
               style={{ width: QR_SIZE, height: QR_SIZE }}
             >
-              <QRCanvas
-                value={qrValue}
-                qrStyle={{ ...qrStyle, logoUri: undefined }}
-                size={QR_SIZE}
-              />
+              <QRCanvas value={qrValue} qrStyle={qrStyle} size={QR_SIZE} />
               {qrStyle.logoUri && (
                 <LogoOverlay
                   uri={qrStyle.logoUri}
                   containerSize={QR_SIZE}
-                  logoSize={Math.round(QR_SIZE * 0.18)}
                   onRemove={() =>
-                    setQrStyle((p) => ({ ...p, logoUri: undefined }))
+                    setQrStyle((p: QRStyle) => ({ ...p, logoUri: undefined }))
                   }
                 />
               )}
@@ -395,55 +390,51 @@ export default function CreateScreen() {
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={styles.formWrap}
+          ></KeyboardAvoidingView>
+          <TouchableOpacity
+            style={[
+              styles.formTrigger,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={() => setFormModalOpen(true)}
+            activeOpacity={0.7}
           >
-            <TouchableOpacity
-              style={[
-                styles.formTrigger,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                },
-              ]}
-              onPress={() => setFormModalOpen(true)}
-              activeOpacity={0.7}
+            <View
+              style={[styles.formTriggerIcon, { backgroundColor: tint + "18" }]}
             >
-              <View
+              <Ionicons
+                name={QR_TYPES.find((t) => t.id === activeType)?.icon as any}
+                size={18}
+                color={tint}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
                 style={[
-                  styles.formTriggerIcon,
-                  { backgroundColor: tint + "18" },
+                  styles.formTriggerLabel,
+                  { color: colors.textMuted, fontFamily: Fonts.mono },
                 ]}
               >
-                <Ionicons
-                  name={QR_TYPES.find((t) => t.id === activeType)?.icon as any}
-                  size={18}
-                  color={tint}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    styles.formTriggerLabel,
-                    { color: colors.textMuted, fontFamily: Fonts.mono },
-                  ]}
-                >
-                  {QR_TYPES.find((t) => t.id === activeType)?.label}
-                </Text>
-                <Text
-                  style={[
-                    styles.formTriggerValue,
-                    {
-                      color: qrValue ? colors.text : colors.textFaint,
-                      fontFamily: Fonts.mono,
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {qrValue || "Tap to enter data..."}
-                </Text>
-              </View>
-              <Ionicons name="create-outline" size={16} color={tint} />
-            </TouchableOpacity>
-          </KeyboardAvoidingView>
+                {QR_TYPES.find((t) => t.id === activeType)?.label}
+              </Text>
+              <Text
+                style={[
+                  styles.formTriggerValue,
+                  {
+                    color: qrValue ? colors.text : colors.textFaint,
+                    fontFamily: Fonts.mono,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {qrValue || "Tap to enter data..."}
+              </Text>
+            </View>
+            <Ionicons name="create-outline" size={16} color={tint} />
+          </TouchableOpacity>
         </View>
         <ScrollView
           style={styles.scroll}
@@ -759,8 +750,8 @@ const styles = StyleSheet.create({
   appTitle: { fontSize: FontSize.xl },
   canvasWrap: {
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.md,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   formWrap: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.md },
   formCard: {
