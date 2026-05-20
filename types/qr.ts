@@ -55,19 +55,19 @@ export interface QRStyle {
   colorId: string;
   fgColor: string;
   bgColor: string;
+  eyeColor: string;
   eyeShape: EyeShape;
   pixelShape: PixelShape;
   logoUri?: string;
   ecl: ECL;
 }
-
 export const DEFAULT_QR_STYLE: QRStyle = {
-  colorId: "slate",
-  fgColor: "#0d1117",
-  bgColor: "#f0f4f8",
+  colorId: "arctic",
+  fgColor: "#041520",
+  bgColor: "#67e8f9",
+  eyeColor: "#041520",
   eyeShape: "round",
   pixelShape: "dots",
-  logoUri: undefined,
   ecl: "M",
 };
 
@@ -82,15 +82,6 @@ export const PIXEL_BORDER_RADIUS: Record<PixelShape, number> = {
   diamond: 2,
   cross: 0,
   star: 1,
-};
-
-export const PIXEL_IS_GLUED: Record<PixelShape, boolean> = {
-  sharp: false,
-  soft: false,
-  round: false,
-  dots: false,
-  liquid: true,
-  glued: true,
 };
 
 export interface QRData {

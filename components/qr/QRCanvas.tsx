@@ -1,10 +1,9 @@
 import { useMemo } from "react";
 import { View } from "react-native";
-import Svg, { Rect, Path, G, Circle } from "react-native-svg";
+import Svg, { Rect, Path } from "react-native-svg";
 import { QRStyle } from "@/types/qr";
 
-// Use the qrcode package that ships with react-native-qrcode-styled
-const QRCodeLib = require("qrcode");
+const QRLib = require("qrcode");
 
 interface Props {
   value: string;
@@ -12,153 +11,120 @@ interface Props {
   size: number;
 }
 
-// ─── Get raw boolean matrix from qrcode lib ───────────────────────────────────
+// ─── Matrix ───────────────────────────────────────────────────────────────────
 function getMatrix(data: string, ecl: string): boolean[][] | null {
   try {
-    const qr = QRCodeLib.create(data, { errorCorrectionLevel: ecl });
+    const qr = QRLib.create(data, { errorCorrectionLevel: ecl });
     const n = qr.modules.size;
-    const matrix: boolean[][] = [];
-    for (let r = 0; r < n; r++) {
-      matrix.push([]);
-      for (let c = 0; c < n; c++) {
-        matrix[r].push(!!qr.modules.get(r, c));
-      }
-    }
-    return matrix;
+    const m: boolean[][] = Array.from({ length: n }, (_, r) =>
+      Array.from({ length: n }, (__, c) => !!qr.modules.get(r, c)),
+    );
+    return m;
   } catch {
     return null;
   }
 }
 
-// ─── Check if cell belongs to any of the 3 finder eyes ───────────────────────
-function inFinderEye(r: number, c: number, n: number): boolean {
-  // top-left: rows 0-8, cols 0-8 (7×7 pattern + 1 separator)
-  if (r <= 7 && c <= 7) return true;
-  // top-right: rows 0-8, cols n-8 to n-1
-  if (r <= 7 && c >= n - 8) return true;
-  // bottom-left: rows n-8 to n-1, cols 0-8
-  if (r >= n - 8 && c <= 7) return true;
-  return false;
+// ─── Eye region mask ──────────────────────────────────────────────────────────
+function inEye(r: number, c: number, n: number): boolean {
+  return (r <= 7 && c <= 7) || (r <= 7 && c >= n - 8) || (r >= n - 8 && c <= 7);
 }
 
-// ─── Build SVG path for a rounded rectangle ───────────────────────────────────
-// Winds CLOCKWISE (positive area) — use for filled shapes
+// ─── SVG path helpers ─────────────────────────────────────────────────────────
+// Clockwise rounded rect (positive winding — filled)
 function rrCW(x: number, y: number, w: number, h: number, r: number): string {
+  "worklet";
   const cr = Math.min(r, w / 2, h / 2);
-  if (cr <= 0) return `M${x},${y}h${w}v${h}h${-w}Z`;
-  return (
-    `M${x + cr},${y}` +
-    `H${x + w - cr}Q${x + w},${y} ${x + w},${y + cr}` +
-    `V${y + h - cr}Q${x + w},${y + h} ${x + w - cr},${y + h}` +
-    `H${x + cr}Q${x},${y + h} ${x},${y + h - cr}` +
-    `V${y + cr}Q${x},${y} ${x + cr},${y}Z`
-  );
+  if (cr < 0.5) return `M${x},${y}h${w}v${h}h-${w}Z`;
+  return `M${x + cr},${y}H${x + w - cr}Q${x + w},${y} ${x + w},${y + cr}V${y + h - cr}Q${x + w},${y + h} ${x + w - cr},${y + h}H${x + cr}Q${x},${y + h} ${x},${y + h - cr}V${y + cr}Q${x},${y} ${x + cr},${y}Z`;
 }
-
-// Winds COUNTER-CLOCKWISE (negative area) — use for holes with fillRule="evenodd"
+// Counter-clockwise rounded rect (negative winding — punch hole via evenodd)
 function rrCCW(x: number, y: number, w: number, h: number, r: number): string {
   const cr = Math.min(r, w / 2, h / 2);
-  if (cr <= 0) return `M${x},${y}v${h}h${w}v${-h}Z`;
-  return (
-    `M${x + cr},${y}` +
-    `Q${x},${y} ${x},${y + cr}` +
-    `V${y + h - cr}Q${x},${y + h} ${x + cr},${y + h}` +
-    `H${x + w - cr}Q${x + w},${y + h} ${x + w},${y + h - cr}` +
-    `V${y + cr}Q${x + w},${y} ${x + w - cr},${y}Z`
-  );
+  if (cr < 0.5) return `M${x},${y}v${h}h${w}v-${h}Z`;
+  return `M${x + cr},${y}Q${x},${y} ${x},${y + cr}V${y + h - cr}Q${x},${y + h} ${x + cr},${y + h}H${x + w - cr}Q${x + w},${y + h} ${x + w},${y + h - cr}V${y + cr}Q${x + w},${y} ${x + w - cr},${y}Z`;
+}
+// Circle
+function circlePath(cx: number, cy: number, r: number): string {
+  return `M${cx - r},${cy}a${r},${r} 0 1,0 ${r * 2},0a${r},${r} 0 1,0 -${r * 2},0`;
+}
+// Diamond (45° rotated square)
+function diamondPath(cx: number, cy: number, hs: number): string {
+  return `M${cx},${cy - hs}L${cx + hs},${cy}L${cx},${cy + hs}L${cx - hs},${cy}Z`;
+}
+// Cross / plus shape
+function crossPath(cx: number, cy: number, s: number): string {
+  const t = s * 0.32; // arm thickness
+  return `M${cx - t},${cy - s}H${cx + t}V${cy - t}H${cx + s}V${cy + t}H${cx + t}V${cy + s}H${cx - t}V${cy + t}H${cx - s}V${cy - t}H${cx - t}Z`;
 }
 
-// ─── Pixel shape radius as fraction of pieceW ─────────────────────────────────
-// These are FRACTIONS (0–0.5), multiplied by pieceW at render time
-const PIXEL_RADIUS_FRAC: Record<string, number> = {
-  sharp: 0,
-  soft: 0.18,
-  round: 0.35,
-  dots: 0.5, // full circle
-  liquid: 0.3,
-  glued: 0.25,
-  diamond: 0.15,
-  cross: 0,
-  star: 0.08,
+// ─── Pixel shape config ───────────────────────────────────────────────────────
+// r: corner radius as fraction of piece draw size (0 = sharp, 0.5 = circle)
+// inset: gap around each piece as fraction of pieceW (0 = no gap)
+// type: drawing method
+type ShapeType = "rect" | "circle" | "diamond" | "cross";
+const PIXEL_CFG: Record<string, { r: number; inset: number; type: ShapeType }> =
+  {
+    sharp: { r: 0, inset: 0.02, type: "rect" },
+    soft: { r: 0.2, inset: 0.04, type: "rect" },
+    round: { r: 0.38, inset: 0.05, type: "rect" },
+    dots: { r: 0.5, inset: 0.08, type: "circle" },
+    liquid: { r: 0.35, inset: 0.01, type: "rect" },
+    glued: { r: 0.28, inset: 0, type: "rect" },
+    diamond: { r: 0, inset: 0.06, type: "diamond" },
+    cross: { r: 0, inset: 0.08, type: "cross" },
+    star: { r: 0.1, inset: 0.1, type: "rect" },
+  };
+
+// ─── Eye config ───────────────────────────────────────────────────────────────
+// outerR: outer square radius as fraction of eye size (7×pieceW)
+// innerR: inner dot radius as fraction of inner dot size (3×pieceW)
+const EYE_CFG: Record<string, { outerR: number; innerR: number }> = {
+  sharp: { outerR: 0, innerR: 0 },
+  soft: { outerR: 0.1, innerR: 0.12 },
+  round: { outerR: 0.22, innerR: 0.5 },
+  pill: { outerR: 0.48, innerR: 0.5 },
+  leaf: { outerR: 0.22, innerR: 0.5 },
+  diamond: { outerR: 0.12, innerR: 0.12 },
+  shield: { outerR: 0.2, innerR: 0.1 },
+  dot: { outerR: 0.5, innerR: 0.5 },
 };
 
-// Eye outer border radius as fraction of total eye size (7 × pieceW)
-const EYE_OUTER_RADIUS_FRAC: Record<string, number> = {
-  sharp: 0,
-  soft: 0.08,
-  round: 0.22,
-  pill: 0.5,
-  leaf: 0.22,
-  diamond: 0.12,
-  shield: 0.18,
-  dot: 0.5,
-};
-
-// Eye inner dot radius as fraction of inner dot size (3 × pieceW)
-const EYE_INNER_RADIUS_FRAC: Record<string, number> = {
-  sharp: 0,
-  soft: 0.1,
-  round: 0.5, // full circle dot
-  pill: 0.5,
-  leaf: 0.5,
-  diamond: 0.12,
-  shield: 0.12,
-  dot: 0.5,
-};
-
-// ─── Render one finder eye ────────────────────────────────────────────────────
-function renderEye(
+// ─── Draw one finder eye as SVG path string ───────────────────────────────────
+function drawEye(
   eyeRow: number,
   eyeCol: number,
-  pieceW: number,
+  pw: number,
   pad: number,
-  fg: string,
-  eyeShape: string,
+  shape: string,
 ): string {
-  const ox = pad + eyeCol * pieceW;
-  const oy = pad + eyeRow * pieceW;
-  const outerSize = 7 * pieceW;
-  const innerSize = 3 * pieceW;
-  const innerOff = 2 * pieceW;
+  const cfg = EYE_CFG[shape] ?? EYE_CFG.round;
+  const ox = pad + eyeCol * pw;
+  const oy = pad + eyeRow * pw;
+  const outerSz = 7 * pw;
+  const innerSz = 3 * pw;
+  const outerR = cfg.outerR * outerSz;
+  const innerR = cfg.innerR * innerSz;
 
-  // Radii as actual pixels
-  const outerR = EYE_OUTER_RADIUS_FRAC[eyeShape] * outerSize;
-  const innerR = EYE_INNER_RADIUS_FRAC[eyeShape] * innerSize;
-
-  // Outer ring = CW outer square MINUS CCW inner square → evenodd cuts hole
-  const outerPath =
-    rrCW(ox, oy, outerSize, outerSize, outerR) +
+  // Outer ring = CW outer - CCW hole (evenodd cuts ring)
+  const outer =
+    rrCW(ox, oy, outerSz, outerSz, outerR) +
     " " +
-    rrCCW(
-      ox + pieceW,
-      oy + pieceW,
-      5 * pieceW,
-      5 * pieceW,
-      Math.max(0, outerR - pieceW),
-    );
-
+    rrCCW(ox + pw, oy + pw, 5 * pw, 5 * pw, Math.max(0, outerR - pw * 0.7));
   // Inner dot
-  const innerPath = rrCW(
-    ox + innerOff,
-    oy + innerOff,
-    innerSize,
-    innerSize,
-    innerR,
-  );
-
-  return outerPath + " " + innerPath;
+  const inner = rrCW(ox + 2 * pw, oy + 2 * pw, innerSz, innerSz, innerR);
+  return outer + " " + inner;
 }
 
 // ─── QRCanvas ─────────────────────────────────────────────────────────────────
 export function QRCanvas({ value, qrStyle, size }: Props) {
-  const isEmpty = !value || value.trim().length === 0;
+  const isEmpty = !value || !value.trim();
 
   const matrix = useMemo(
     () => (isEmpty ? null : getMatrix(value, qrStyle.ecl)),
     [value, qrStyle.ecl, isEmpty],
   );
 
-  // Empty / error state
   if (isEmpty || !matrix) {
     return (
       <View
@@ -186,36 +152,48 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
   }
 
   const n = matrix.length;
-  const PAD = Math.round(size * 0.04);
-  const pieceW = (size - PAD * 2) / n; // exact — fills container every time
+  const PAD = Math.round(size * 0.045);
+  const pw = (size - PAD * 2) / n; // piece width — fills container exactly
 
-  const pixelFrac = PIXEL_RADIUS_FRAC[qrStyle.pixelShape] ?? 0;
-  const pbr = pixelFrac * pieceW;
+  const cfg = PIXEL_CFG[qrStyle.pixelShape] ?? PIXEL_CFG.sharp;
+  const inset = cfg.inset * pw;
+  const drawSz = pw - inset * 2;
+  const drawR = cfg.r * drawSz;
 
-  // Build data module path (skip finder eye regions)
-  const dataPieces: string[] = [];
+  // Build data modules path
+  const pieces: string[] = [];
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
-      if (!matrix[r][c]) continue;
-      if (inFinderEye(r, c, n)) continue;
-      const x = PAD + c * pieceW;
-      const y = PAD + r * pieceW;
-      dataPieces.push(rrCW(x, y, pieceW, pieceW, pbr));
+      if (!matrix[r][c] || inEye(r, c, n)) continue;
+      const cx = PAD + c * pw + pw / 2;
+      const cy = PAD + r * pw + pw / 2;
+      const x = cx - drawSz / 2;
+      const y = cy - drawSz / 2;
+      switch (cfg.type) {
+        case "circle":
+          pieces.push(circlePath(cx, cy, drawSz / 2));
+          break;
+        case "diamond":
+          pieces.push(diamondPath(cx, cy, drawSz / 2));
+          break;
+        case "cross":
+          pieces.push(crossPath(cx, cy, drawSz / 2));
+          break;
+        default:
+          pieces.push(rrCW(x, y, drawSz, drawSz, drawR));
+          break;
+      }
     }
   }
 
-  // Three finder eye positions
-  const eyePositions = [
-    { row: 0, col: 0 }, // top-left
-    { row: 0, col: n - 7 }, // top-right
-    { row: n - 7, col: 0 }, // bottom-left
+  // Eye positions: top-left, top-right, bottom-left
+  const eyePos = [
+    { r: 0, c: 0 },
+    { r: 0, c: n - 7 },
+    { r: n - 7, c: 0 },
   ];
-
-  // Single combined path for all eyes (data + eyes share same fill color)
-  const eyePath = eyePositions
-    .map((e) =>
-      renderEye(e.row, e.col, pieceW, PAD, qrStyle.fgColor, qrStyle.eyeShape),
-    )
+  const eyePath = eyePos
+    .map((e) => drawEye(e.r, e.c, pw, PAD, qrStyle.eyeShape))
     .join(" ");
 
   return (
@@ -229,13 +207,9 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
       }}
     >
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* Background */}
         <Rect width={size} height={size} fill={qrStyle.bgColor} />
-
-        {/* All data modules — single <Path> = best perf */}
-        <Path d={dataPieces.join(" ")} fill={qrStyle.fgColor} />
-
-        {/* Finder eyes — evenodd cuts the ring holes correctly */}
+        <Path d={pieces.join(" ")} fill={qrStyle.fgColor} />
+        <Path d={eyePath} fill={qrStyle.eyeColor} fillRule="evenodd" />
         <Path d={eyePath} fill={qrStyle.fgColor} fillRule="evenodd" />
       </Svg>
     </View>

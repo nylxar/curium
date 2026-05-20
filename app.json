@@ -36,6 +36,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-linear=gradient",
       "expo-font",
       [
         "expo-splash-screen",

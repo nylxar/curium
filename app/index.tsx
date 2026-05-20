@@ -35,6 +35,7 @@ import {
 import { LogoPicker } from "@/components/qr/LogoPicker";
 import { TypeSelector } from "@/components/qr/TypeSelector";
 import { ColorPicker } from "@/components/qr/ColorPicker";
+import { useToast } from "@/components/ui/Toast";
 import { ExportSheet } from "@/components/qr/ExportSheet";
 import {
   URLFormView,
@@ -187,6 +188,7 @@ export default function CreateScreen() {
   >(null);
   const { colors } = useTheme();
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const { show: showToast, toastEl } = useToast();
 
   // Derived — no hooks
   const qrStyleRef = useRef(qrStyle);
