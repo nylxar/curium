@@ -9,8 +9,7 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "@/context/ThemeContext";
-import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { Spacing, Radius, FontSize } from "@/constants/theme";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -20,7 +19,7 @@ const META: Record<
 > = {
   success: { icon: "checkmark-circle", color: "#22c55e" },
   error: { icon: "close-circle", color: "#ef4444" },
-  info: { icon: "information-circle", color: "#3b82f6" },
+  info: { icon: "information-circle", color: "#60a5fa" },
 };
 
 interface ToastProps {
@@ -38,16 +37,15 @@ export function Toast({
   duration = 2800,
   onHide,
 }: ToastProps) {
-  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const ty = useSharedValue(-100);
+  const ty = useSharedValue(-80);
   const op = useSharedValue(0);
   const timer = useRef<ReturnType<typeof setTimeout>>();
 
   const dismiss = () => {
-    ty.value = withTiming(-100, { duration: 260 });
-    op.value = withTiming(0, { duration: 260 }, () => {
-      scheduleOnRN(onHide)();
+    ty.value = withTiming(-80, { duration: 250 });
+    op.value = withTiming(0, { duration: 250 }, () => {
+      scheduleOnRN(onHide);
     });
   };
 
@@ -67,28 +65,18 @@ export function Toast({
   }));
 
   if (!visible) return null;
-
   const meta = META[type];
 
   return (
     <Animated.View
-      style={[
-        styles.wrap,
-        {
-          top: insets.top + Spacing.sm,
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-        },
-        animStyle,
-      ]}
-      pointerEvents="box-none"
+      style={[styles.wrap, { top: insets.top + Spacing.sm }, animStyle]}
     >
       <Ionicons name={meta.icon} size={18} color={meta.color} />
-      <Text style={[styles.msg, { color: colors.text }]} numberOfLines={2}>
+      <Text style={styles.msg} numberOfLines={2}>
         {message}
       </Text>
       <Pressable onPress={dismiss} hitSlop={14}>
-        <Ionicons name="close" size={15} color={colors.textFaint} />
+        <Ionicons name="close" size={15} color="#666" />
       </Pressable>
     </Animated.View>
   );
@@ -135,13 +123,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: Radius.lg,
+    backgroundColor: "#1c1b19",
     borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#333",
     zIndex: 9999,
     shadowColor: "#000",
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.2,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 14,
   },
-  msg: { flex: 1, fontSize: FontSize.sm, fontFamily: Fonts.mono },
+  msg: { flex: 1, fontSize: FontSize.sm, color: "#ddd" },
 });

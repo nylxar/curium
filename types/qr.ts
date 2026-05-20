@@ -71,6 +71,16 @@ export const DEFAULT_QR_STYLE: QRStyle = {
   ecl: "M",
 };
 
+export type SheetId =
+  | "fgColor"
+  | "bgColor"
+  | "eyeColor"
+  | "eye"
+  | "pixel"
+  | "logo"
+  | "ecl"
+  | null;
+
 // Map our PixelShape names → qrcode-styled pieceBorderRadius
 export const PIXEL_BORDER_RADIUS: Record<PixelShape, number> = {
   sharp: 0,

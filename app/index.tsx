@@ -76,7 +76,15 @@ interface FormState {
   location: LocationForm;
 }
 
-type SheetId = "color" | "eye" | "pixel" | "logo" | "ecl" | null;
+type SheetId =
+  | "color"
+  | "fgColor"
+  | "bgColor"
+  | "eye"
+  | "pixel"
+  | "logo"
+  | "ecl"
+  | null;
 
 // ─── Constants — module level (NO hooks here) ────────────────────────────────
 const DEFAULT_FORMS: FormState = {
@@ -188,7 +196,7 @@ export default function CreateScreen() {
   >(null);
   const { colors } = useTheme();
   const [formModalOpen, setFormModalOpen] = useState(false);
-  const { show: showToast, toastEl } = useToast();
+  const { show: showToast } = useToast();
 
   // Derived — no hooks
   const qrStyleRef = useRef(qrStyle);
@@ -702,6 +710,24 @@ export default function CreateScreen() {
           onClose={() => setColorTarget(null)}
         />
       </SafeAreaView>
+      <ColorPicker
+        visible={activeSheet === "fgColor"}
+        initialColor={qrStyle.fgColor}
+        title="Foreground Color"
+        onConfirm={(c) =>
+          setQrStyle((p) => ({ ...p, fgColor: c, colorId: "custom" }))
+        }
+        onClose={closeSheet}
+      />
+      <ColorPicker
+        visible={activeSheet === "bgColor"}
+        initialColor={qrStyle.bgColor}
+        title="Background Color"
+        onConfirm={(c) =>
+          setQrStyle((p) => ({ ...p, bgColor: c, colorId: "custom" }))
+        }
+        onClose={closeSheet}
+      />
     </View>
   );
 }
