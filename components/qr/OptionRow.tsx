@@ -1,165 +1,118 @@
-import { ReactNode, useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
-  Pressable,
   StyleSheet,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
-import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
+
+if (Platform.OS === "android") {
+  UIManager.setLayoutAnimationEnabledExperimental?.(true);
+}
 
 interface OptionRowProps {
-  label: string;
-  iconName: keyof typeof Ionicons.glyphMap;
-  preview?: ReactNode;
+  label:     string;
+  iconName:  string;
   tintColor: string;
-  bgColor?: string;
-  onOpen?: () => void;
-  onClose?: () => void;
-  sheetOpen?: boolean;
-  children?: ReactNode;
+  children:  React.ReactNode;
+  preview?:  React.ReactNode;
+  onOpen?:   () => void;
+  onClose?:  () => void;
 }
 
 export function OptionRow({
   label,
   iconName,
-  preview,
   tintColor,
-  bgColor,
+  children,
+  preview,
   onOpen,
   onClose,
-  sheetOpen: externalOpen,
-  children,
 }: OptionRowProps) {
+  const [open, setOpen] = useState(false);
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
-  // Support both controlled (external sheetOpen) and uncontrolled mode
-  const [internalOpen, setInternalOpen] = useState(false);
-  const isOpen = externalOpen ?? internalOpen;
-  const doOpen = () => {
-    setInternalOpen(true);
-    onOpen?.();
-  };
-  const doClose = () => {
-    setInternalOpen(false);
-    onClose?.();
-  };
+
+  const toggle = useCallback(() => {
+    LayoutAnimation.configureNext(
+      LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity),
+    );
+    const next = !open;
+    setOpen(next);
+    if (next) onOpen?.();
+    else       onClose?.();
+  }, [open, onOpen, onClose]);
 
   return (
-    <>
+    <View
+      style={[
+        styles.wrap,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}
+    >
+      {/* Header row */}
       <TouchableOpacity
-        style={[
-          styles.row,
-          {
-            backgroundColor: bgColor ?? colors.surface,
-            borderColor: colors.border,
-          },
-        ]}
-        onPress={doOpen}
-        activeOpacity={0.7}
+        onPress={toggle}
+        activeOpacity={0.72}
+        style={styles.header}
       >
-        <View style={[styles.iconBox, { backgroundColor: tintColor + "18" }]}>
-          <Ionicons name={iconName} size={18} color={tintColor} />
+        <View style={[styles.iconWrap, { backgroundColor: tintColor + "18" }]}>
+          <Ionicons name={iconName as any} size={16} color={tintColor} />
         </View>
-        <Text
-          style={[
-            styles.label,
-            { color: colors.text, fontFamily: Fonts.monoMedium },
-          ]}
-        >
+        <Text style={[styles.label, { color: colors.text, fontFamily: Fonts.mono }]}>
           {label}
         </Text>
-        <View style={styles.right}>
-          {preview && <View>{preview}</View>}
-          <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
+        <View style={styles.headerRight}>
+          {preview && !open && (
+            <View style={styles.previewWrap}>{preview}</View>
+          )}
+          <Ionicons
+            name={open ? "chevron-up" : "chevron-down"}
+            size={16}
+            color={colors.textFaint}
+          />
         </View>
       </TouchableOpacity>
 
-      <Modal
-        visible={isOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={doClose}
-      >
-        <Pressable style={styles.backdrop} onPress={doClose} />
-        <View
-          style={[
-            styles.sheet,
-            {
-              backgroundColor: colors.surface,
-              paddingBottom: insets.bottom + Spacing.lg,
-              borderTopColor: colors.border,
-            },
-          ]}
-        >
-          {/* Handle */}
-          <View style={[styles.handle, { backgroundColor: colors.border }]} />
-
-          {/* Header */}
-          <View style={styles.sheetHeader}>
-            <View
-              style={[styles.iconBox, { backgroundColor: tintColor + "18" }]}
-            >
-              <Ionicons name={iconName} size={18} color={tintColor} />
-            </View>
-            <Text
-              style={[
-                styles.sheetTitle,
-                { color: colors.text, fontFamily: Fonts.monoBold },
-              ]}
-            >
-              {label}
-            </Text>
-            <TouchableOpacity onPress={doClose} hitSlop={12}>
-              <Ionicons
-                name="close-circle"
-                size={24}
-                color={colors.textFaint}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Content */}
-          <View style={styles.content}>{children}</View>
+      {/* Expandable content */}
+      {open && (
+        <View style={[styles.content, { borderTopColor: colors.border }]}>
+          {children}
         </View>
-      </Modal>
-    </>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
+  wrap: {
     borderRadius: Radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.md,
-    gap: Spacing.md,
+    overflow: "hidden",
   },
-  iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.md,
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    padding: Spacing.md,
+  },
+  iconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.sm,
     alignItems: "center",
     justifyContent: "center",
   },
-  label: { flex: 1, fontSize: FontSize.base },
-  right: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  backdrop: { flex: 1, backgroundColor: "#00000060" },
-  sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+  label:       { flex: 1, fontSize: FontSize.sm },
+  headerRight: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+  previewWrap: { alignItems: "center", justifyContent: "center" },
+  content: {
+    padding: Spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-    maxHeight: "85%",
   },
-  handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center" },
-  sheetHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-  sheetTitle: { flex: 1, fontSize: FontSize.md },
-  content: { gap: Spacing.sm },
 });

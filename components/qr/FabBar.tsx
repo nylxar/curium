@@ -1,270 +1,161 @@
-import { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
   StyleSheet,
-  Pressable,
+  Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Radius, Spacing, FontSize } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
-const NAV_ITEMS = [
-  { route: "/", label: "Create", icon: "add-circle-outline" },
-  { route: "/scan", label: "Scan", icon: "scan-outline" },
-  { route: "/history", label: "History", icon: "albums-outline" },
-  { route: "/settings", label: "Settings", icon: "settings-outline" },
-] as const;
+interface FabBarProps {
+  tintColor: string;
+  bgColor?: string;
+  disabled?: boolean;
+  onCopy:    () => void;
+  onShuffle: () => void;
+  onShare:   () => void;
+}
 
-interface BtnProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
+interface FabItem {
+  icon:    string;
+  label:   string;
   onPress: () => void;
   primary?: boolean;
-  tintColor: string;
-  bgColor: string;
-  disabled?: boolean;
-}
-
-function Btn({
-  icon,
-  label,
-  onPress,
-  primary,
-  tintColor,
-  bgColor,
-  disabled,
-}: BtnProps) {
-  return (
-    <TouchableOpacity
-      onPress={() => {
-        if (!disabled) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onPress();
-        }
-      }}
-      activeOpacity={0.75}
-      disabled={disabled}
-      style={[styles.btnWrap, { opacity: disabled ? 0.4 : 1 }]}
-    >
-      <View
-        style={[
-          styles.btnCircle,
-          primary
-            ? { backgroundColor: tintColor }
-            : {
-                backgroundColor: tintColor + "20",
-                borderWidth: 1,
-                borderColor: tintColor + "35",
-              },
-        ]}
-      >
-        <Ionicons name={icon} size={21} color={primary ? bgColor : tintColor} />
-      </View>
-      <Text style={[styles.btnLabel, { color: tintColor + "cc" }]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-interface Props {
-  tintColor: string;
-  bgColor: string;
-  disabled: boolean;
-  onCopy: () => void;
-  onShuffle: () => void;
-  onShare: () => void;
 }
 
 export function FabBar({
   tintColor,
   bgColor,
-  disabled,
+  disabled = false,
   onCopy,
   onShuffle,
   onShare,
-}: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const router = useRouter();
+}: FabBarProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
-  const go = (route: string) => {
-    setMenuOpen(false);
-    setTimeout(() => router.push(route as any), 60);
-    Haptics.selectionAsync();
-  };
+  const actions: FabItem[] = [
+    {
+      icon: "shuffle-outline",
+      label: "Shuffle",
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        onShuffle();
+      },
+    },
+    {
+      icon: "copy-outline",
+      label: "Copy",
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onCopy();
+      },
+    },
+    {
+      icon: "share-outline",
+      label: "Export",
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        onShare();
+      },
+      primary: true,
+    },
+  ];
 
   return (
-    <>
-      <View
-        style={[
-          styles.bar,
-          {
-            backgroundColor: bgColor,
-            paddingBottom: insets.bottom + Spacing.sm,
-            borderTopColor: tintColor + "20",
-          },
-        ]}
-      >
-        {/* Single row — Copy | Random | Share | Menu */}
-        <View style={styles.row}>
-          <Btn
-            icon="copy-outline"
-            label="Copy"
-            tintColor={tintColor}
-            bgColor={bgColor}
-            onPress={onCopy}
-            disabled={disabled}
+    <View
+      style={[
+        styles.bar,
+        {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          paddingBottom: insets.bottom + Spacing.sm,
+        },
+      ]}
+    >
+      {actions.map((action) => (
+        <TouchableOpacity
+          key={action.label}
+          onPress={action.onPress}
+          disabled={disabled}
+          activeOpacity={0.72}
+          style={[
+            styles.btn,
+            action.primary
+              ? [
+                  styles.btnPrimary,
+                  {
+                    backgroundColor: disabled
+                      ? colors.border
+                      : tintColor,
+                  },
+                ]
+              : [
+                  styles.btnSecondary,
+                  {
+                    backgroundColor: colors.bg,
+                    borderColor: colors.border,
+                    opacity: disabled ? 0.4 : 1,
+                  },
+                ],
+          ]}
+        >
+          <Ionicons
+            name={action.icon as any}
+            size={20}
+            color={action.primary ? "#fff" : colors.text}
           />
-          <Btn
-            icon="shuffle"
-            label="Random"
-            tintColor={tintColor}
-            bgColor={bgColor}
-            onPress={onShuffle}
-            disabled={disabled}
-            primary
-          />
-          <Btn
-            icon="share-outline"
-            label="Share"
-            tintColor={tintColor}
-            bgColor={bgColor}
-            onPress={onShare}
-            disabled={disabled}
-          />
-          <Btn
-            icon="menu"
-            label="Menu"
-            tintColor={tintColor}
-            bgColor={bgColor}
-            onPress={() => setMenuOpen(true)}
-          />
-        </View>
-      </View>
-
-      <Modal
-        visible={menuOpen}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setMenuOpen(false)}
-      >
-        <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
-          <Pressable
+          <Text
             style={[
-              styles.sheet,
+              styles.btnLabel,
               {
-                backgroundColor: bgColor,
-                borderColor: tintColor + "25",
-                paddingBottom: insets.bottom + Spacing.lg,
+                color: action.primary ? "#fff" : colors.textMuted,
+                fontFamily: Fonts.mono,
               },
             ]}
-            onPress={(e) => e.stopPropagation()}
           >
-            <View
-              style={[styles.handle, { backgroundColor: tintColor + "40" }]}
-            />
-
-            {NAV_ITEMS.map((item, i) => (
-              <TouchableOpacity
-                key={item.route}
-                style={[
-                  styles.navRow,
-                  i < NAV_ITEMS.length - 1 && {
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: tintColor + "20",
-                  },
-                ]}
-                onPress={() => go(item.route)}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[
-                    styles.navIcon,
-                    { backgroundColor: tintColor + "18" },
-                  ]}
-                >
-                  <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color={tintColor}
-                  />
-                </View>
-                <Text style={[styles.navLabel, { color: tintColor }]}>
-                  {item.label}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={tintColor + "40"}
-                />
-              </TouchableOpacity>
-            ))}
-          </Pressable>
-        </Pressable>
-      </Modal>
-    </>
+            {action.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   bar: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: Spacing.md,
-  },
-  row: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "flex-start",
-    paddingHorizontal: Spacing.md,
-  },
-  btnWrap: { alignItems: "center", gap: Spacing.xs },
-  btnCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnLabel: { fontSize: FontSize.xs, fontWeight: "600" },
-
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    borderWidth: 1,
-    paddingTop: Spacing.md,
+    gap: Spacing.sm,
+    paddingTop: Spacing.sm,
     paddingHorizontal: Spacing.base,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: { elevation: 4 },
+    }),
   },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: Radius.full,
-    alignSelf: "center",
-    marginBottom: Spacing.md,
-  },
-  navRow: {
+  btn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.md,
-    paddingVertical: Spacing.md + 2,
-  },
-  navIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    alignItems: "center",
     justifyContent: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.lg,
   },
-  navLabel: { flex: 1, fontSize: FontSize.md ?? 15, fontWeight: "600" },
+  btnPrimary: {},
+  btnSecondary: {
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  btnLabel: { fontSize: FontSize.sm, fontWeight: "600" },
 });
