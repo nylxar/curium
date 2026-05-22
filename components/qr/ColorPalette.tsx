@@ -1,147 +1,88 @@
-import { useEffect } from "react";
+import React from "react";
 import {
-  ScrollView,
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
+  ScrollView,
+  StyleSheet,
 } from "react-native";
-import Animated, {
-  useSharedValue,
-  withSpring,
-  useAnimatedStyle,
-} from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
 import { QR_COLORS } from "@/constants/theme";
-import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
-import * as Haptics from "expo-haptics";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
-interface Props {
+interface ColorPaletteProps {
   selectedId: string;
   onSelect: (id: string, fg: string, bg: string) => void;
 }
 
-function ColorSwatch({
-  item,
-  selected,
-  onPress,
-}: {
-  item: (typeof QR_COLORS)[number];
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    scale.value = withSpring(selected ? 1.15 : 1, {
-      damping: 12,
-      stiffness: 220,
-    });
-  }, [selected]);
-
-  // Ring/check visibility via JS conditional — NOT in Reanimated worklet
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+export function ColorPalette({ selectedId, onSelect }: ColorPaletteProps) {
+  const { colors } = useTheme();
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.75}
-      style={styles.swatchWrap}
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.row}
     >
-      <Animated.View style={animStyle}>
-        <View
-          style={[
-            styles.swatch,
-            { backgroundColor: item.bg },
-            selected && { borderColor: item.fg, borderWidth: 2.5 },
-          ]}
-        >
-          <View style={[styles.swatchInner, { backgroundColor: item.fg }]} />
-          {selected && (
-            <View style={styles.check}>
-              <Ionicons name="checkmark" size={10} color={item.bg} />
-            </View>
-          )}
-        </View>
-      </Animated.View>
-      <Text
-        style={[styles.swatchLabel, selected && { color: item.fg }]}
-        numberOfLines={1}
-      >
-        {item.label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-export function ColorPalette({ selectedId, onSelect }: Props) {
-  return (
-    <View>
-      <Text style={styles.sectionTitle}>Color Presets</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {QR_COLORS.map((item) => (
-          <ColorSwatch
-            key={item.id}
-            item={item}
-            selected={selectedId === item.id}
-            onPress={() => {
-              Haptics.selectionAsync();
-              onSelect(item.id, item.fg, item.bg);
-            }}
-          />
-        ))}
-      </ScrollView>
-    </View>
+      {QR_COLORS.map((c) => {
+        const isSelected = selectedId === c.id;
+        return (
+          <TouchableOpacity
+            key={c.id}
+            onPress={() => onSelect(c.id, c.fg, c.bg)}
+            activeOpacity={0.75}
+            style={[
+              styles.swatch,
+              { backgroundColor: c.bg },
+              isSelected && { borderColor: colors.text, borderWidth: 2.5 },
+              !isSelected && { borderColor: "transparent", borderWidth: 2.5 },
+            ]}
+          >
+            {/* Foreground preview dot */}
+            <View style={[styles.fgDot, { backgroundColor: c.fg }]} />
+            {/* Selected checkmark */}
+            {isSelected && (
+              <View style={styles.checkWrap}>
+                <Ionicons name="checkmark" size={10} color={c.bg} />
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: {
-    fontSize: FontSize.xs,
-    fontWeight: "600",
-    color: Colors.textFaint,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-    marginLeft: Spacing.base,
-    marginBottom: Spacing.sm,
-  },
   row: {
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.md,
-    paddingBottom: Spacing.sm,
+    flexDirection: "row",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: 2,
   },
-  swatchWrap: { alignItems: "center", gap: 5, width: 58 },
   swatch: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.lg,
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 0.5,
-    borderColor: Colors.border,
+    position: "relative",
   },
-  swatchInner: { width: 22, height: 22, borderRadius: 11 },
-  check: {
+  fgDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  checkWrap: {
     position: "absolute",
     bottom: 3,
     right: 3,
-    width: 17,
-    height: 17,
-    borderRadius: 9,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: "rgba(0,0,0,0.55)",
     alignItems: "center",
     justifyContent: "center",
-  },
-  swatchLabel: {
-    fontSize: 9,
-    color: Colors.textFaint,
-    textAlign: "center",
-    width: 58,
   },
 });
