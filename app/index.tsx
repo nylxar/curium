@@ -21,7 +21,6 @@ import { captureRef } from "react-native-view-shot";
 import { Ionicons } from "@expo/vector-icons";
 
 import { QRCanvas } from "@/components/qr/QRCanvas";
-import { TypePill } from "@/components/qr/TypePill";
 import { OptionRow } from "@/components/qr/OptionRow";
 import { FabBar } from "@/components/qr/FabBar";
 import { FormModal } from "@/components/qr/FormModal";
@@ -165,37 +164,33 @@ function encodeQR(type: QRType, forms: FormState): string {
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function CreateScreen() {
-  // ── useWindowDimensions MUST live inside the component (Rules of Hooks) ──
+  // useWindowDimensions MUST be inside the component (Rules of Hooks)
   const { width } = useWindowDimensions();
   const QR_SIZE = Math.min(Math.floor(width) - Spacing.base * 2, 320);
 
-  // ── all hooks at top, unconditionally, same order every render ──
-  const [activeType, setActiveType]         = useState<QRType>("url");
-  const [forms, setForms]                   = useState<FormState>(DEFAULT_FORMS);
-  const [qrStyle, setQrStyle]               = useState<QRStyle>(DEFAULT_QR_STYLE);
-  const [activeSheet, setActiveSheet]       = useState<SheetId>(null);
-  const [exportOpen, setExportOpen]         = useState(false);
-  const [formModalOpen, setFormModalOpen]   = useState(false);
-  const [colorTarget, setColorTarget]       = useState<"fg" | "bg" | null>(null);
-  const qrRef                               = useRef<View>(null);
-  const qrStyleRef                          = useRef(qrStyle);
-  const lastSaved                           = useRef("");
+  // all hooks at top, unconditionally, same order every render
+  const [activeType, setActiveType]       = useState<QRType>("url");
+  const [forms, setForms]                 = useState<FormState>(DEFAULT_FORMS);
+  const [qrStyle, setQrStyle]             = useState<QRStyle>(DEFAULT_QR_STYLE);
+  const [activeSheet, setActiveSheet]     = useState<SheetId>(null);
+  const [exportOpen, setExportOpen]       = useState(false);
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [colorTarget, setColorTarget]     = useState<"fg" | "bg" | null>(null);
+  const qrRef                             = useRef<View>(null);
+  const qrStyleRef                        = useRef(qrStyle);
+  const lastSaved                         = useRef("");
 
-  // single useTheme call — no duplicate
   const { colors, setQRColors } = useTheme();
   const { show: showToast }     = useToast();
   const params = useLocalSearchParams<{ loadType?: string; loadData?: string }>();
 
-  // keep qrStyleRef in sync
   useEffect(() => { qrStyleRef.current = qrStyle; }, [qrStyle]);
 
-  // sync theme accent on mount
   useEffect(() => {
     setQRColors(DEFAULT_QR_STYLE.fgColor, DEFAULT_QR_STYLE.bgColor);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // pre-fill from deep-link / history params
   useEffect(() => {
     if (!params.loadType || !params.loadData) return;
     try {
@@ -207,7 +202,6 @@ export default function CreateScreen() {
 
   const qrValue = useMemo(() => encodeQR(activeType, forms), [activeType, forms]);
 
-  // auto-save to history
   useEffect(() => {
     if (!qrValue) return;
     const t = setTimeout(() => {
@@ -273,16 +267,17 @@ export default function CreateScreen() {
 
   const activeTypeMeta = QR_TYPES.find((t) => t.id === activeType);
 
+  // renderForm uses `form=` (matching InputForms props interface)
   const renderForm = () => {
     switch (activeType) {
-      case "url":      return <URLFormView      value={forms.url}      onChange={(v) => updateForm("url",      v)} />;
-      case "text":     return <TextFormView     value={forms.text}     onChange={(v) => updateForm("text",     v)} />;
-      case "email":    return <EmailFormView    value={forms.email}    onChange={(v) => updateForm("email",    v)} />;
-      case "phone":    return <PhoneFormView    value={forms.phone}    onChange={(v) => updateForm("phone",    v)} />;
-      case "sms":      return <SMSFormView      value={forms.sms}      onChange={(v) => updateForm("sms",      v)} />;
-      case "wifi":     return <WiFiFormView     value={forms.wifi}     onChange={(v) => updateForm("wifi",     v)} />;
-      case "contact":  return <ContactFormView  value={forms.contact}  onChange={(v) => updateForm("contact",  v)} />;
-      case "location": return <LocationFormView value={forms.location} onChange={(v) => updateForm("location", v)} />;
+      case "url":      return <URLFormView      form={forms.url}      onChange={(v) => updateForm("url",      v)} tintColor={tint} />;
+      case "text":     return <TextFormView     form={forms.text}     onChange={(v) => updateForm("text",     v)} tintColor={tint} />;
+      case "email":    return <EmailFormView    form={forms.email}    onChange={(v) => updateForm("email",    v)} tintColor={tint} />;
+      case "phone":    return <PhoneFormView    form={forms.phone}    onChange={(v) => updateForm("phone",    v)} tintColor={tint} />;
+      case "sms":      return <SMSFormView      form={forms.sms}      onChange={(v) => updateForm("sms",      v)} tintColor={tint} />;
+      case "wifi":     return <WiFiFormView     form={forms.wifi}     onChange={(v) => updateForm("wifi",     v)} tintColor={tint} />;
+      case "contact":  return <ContactFormView  form={forms.contact}  onChange={(v) => updateForm("contact",  v)} tintColor={tint} />;
+      case "location": return <LocationFormView form={forms.location} onChange={(v) => updateForm("location", v)} tintColor={tint} />;
       default:         return null;
     }
   };
@@ -341,12 +336,11 @@ export default function CreateScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ── Type selector ── */}
+          {/* ── Type selector — uses selected/tintColor/onChange ── */}
           <TypeSelector
-            types={QR_TYPES}
-            activeType={activeType}
+            selected={activeType}
             tintColor={tint}
-            onSelect={(t) => {
+            onChange={(t) => {
               setActiveType(t);
               lastSaved.current = "";
             }}
