@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { HistoryProvider } from "@/context/HistoryContext";
+import { ToastProvider } from "@/components/ui/Toast";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,29 +31,31 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <HistoryProvider>
-            <StatusBar style="auto" />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" options={{ animation: "none" }} />
-              <Stack.Screen
-                name="scan"
-                options={{
-                  animation: "slide_from_bottom",
-                  presentation: "modal",
-                }}
-              />
-              <Stack.Screen
-                name="history"
-                options={{ animation: "slide_from_right" }}
-              />
-              <Stack.Screen
-                name="settings"
-                options={{ animation: "slide_from_right" }}
-              />
-              <Stack.Screen
-                name="qr-detail"
-                options={{ animation: "slide_from_bottom" }}
-              />
-            </Stack>
+            <ToastProvider>
+              <StatusBar style="auto" />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" options={{ animation: "none" }} />
+                <Stack.Screen
+                  name="scan"
+                  options={{
+                    animation: "slide_from_bottom",
+                    presentation: "modal",
+                  }}
+                />
+                <Stack.Screen
+                  name="history"
+                  options={{ animation: "slide_from_right" }}
+                />
+                <Stack.Screen
+                  name="settings"
+                  options={{ animation: "slide_from_right" }}
+                />
+                <Stack.Screen
+                  name="qr-detail"
+                  options={{ animation: "slide_from_bottom" }}
+                />
+              </Stack>
+            </ToastProvider>
           </HistoryProvider>
         </ThemeProvider>
       </SafeAreaProvider>

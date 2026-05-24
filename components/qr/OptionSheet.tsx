@@ -6,6 +6,8 @@ import {
   Pressable,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,6 +31,7 @@ export function OptionSheet({
   children,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
 
   return (
     <Modal
@@ -46,6 +49,7 @@ export function OptionSheet({
               backgroundColor: bgColor,
               borderColor: tintColor + "25",
               paddingBottom: insets.bottom + Spacing.lg,
+              maxHeight: height * 0.78,
             },
           ]}
           onPress={(e) => e.stopPropagation()}
@@ -68,7 +72,12 @@ export function OptionSheet({
           </View>
 
           {/* Content */}
-          <View style={styles.body}>{children}</View>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.body}
+          >
+            {children}
+          </ScrollView>
         </Pressable>
       </Pressable>
     </Modal>
@@ -103,5 +112,5 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   title: { fontSize: FontSize.lg, fontWeight: "700" },
-  body: { gap: Spacing.md },
+  body: { gap: Spacing.md, paddingBottom: Spacing.xs },
 });

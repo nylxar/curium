@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   Platform,
   KeyboardAvoidingView,
   useWindowDimensions,
@@ -14,10 +13,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { saveToHistory } from "@/services/history";
 import * as Clipboard from "expo-clipboard";
 import * as ImagePicker from "expo-image-picker";
-import * as Sharing from "expo-sharing";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { captureRef } from "react-native-view-shot";
 import { Ionicons } from "@expo/vector-icons";
 
 import { QRCanvas } from "@/components/qr/QRCanvas";
@@ -182,6 +179,7 @@ export default function CreateScreen() {
 
   const { colors, setQRColors } = useTheme();
   const { show: showToast }     = useToast();
+  const router = useRouter();
   const params = useLocalSearchParams<{ loadType?: string; loadData?: string }>();
 
   useEffect(() => { qrStyleRef.current = qrStyle; }, [qrStyle]);
@@ -232,8 +230,9 @@ export default function CreateScreen() {
     const pixel = PIXEL_SHAPES[Math.floor(Math.random() * PIXEL_SHAPES.length)];
     setQrStyle((p) => ({ ...p, colorId: r.id, fgColor: r.fg, bgColor: r.bg, eyeShape: eye, pixelShape: pixel }));
     setQRColors(r.fg, r.bg);
+    showToast("Style shuffled", "info");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  }, [setQRColors]);
+  }, [setQRColors, showToast]);
 
   const handleCopy = useCallback(async () => {
     if (!hasQR) return;
@@ -295,18 +294,50 @@ export default function CreateScreen() {
           </Text>
           <View style={styles.appBarRight}>
             <TouchableOpacity
+              onPress={() => router.push("/scan")}
+              hitSlop={12}
+              style={[styles.appBarBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="scan-outline" size={19} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/history")}
+              hitSlop={12}
+              style={[styles.appBarBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="time-outline" size={19} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/settings")}
+              hitSlop={12}
+              style={[styles.appBarBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="settings-outline" size={19} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={handleCopy}
               hitSlop={12}
               disabled={!hasQR}
-              style={[styles.appBarBtn, { opacity: hasQR ? 1 : 0.35 }]}
+              style={[
+                styles.appBarBtn,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  opacity: hasQR ? 1 : 0.35,
+                },
+              ]}
+              activeOpacity={0.75}
             >
-              <Ionicons name="copy-outline" size={20} color={colors.text} />
+              <Ionicons name="copy-outline" size={19} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* ── QR canvas ── */}
-        <View style={styles.canvasWrap}>
+        <View style={[styles.canvasWrap, { borderBottomColor: colors.border }]}>
           <View
             ref={qrRef}
             collapsable={false}
@@ -317,16 +348,29 @@ export default function CreateScreen() {
           >
             <QRCanvas
               value={qrValue || "https://curium.app"}
-              style={qrStyle}
+              qrStyle={qrStyle}
               size={QR_SIZE - 16}
             />
             {qrStyle.logoUri && (
               <LogoOverlay
                 uri={qrStyle.logoUri}
-                size={QR_SIZE * 0.22}
+                containerSize={QR_SIZE}
+                logoSize={QR_SIZE * 0.22}
                 onRemove={() => setQrStyle((p: QRStyle) => ({ ...p, logoUri: undefined }))}
               />
             )}
+          </View>
+          <View style={styles.canvasMeta}>
+            <View style={[styles.statusPill, { backgroundColor: hasQR ? tint + "18" : colors.surface, borderColor: hasQR ? tint + "35" : colors.border }]}>
+              <Ionicons
+                name={hasQR ? "checkmark-circle" : "create-outline"}
+                size={14}
+                color={hasQR ? tint : colors.textMuted}
+              />
+              <Text style={[styles.statusText, { color: hasQR ? tint : colors.textMuted, fontFamily: Fonts.mono }]}>
+                {hasQR ? "Ready to export" : "Add content to activate"}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -570,24 +614,42 @@ const styles = StyleSheet.create({
   },
   appTitle:    { fontSize: FontSize.lg },
   appBarRight: { flexDirection: "row", gap: Spacing.sm },
-  appBarBtn:   { padding: Spacing.xs },
+  appBarBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   canvasWrap: {
     alignItems: "center",
     paddingTop: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingBottom: Spacing.base,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   qrCard: {
-    borderRadius: Radius.xl,
+    borderRadius: Radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
-    padding: 8,
   },
+  canvasMeta: { marginTop: Spacing.md, alignItems: "center" },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+    borderRadius: Radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  statusText: { fontSize: FontSize.xs },
 
   scroll:        { flex: 1 },
-  scrollContent: { paddingBottom: Spacing.xl, gap: Spacing.sm },
+  scrollContent: { paddingTop: Spacing.base, paddingBottom: Spacing.xl, gap: Spacing.sm },
 
   formTrigger: {
     flexDirection: "row",

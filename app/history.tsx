@@ -14,7 +14,7 @@ import * as Haptics from "expo-haptics";
 import { useTheme } from "@/context/ThemeContext";
 import { useHistory } from "@/context/HistoryContext";
 import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
-import type { HistoryEntry } from "@/types/qr";
+import type { HistoryItem } from "@/services/history";
 
 const TYPE_ICONS: Record<string, string> = {
   url:      "link-outline",
@@ -27,8 +27,9 @@ const TYPE_ICONS: Record<string, string> = {
   location: "location-outline",
 };
 
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
+function relativeTime(createdAt: number | string): string {
+  const time = typeof createdAt === "number" ? createdAt : new Date(createdAt).getTime();
+  const diff = Date.now() - time;
   const m = Math.floor(diff / 60_000);
   if (m < 1)  return "just now";
   if (m < 60) return `${m}m ago`;
@@ -38,13 +39,54 @@ function relativeTime(iso: string): string {
   return `${d}d ago`;
 }
 
+function formPayloadFor(item: HistoryItem): Record<string, string> {
+  const value = item.value;
+
+  switch (item.type) {
+    case "url":
+      return { url: value };
+    case "email": {
+      const [to, qs] = value.replace(/^mailto:/i, "").split("?");
+      const params = Object.fromEntries(new URLSearchParams(qs ?? ""));
+      return { to, subject: params.subject ?? "", body: params.body ?? "" };
+    }
+    case "phone":
+      return { phone: value.replace(/^tel:/i, "") };
+    case "sms": {
+      const [phone, qs] = value.replace(/^sms:/i, "").split("?");
+      const params = Object.fromEntries(new URLSearchParams(qs ?? ""));
+      return { phone, message: params.body ?? "" };
+    }
+    case "wifi":
+      return {
+        ssid: value.match(/S:([^;]*)/)?.[1] ?? "",
+        password: value.match(/P:([^;]*)/)?.[1] ?? "",
+        encryption: value.match(/T:([^;]*)/)?.[1] ?? "WPA",
+      };
+    case "contact":
+      return {
+        name: value.match(/FN:([^\n]*)/)?.[1] ?? "",
+        phone: value.match(/TEL:([^\n]*)/)?.[1] ?? "",
+        email: value.match(/EMAIL:([^\n]*)/)?.[1] ?? "",
+        org: value.match(/ORG:([^\n]*)/)?.[1] ?? "",
+      };
+    case "location": {
+      const coords = value.replace(/^geo:/i, "").split(",");
+      return { lat: coords[0] ?? "", lng: coords[1]?.split("?")[0] ?? "", label: "" };
+    }
+    case "text":
+    default:
+      return { text: value };
+  }
+}
+
 function HistoryCard({
   item,
   onPress,
   onDelete,
   colors,
 }: {
-  item: HistoryEntry;
+  item: HistoryItem;
   onPress: () => void;
   onDelete: () => void;
   colors: ReturnType<typeof useTheme>["colors"];
@@ -143,10 +185,10 @@ export default function HistoryScreen() {
   }, [clearAll]);
 
   const handlePress = useCallback(
-    (item: HistoryEntry) => {
+    (item: HistoryItem) => {
       router.push({
         pathname: "/",
-        params: { loadType: item.type, loadData: JSON.stringify(item) },
+        params: { loadType: item.type, loadData: JSON.stringify(formPayloadFor(item)) },
       });
     },
     [router],

@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -149,6 +150,7 @@ export function FormModal({
 }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const meta = TYPE_META[activeType];
 
   const renderFields = () => {
@@ -424,6 +426,7 @@ export function FormModal({
               backgroundColor: colors.surface,
               borderTopColor: colors.border,
               paddingBottom: insets.bottom + Spacing.lg,
+              maxHeight: height * 0.86,
             },
           ]}
         >
@@ -458,8 +461,13 @@ export function FormModal({
             </TouchableOpacity>
           </View>
 
-          {/* Fields — no ScrollView needed, modal expands to fit */}
-          <View style={{ gap: Spacing.sm }}>{renderFields()}</View>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={mStyles.fields}
+          >
+            {renderFields()}
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -478,6 +486,7 @@ const mStyles = StyleSheet.create({
   },
   handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center" },
   header: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+  fields: { gap: Spacing.sm, paddingBottom: Spacing.xs },
   iconBox: {
     width: 36,
     height: 36,

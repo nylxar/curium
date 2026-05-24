@@ -65,7 +65,6 @@ export default function ScanScreen() {
   const [result,  setResult]  = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { colors } = useTheme();
 
   // laser sweep animation
@@ -115,7 +114,11 @@ export default function ScanScreen() {
         style={[
           styles.screen,
           styles.permScreen,
-          { paddingTop: insets.top + Spacing.lg, paddingBottom: insets.bottom + Spacing.lg },
+          {
+            backgroundColor: colors.bg,
+            paddingTop: insets.top + Spacing.lg,
+            paddingBottom: insets.bottom + Spacing.lg,
+          },
         ]}
       >
         <TouchableOpacity
@@ -123,22 +126,23 @@ export default function ScanScreen() {
           hitSlop={12}
           style={[styles.permBack, { top: insets.top + Spacing.md }]}
         >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <View style={styles.permIconWrap}>
-          <Ionicons name="camera" size={52} color="#fff" />
+        <View style={[styles.permIconWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="camera" size={52} color={colors.primary} />
         </View>
-        <Text style={styles.permTitle}>Camera Access Needed</Text>
-        <Text style={styles.permSub}>
+        <Text style={[styles.permTitle, { color: colors.text, fontFamily: Fonts.monoBold }]}>Camera Access Needed</Text>
+        <Text style={[styles.permSub, { color: colors.textMuted, fontFamily: Fonts.mono }]}>
           Allow camera access to scan QR codes and barcodes.
         </Text>
         <TouchableOpacity
           onPress={requestPermission}
-          style={styles.permBtn}
+          style={[styles.permBtn, { backgroundColor: colors.primary }]}
           activeOpacity={0.85}
         >
-          <Text style={styles.permBtnLabel}>Allow Camera</Text>
+          <Ionicons name="camera-outline" size={18} color="#fff" />
+          <Text style={[styles.permBtnLabel, { fontFamily: Fonts.monoBold }]}>Allow Camera</Text>
         </TouchableOpacity>
       </View>
     );
@@ -196,7 +200,7 @@ export default function ScanScreen() {
           )}
         </View>
         <Text style={styles.hint}>
-          {scanned ? "✓  Scanned!" : "Point at any QR code or barcode"}
+          {scanned ? "Scanned" : "Point at a QR code"}
         </Text>
       </View>
 
@@ -259,7 +263,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: Spacing.md,
     padding: Spacing.xl,
-    backgroundColor: "#111",
   },
   permBack: {
     position: "absolute",
@@ -270,32 +273,31 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: "rgba(255,255,255,0.10)",
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,
   },
   permTitle: {
-    color: "#fff",
     fontSize: FontSize.lg,
-    fontWeight: "700",
     textAlign: "center",
   },
   permSub: {
-    color: "rgba(255,255,255,0.60)",
     fontSize: FontSize.sm,
     textAlign: "center",
     maxWidth: 280,
     lineHeight: 22,
   },
   permBtn: {
-    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
     borderRadius: Radius.full,
     marginTop: Spacing.sm,
   },
-  permBtnLabel: { color: "#000", fontSize: FontSize.base, fontWeight: "700" },
+  permBtnLabel: { color: "#fff", fontSize: FontSize.base },
 
   // ── Overlays ──
   overlayTop: {
@@ -332,7 +334,13 @@ const styles = StyleSheet.create({
     marginTop: 72,
     marginBottom: 220,
   },
-  frameOuter: { width: 260, height: 260, position: "relative" },
+  frameOuter: {
+    width: 260,
+    height: 260,
+    position: "relative",
+    borderRadius: Radius.lg,
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
   corner: {
     position: "absolute",
     width: 28,
@@ -352,9 +360,10 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   hint: {
-    color: "rgba(255,255,255,0.75)",
+    color: "rgba(255,255,255,0.82)",
     fontSize: FontSize.sm,
     textAlign: "center",
+    fontFamily: Fonts.mono,
   },
 
   // ── Result panel ──

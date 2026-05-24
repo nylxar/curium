@@ -57,7 +57,7 @@ function SectionHeader({ title, colors }: { title: string; colors: ReturnType<ty
 }
 
 export default function SettingsScreen() {
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors, isDark, setTheme } = useTheme();
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
@@ -83,7 +83,7 @@ export default function SettingsScreen() {
             right={
               <Switch
                 value={isDark}
-                onValueChange={toggleTheme}
+                onValueChange={(next) => setTheme(next ? "dark" : "light")}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor={isDark ? "#fff" : "#fff"}
               />
