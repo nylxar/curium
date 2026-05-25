@@ -62,7 +62,7 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
           <Text
             style={[
               styles.rowLabel,
-              { color: colors.text, fontFamily: Fonts.monoMedium },
+              { color: colors.text, fontFamily: Fonts.system },
             ]}
           >
             QR Type
@@ -70,7 +70,7 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
           <Text
             style={[
               styles.rowSub,
-              { color: colors.textMuted, fontFamily: Fonts.mono },
+              { color: colors.textMuted, fontFamily: Fonts.system },
             ]}
           >
             {current.label}
@@ -100,7 +100,7 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
           <Text
             style={[
               styles.sheetTitle,
-              { color: colors.text, fontFamily: Fonts.monoBold },
+              { color: colors.text, fontFamily: Fonts.system },
             ]}
           >
             Select QR Type
@@ -137,7 +137,8 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
                       styles.cellLabel,
                       {
                         color: active ? tintColor : colors.textMuted,
-                        fontFamily: active ? Fonts.monoBold : Fonts.mono,
+                        fontFamily: Fonts.system,
+                        fontWeight: active ? "700" : "500",
                       },
                     ]}
                   >
@@ -158,40 +159,43 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: Radius.lg,
+    minHeight: 60,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
   },
   rowIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.md,
+    width: 44,
+    height: 44,
+    borderRadius: Radius.lg,
     alignItems: "center",
     justifyContent: "center",
   },
   rowText: { flex: 1 },
-  rowLabel: { fontSize: FontSize.base },
-  rowSub: { fontSize: FontSize.xs, marginTop: 1 },
+  rowLabel: { fontSize: FontSize.base, fontWeight: "600" },
+  rowSub: { fontSize: FontSize.sm, marginTop: 2 },
 
-  backdrop: { flex: 1, backgroundColor: "#00000066" },
+  backdrop: { flex: 1, backgroundColor: "#00000073" },
   sheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
     padding: Spacing.lg,
     gap: Spacing.lg,
   },
   handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center" },
-  sheetTitle: { fontSize: FontSize.md, textAlign: "center" },
+  sheetTitle: { fontSize: FontSize.lg, fontWeight: "700", textAlign: "center" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
   cell: {
     width: "22%",
     aspectRatio: 1,
-    borderRadius: Radius.md,
-    borderWidth: 1.5,
+    minHeight: 76,
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.xs,
     flexGrow: 1,
   },
-  cellLabel: { fontSize: FontSize.xs },
+  cellLabel: { fontSize: FontSize.sm },
 });

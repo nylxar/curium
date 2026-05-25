@@ -13,7 +13,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { QR_COLORS } from "@/constants/theme";
-import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
+import { Colors, Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
 import * as Haptics from "expo-haptics";
 
 interface Props {
@@ -77,9 +78,12 @@ function ColorSwatch({
 }
 
 export function ColorPalette({ selectedId, onSelect }: Props) {
+  const { colors } = useTheme();
   return (
     <View>
-      <Text style={styles.sectionTitle}>Color Presets</Text>
+      <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+        Color Presets
+      </Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -106,7 +110,8 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontWeight: "600",
     color: Colors.textFaint,
-    letterSpacing: 1.2,
+    fontFamily: Fonts.system,
+    letterSpacing: 0,
     textTransform: "uppercase",
     marginLeft: Spacing.base,
     marginBottom: Spacing.sm,
@@ -120,7 +125,7 @@ const styles = StyleSheet.create({
   swatch: {
     width: 52,
     height: 52,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 0.5,
@@ -139,8 +144,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   swatchLabel: {
-    fontSize: 9,
+    fontSize: FontSize.xs,
     color: Colors.textFaint,
+    fontWeight: "600",
     textAlign: "center",
     width: 58,
   },

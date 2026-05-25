@@ -127,7 +127,7 @@ export default function HistoryScreen() {
             <Text
               style={[
                 styles.badgeText,
-                { color: colors.primary, fontFamily: Fonts.monoBold },
+                { color: colors.primary, fontFamily: Fonts.system },
               ]}
             >
               {item.type.toUpperCase()}
@@ -136,7 +136,7 @@ export default function HistoryScreen() {
           <Text
             style={[
               styles.date,
-              { color: colors.textFaint, fontFamily: Fonts.mono },
+              { color: colors.textFaint, fontFamily: Fonts.system },
             ]}
           >
             {new Date(item.createdAt).toLocaleDateString("en-IN", {
@@ -146,7 +146,7 @@ export default function HistoryScreen() {
           </Text>
         </View>
         <Text
-          style={[styles.value, { color: colors.text, fontFamily: Fonts.mono }]}
+          style={[styles.value, { color: colors.text, fontFamily: Fonts.system }]}
           numberOfLines={2}
         >
           {item.value}
@@ -178,7 +178,7 @@ export default function HistoryScreen() {
         <Text
           style={[
             styles.title,
-            { color: colors.text, fontFamily: Fonts.monoBold },
+            { color: colors.text, fontFamily: Fonts.system },
           ]}
         >
           History
@@ -202,7 +202,7 @@ export default function HistoryScreen() {
           <TextInput
             style={[
               styles.searchInput,
-              { color: colors.text, fontFamily: Fonts.mono },
+              { color: colors.text, fontFamily: Fonts.system },
             ]}
             placeholder="Search..."
             placeholderTextColor={colors.textFaint}
@@ -227,7 +227,7 @@ export default function HistoryScreen() {
           <Text
             style={[
               styles.emptyTitle,
-              { color: colors.text, fontFamily: Fonts.monoBold },
+              { color: colors.text, fontFamily: Fonts.system },
             ]}
           >
             {query ? "No results" : "No history yet"}
@@ -235,7 +235,7 @@ export default function HistoryScreen() {
           <Text
             style={[
               styles.emptySub,
-              { color: colors.textMuted, fontFamily: Fonts.mono },
+              { color: colors.textMuted, fontFamily: Fonts.system },
             ]}
           >
             {query
@@ -278,23 +278,24 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  title: { fontSize: FontSize.lg },
+  title: { fontSize: FontSize.xl, fontWeight: "700" },
   searchWrap: {
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: Spacing.base,
     marginTop: Spacing.md,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
+    minHeight: 48,
+    borderRadius: Radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     gap: Spacing.sm,
   },
-  searchInput: { flex: 1, fontSize: FontSize.sm, padding: 0 },
+  searchInput: { flex: 1, fontSize: FontSize.base, padding: 0 },
   card: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.md,
     gap: Spacing.md,
@@ -303,7 +304,7 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 48,
     height: 48,
-    borderRadius: Radius.md,
+    borderRadius: Radius.lg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -315,10 +316,10 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: Radius.sm,
   },
-  badgeText: { fontSize: FontSize.xs },
+  badgeText: { fontSize: FontSize.xs, fontWeight: "700" },
   date: { fontSize: FontSize.xs },
-  value: { fontSize: FontSize.sm, lineHeight: 18 },
-  del: { padding: Spacing.xs },
+  value: { fontSize: FontSize.base, lineHeight: 21 },
+  del: { minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" },
   empty: {
     flex: 1,
     alignItems: "center",
@@ -326,6 +327,6 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     padding: Spacing.xxl,
   },
-  emptyTitle: { fontSize: FontSize.lg },
-  emptySub: { fontSize: FontSize.sm, textAlign: "center" },
+  emptyTitle: { fontSize: FontSize.lg, fontWeight: "700" },
+  emptySub: { fontSize: FontSize.base, textAlign: "center", lineHeight: 22 },
 });

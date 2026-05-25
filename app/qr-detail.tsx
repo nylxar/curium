@@ -115,14 +115,14 @@ export default function QRDetailScreen() {
           <Text
             style={[
               styles.badgeText,
-              { color: colors.primary, fontFamily: Fonts.monoBold },
+              { color: colors.primary, fontFamily: Fonts.system },
             ]}
           >
             {item.type.toUpperCase()}
           </Text>
         </View>
         <Text
-          style={[styles.value, { color: colors.text, fontFamily: Fonts.mono }]}
+          style={[styles.value, { color: colors.text, fontFamily: Fonts.system }]}
           numberOfLines={4}
         >
           {item.value}
@@ -130,7 +130,7 @@ export default function QRDetailScreen() {
         <Text
           style={[
             styles.date,
-            { color: colors.textFaint, fontFamily: Fonts.mono },
+            { color: colors.textFaint, fontFamily: Fonts.system },
           ]}
         >
           {new Date(item.createdAt).toLocaleDateString("en-IN", {
@@ -176,7 +176,7 @@ export default function QRDetailScreen() {
                 styles.actionLabel,
                 {
                   color: a.danger ? colors.error : colors.text,
-                  fontFamily: Fonts.mono,
+                  fontFamily: Fonts.system,
                 },
               ]}
             >
@@ -203,7 +203,7 @@ export default function QRDetailScreen() {
         <Text
           style={[
             styles.counter,
-            { color: colors.textMuted, fontFamily: Fonts.mono },
+            { color: colors.textMuted, fontFamily: Fonts.system },
           ]}
         >
           {items.length > 0 ? `${activeIndex + 1} / ${items.length}` : "—"}
@@ -266,33 +266,34 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  counter: { fontSize: FontSize.sm },
+  counter: { fontSize: FontSize.base, fontWeight: "600" },
   page: {
     alignItems: "center",
     gap: Spacing.xl,
     paddingHorizontal: Spacing.xl,
   },
-  qrWrap: { borderRadius: 20, overflow: "hidden" },
+  qrWrap: { borderRadius: Radius.xl, overflow: "hidden" },
   meta: { alignItems: "center", gap: Spacing.sm, width: "100%" },
   badge: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: Radius.full,
   },
-  badgeText: { fontSize: FontSize.xs },
-  value: { fontSize: FontSize.sm, textAlign: "center", lineHeight: 22 },
-  date: { fontSize: FontSize.xs },
+  badgeText: { fontSize: FontSize.xs, fontWeight: "700" },
+  value: { fontSize: FontSize.base, textAlign: "center", lineHeight: 23 },
+  date: { fontSize: FontSize.sm },
   actions: { flexDirection: "row", gap: Spacing.sm, width: "100%" },
   actionBtn: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.xs,
+    minHeight: 64,
     paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  actionLabel: { fontSize: FontSize.xs },
+  actionLabel: { fontSize: FontSize.sm, fontWeight: "600" },
   dots: { flexDirection: "row", justifyContent: "center", gap: Spacing.xs },
   dot: { height: 6, borderRadius: 3 },
 });

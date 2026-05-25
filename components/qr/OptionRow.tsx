@@ -29,7 +29,6 @@ export function OptionRow({
   iconName,
   preview,
   tintColor,
-  bgColor,
   onOpen,
   onClose,
   sheetOpen: externalOpen,
@@ -54,10 +53,7 @@ export function OptionRow({
       <TouchableOpacity
         style={[
           styles.row,
-          {
-            backgroundColor: bgColor ?? colors.surface,
-            borderColor: colors.border,
-          },
+          { backgroundColor: colors.surface, borderColor: colors.border },
         ]}
         onPress={doOpen}
         activeOpacity={0.7}
@@ -68,7 +64,7 @@ export function OptionRow({
         <Text
           style={[
             styles.label,
-            { color: colors.text, fontFamily: Fonts.monoMedium },
+            { color: colors.text, fontFamily: Fonts.system },
           ]}
         >
           {label}
@@ -109,7 +105,7 @@ export function OptionRow({
             <Text
               style={[
                 styles.sheetTitle,
-                { color: colors.text, fontFamily: Fonts.monoBold },
+                { color: colors.text, fontFamily: Fonts.system },
               ]}
             >
               {label}
@@ -135,24 +131,26 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: Radius.lg,
+    minHeight: 60,
+    borderRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
     gap: Spacing.md,
   },
   iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.md,
+    width: 44,
+    height: 44,
+    borderRadius: Radius.lg,
     alignItems: "center",
     justifyContent: "center",
   },
-  label: { flex: 1, fontSize: FontSize.base },
+  label: { flex: 1, fontSize: FontSize.base, fontWeight: "600" },
   right: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  backdrop: { flex: 1, backgroundColor: "#00000060" },
+  backdrop: { flex: 1, backgroundColor: "#00000073" },
   sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
     borderTopWidth: StyleSheet.hairlineWidth,
     padding: Spacing.lg,
     gap: Spacing.md,
@@ -160,6 +158,6 @@ const styles = StyleSheet.create({
   },
   handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center" },
   sheetHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-  sheetTitle: { flex: 1, fontSize: FontSize.md },
+  sheetTitle: { flex: 1, fontSize: FontSize.lg, fontWeight: "700" },
   content: { gap: Spacing.sm },
 });

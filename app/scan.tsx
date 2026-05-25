@@ -134,7 +134,7 @@ export default function ScanScreen() {
   if (!permission.granted) {
     return (
       <View
-        style={[styles.screen, styles.center, { backgroundColor: "colors.bg" }]}
+        style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}
       >
         <Ionicons name="camera-outline" size={56} color="#fff" />
         <Text style={styles.permTitle}>Camera Access Needed</Text>
@@ -189,7 +189,7 @@ export default function ScanScreen() {
             <Ionicons
               name={torch ? "flash" : "flash-outline"}
               size={24}
-              color={torch ? "colors.warning" : "#fff"}
+              color={torch ? colors.warning : "#fff"}
             />
           </TouchableOpacity>
         </View>
@@ -226,7 +226,7 @@ export default function ScanScreen() {
             {!scanned && <Animated.View style={[styles.laser, laserStyle]} />}
           </View>
           <Text style={styles.hint}>
-            {scanned ? "✓ Scanned!" : "Point at any QR code or barcode"}
+            {scanned ? "Scanned" : "Point at any QR code or barcode"}
           </Text>
         </View>
 
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     padding: Spacing.xl,
   },
-  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: "center" },
+  overlay: { ...StyleSheet.absoluteFill, justifyContent: "center" },
 
   topBar: {
     flexDirection: "row",
@@ -351,8 +351,9 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   hint: {
-    color: "colors.text+'cc'",
-    fontSize: FontSize.sm,
+    color: "#ffffffe6",
+    fontSize: FontSize.base,
+    fontWeight: "600",
     textAlign: "center",
   },
 
@@ -364,13 +365,13 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   resultLabel: {
-    color: "#ffffff80",
+    color: "#ffffff99",
     fontSize: FontSize.xs,
     fontWeight: "600",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 0,
   },
-  resultText: { color: "#fff", fontSize: FontSize.base, lineHeight: 22 },
+  resultText: { color: "#fff", fontSize: FontSize.base, lineHeight: 23 },
   resultActions: { flexDirection: "row", gap: Spacing.sm },
   resultBtn: {
     flex: 1,
@@ -378,8 +379,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.xs,
+    minHeight: 52,
     paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
   },
   resultBtnLabel: { color: "#fff", fontSize: FontSize.sm, fontWeight: "600" },
 
@@ -399,6 +401,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
+    minHeight: 52,
     borderRadius: Radius.full,
     marginTop: Spacing.sm,
   },

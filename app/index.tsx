@@ -129,9 +129,6 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
   { id: "location", label: "Location", icon: "location-outline" },
 ];
 
-const { width } = useWindowDimensions();
-const QR_SIZE = Math.floor(width) - 32;
-
 // ─── Encoder — module level pure function ────────────────────────────────────
 function encodeQR(type: QRType, forms: FormState): string {
   switch (type) {
@@ -195,6 +192,8 @@ export default function CreateScreen() {
     "fg" | "bg" | null
   >(null);
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const QR_SIZE = Math.min(Math.floor(width) - Spacing.xl * 2, 360);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const { show: showToast } = useToast();
 
@@ -440,7 +439,7 @@ export default function CreateScreen() {
                 ]}
                 numberOfLines={1}
               >
-                {qrValue || "Tap to enter data..."}
+                {qrValue || "Tap to enter data"}
               </Text>
             </View>
             <Ionicons name="create-outline" size={16} color={tint} />
@@ -778,8 +777,8 @@ const styles = StyleSheet.create({
   appTitle: { fontSize: FontSize.xl },
   canvasWrap: {
     alignItems: "center",
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.lg,
   },
   formWrap: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.md },
   formCard: {
@@ -808,11 +807,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
-    padding: Spacing.sm,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    minHeight: 44,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  customBtnText: { fontSize: FontSize.xs },
+  customBtnText: { fontSize: FontSize.sm, fontWeight: "600" },
   colorDot: { width: 20, height: 20, borderRadius: 10 },
   customColorLabel: { fontSize: FontSize.xs },
   formTrigger: {
@@ -820,18 +821,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: Spacing.base,
     marginBottom: Spacing.md,
-    borderRadius: Radius.lg,
+    minHeight: 68,
+    borderRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
     gap: Spacing.md,
   },
   formTriggerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.md,
+    width: 44,
+    height: 44,
+    borderRadius: Radius.lg,
     alignItems: "center",
     justifyContent: "center",
   },
-  formTriggerLabel: { fontSize: FontSize.xs },
-  formTriggerValue: { fontSize: FontSize.sm },
+  formTriggerLabel: { fontSize: FontSize.xs, fontWeight: "600" },
+  formTriggerValue: { fontSize: FontSize.base, lineHeight: 20 },
 });

@@ -40,7 +40,7 @@ export function Toast({
   const insets = useSafeAreaInsets();
   const ty = useSharedValue(-80);
   const op = useSharedValue(0);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismiss = () => {
     ty.value = withTiming(-80, { duration: 250 });
@@ -53,10 +53,12 @@ export function Toast({
     if (visible) {
       op.value = withTiming(1, { duration: 200 });
       ty.value = withSpring(0, { damping: 20, stiffness: 280, mass: 0.6 });
-      clearTimeout(timer.current);
+      if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(dismiss, duration);
     }
-    return () => clearTimeout(timer.current);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
   }, [visible, message]);
 
   const animStyle = useAnimatedStyle(() => ({

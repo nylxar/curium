@@ -49,14 +49,16 @@ export default function SettingsScreen() {
     title: {
       fontSize: FontSize.lg,
       color: colors.text,
-      fontFamily: Fonts.monoBold,
+      fontFamily: Fonts.system,
+      fontWeight: "700",
     },
     sectionTitle: {
       fontSize: FontSize.xs,
       color: colors.textMuted,
-      fontFamily: Fonts.monoBold,
+      fontFamily: Fonts.system,
+      fontWeight: "700",
       textTransform: "uppercase",
-      letterSpacing: 1.2,
+      letterSpacing: 0,
       marginTop: Spacing.xl,
       marginBottom: Spacing.sm,
       marginLeft: 2,
@@ -65,6 +67,7 @@ export default function SettingsScreen() {
       flexDirection: "row",
       alignItems: "center",
       gap: Spacing.md,
+      minHeight: 60,
       paddingVertical: Spacing.md,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
@@ -72,7 +75,7 @@ export default function SettingsScreen() {
     rowIcon: {
       width: 36,
       height: 36,
-      borderRadius: Radius.md,
+      borderRadius: Radius.lg,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -80,13 +83,14 @@ export default function SettingsScreen() {
     rowLabel: {
       fontSize: FontSize.base,
       color: colors.text,
-      fontFamily: Fonts.monoMedium,
+      fontFamily: Fonts.system,
+      fontWeight: "600",
     },
     rowSub: {
       fontSize: FontSize.xs,
       color: colors.textMuted,
       marginTop: 2,
-      fontFamily: Fonts.mono,
+      fontFamily: Fonts.system,
     },
     themeRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
     themeBtn: {
@@ -94,15 +98,16 @@ export default function SettingsScreen() {
       alignItems: "center",
       gap: Spacing.xs,
       paddingVertical: Spacing.md,
-      borderRadius: Radius.lg,
+      minHeight: 74,
+      borderRadius: Radius.xl,
       borderWidth: 1.5,
     },
-    themeBtnLabel: { fontSize: FontSize.xs, fontFamily: Fonts.mono },
+    themeBtnLabel: { fontSize: FontSize.sm, fontFamily: Fonts.system, fontWeight: "600" },
     versionBox: {
       marginTop: Spacing.xl,
       padding: Spacing.lg,
       backgroundColor: colors.surface,
-      borderRadius: Radius.lg,
+      borderRadius: Radius.xl,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
       alignItems: "center",
@@ -111,19 +116,20 @@ export default function SettingsScreen() {
     versionTitle: {
       fontSize: FontSize.md,
       color: colors.text,
-      fontFamily: Fonts.monoBold,
+      fontFamily: Fonts.system,
+      fontWeight: "700",
     },
     versionSub: {
       fontSize: FontSize.xs,
       color: colors.textFaint,
-      fontFamily: Fonts.mono,
+      fontFamily: Fonts.system,
     },
     dynamicNote: {
       flexDirection: "row",
       alignItems: "center",
       gap: Spacing.sm,
       padding: Spacing.md,
-      borderRadius: Radius.md,
+      borderRadius: Radius.lg,
       borderWidth: 1,
       marginTop: Spacing.sm,
     },
@@ -148,7 +154,7 @@ export default function SettingsScreen() {
     iconBg?: string;
   }) => (
     <TouchableOpacity
-      style={S.row}
+            style={S.row}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
     >
@@ -253,7 +259,7 @@ export default function SettingsScreen() {
             <Text
               style={[
                 S.dynamicNoteText,
-                { color: colors.primary, fontFamily: Fonts.mono },
+                { color: colors.primary, fontFamily: Fonts.system },
               ]}
             >
               App colors match your QR theme. Change it on the Create screen.

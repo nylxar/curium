@@ -60,7 +60,7 @@ export function ExpandableField({
           <Text
             style={[
               styles.fieldLabel,
-              { color: colors.textMuted, fontFamily: Fonts.mono },
+              { color: colors.textMuted, fontFamily: Fonts.system },
             ]}
           >
             {label}
@@ -70,7 +70,7 @@ export function ExpandableField({
               styles.preview,
               {
                 color: hasValue ? colors.text : colors.textFaint,
-                fontFamily: Fonts.mono,
+                fontFamily: Fonts.system,
               },
             ]}
             numberOfLines={1}
@@ -109,7 +109,7 @@ export function ExpandableField({
               <Text
                 style={[
                   styles.sheetTitle,
-                  { color: colors.text, fontFamily: Fonts.monoBold },
+                  { color: colors.text, fontFamily: Fonts.system },
                 ]}
               >
                 {label}
@@ -119,7 +119,7 @@ export function ExpandableField({
                 onPress={() => setOpen(false)}
               >
                 <Text
-                  style={[styles.doneBtnText, { fontFamily: Fonts.monoBold }]}
+                  style={[styles.doneBtnText, { fontFamily: Fonts.system }]}
                 >
                   Done
                 </Text>
@@ -132,7 +132,7 @@ export function ExpandableField({
                   backgroundColor: colors.surfaceOffset,
                   borderColor: colors.border,
                   color: colors.text,
-                  fontFamily: Fonts.mono,
+                  fontFamily: Fonts.system,
                   height: multiline ? 140 : 52,
                 },
               ]}
@@ -159,20 +159,20 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
     gap: Spacing.sm,
     minHeight: 52,
   },
   rowContent: { flex: 1, gap: 2 },
-  fieldLabel: { fontSize: FontSize.xs },
-  preview: { fontSize: FontSize.sm },
-  backdrop: { flex: 1, backgroundColor: "#00000066" },
+  fieldLabel: { fontSize: FontSize.xs, fontWeight: "600" },
+  preview: { fontSize: FontSize.base },
+  backdrop: { flex: 1, backgroundColor: "#00000073" },
   sheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
     padding: Spacing.lg,
     gap: Spacing.md,
   },
@@ -182,13 +182,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  sheetTitle: { fontSize: FontSize.md },
+  sheetTitle: { fontSize: FontSize.lg, fontWeight: "700" },
   doneBtn: {
+    minHeight: 44,
+    minWidth: 70,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: Radius.full,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  doneBtnText: { fontSize: FontSize.sm, color: "#fff" },
+  doneBtnText: { fontSize: FontSize.base, color: "#fff", fontWeight: "700" },
   input: {
     borderRadius: Radius.lg,
     borderWidth: 1,

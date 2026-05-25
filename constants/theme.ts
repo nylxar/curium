@@ -1,6 +1,7 @@
 // constants/theme.ts — FULL REPLACEMENT
 
 export const Fonts = {
+  system: undefined,
   mono: "IBMPlexMono-Regular",
   monoLight: "IBMPlexMono-Light",
   monoText: "IBMPlexMono-Text",
@@ -28,33 +29,33 @@ const Slate = {
 export type AppTheme = "dark" | "light" | "system" | "dynamic";
 
 export const DarkColors = {
-  bg: "#0d1117",
-  surface: "#161b22",
-  surfaceOffset: "#21262d",
-  border: "#30363d",
-  text: "#e6edf3",
-  textMuted: "#8b949e",
-  textFaint: "#484f58",
-  primary: "#58a6ff",
-  primaryBg: "#58a6ff22",
-  success: "#3fb950",
-  error: "#f85149",
-  warning: "#d29922",
+  bg: "#000000",
+  surface: "#1c1c1e",
+  surfaceOffset: "#2c2c2e",
+  border: "#38383a",
+  text: "#f5f5f7",
+  textMuted: "#aeaeb2",
+  textFaint: "#636366",
+  primary: "#0a84ff",
+  primaryBg: "#0a84ff22",
+  success: "#30d158",
+  error: "#ff453a",
+  warning: "#ffd60a",
 };
 
 export const LightColors = {
-  bg: "#f6f8fa",
+  bg: "#f2f2f7",
   surface: "#ffffff",
-  surfaceOffset: "#f0f2f5",
-  border: "#d0d7de",
-  text: "#1f2328", // near-black
-  textMuted: "#57606a",
-  textFaint: "#d0d7de",
-  primary: "#0969da", // darker blue
-  primaryBg: "#0969da22",
-  success: "#1a7f37",
-  error: "#cf222e",
-  warning: "#9a6700",
+  surfaceOffset: "#f7f7f8",
+  border: "#d1d1d6",
+  text: "#1d1d1f",
+  textMuted: "#6e6e73",
+  textFaint: "#c7c7cc",
+  primary: "#007aff",
+  primaryBg: "#007aff22",
+  success: "#34c759",
+  error: "#ff3b30",
+  warning: "#ff9500",
 };
 
 // Default export — dark (slate) as default UI theme
@@ -72,10 +73,10 @@ export const Spacing = {
 };
 
 export const Radius = {
-  sm: 6,
-  md: 10,
-  lg: 14,
-  xl: 20,
+  sm: 8,
+  md: 12,
+  lg: 18,
+  xl: 28,
   full: 9999,
 };
 

@@ -47,7 +47,7 @@ function Btn({
           onPress();
         }
       }}
-      activeOpacity={0.75}
+      activeOpacity={0.82}
       disabled={disabled}
       style={[styles.btnWrap, { opacity: disabled ? 0.4 : 1 }]}
     >
@@ -105,7 +105,7 @@ export function FabBar({
         style={[
           styles.bar,
           {
-            backgroundColor: bgColor,
+            backgroundColor: bgColor + "f2",
             paddingBottom: insets.bottom + Spacing.sm,
             borderTopColor: tintColor + "20",
           },
@@ -185,10 +185,7 @@ export function FabBar({
                 activeOpacity={0.7}
               >
                 <View
-                  style={[
-                    styles.navIcon,
-                    { backgroundColor: tintColor + "18" },
-                  ]}
+                  style={[styles.navIcon, { backgroundColor: tintColor + "18" }]}
                 >
                   <Ionicons
                     name={item.icon as any}
@@ -216,7 +213,7 @@ export function FabBar({
 const styles = StyleSheet.create({
   bar: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm,
   },
   row: {
     flexDirection: "row",
@@ -224,11 +221,11 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     paddingHorizontal: Spacing.md,
   },
-  btnWrap: { alignItems: "center", gap: Spacing.xs },
+  btnWrap: { alignItems: "center", gap: Spacing.xs, minWidth: 64 },
   btnCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -236,13 +233,13 @@ const styles = StyleSheet.create({
 
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.48)",
     justifyContent: "flex-end",
   },
   sheet: {
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingTop: Spacing.md,
     paddingHorizontal: Spacing.base,
   },
@@ -257,14 +254,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
-    paddingVertical: Spacing.md + 2,
+    minHeight: 56,
+    paddingVertical: Spacing.md,
   },
   navIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
+    width: 44,
+    height: 44,
+    borderRadius: Radius.lg,
     alignItems: "center",
     justifyContent: "center",
   },
-  navLabel: { flex: 1, fontSize: FontSize.md ?? 15, fontWeight: "600" },
+  navLabel: { flex: 1, fontSize: FontSize.base, fontWeight: "600" },
 });
