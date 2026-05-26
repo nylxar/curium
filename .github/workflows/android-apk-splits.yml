@@ -1,3 +1,7 @@
+# .github/workflows/android-apk-splits.yml
+# Updated: May 26, 2026
+# Builds per-ABI and per-density release APKs from an Expo managed project.
+
 name: Android APK Splits
 
 on:
@@ -6,72 +10,99 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
 jobs:
   build-apk-splits:
-    name: Build density and ABI APKs
+    name: Build density + ABI split APKs
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node
+      - name: Set up Node 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - name: Set up Java
+      - name: Set up Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
+          cache: gradle
 
-      - name: Install dependencies
+      - name: Export JAVA_HOME
+        run: echo "JAVA_HOME=$JAVA_HOME" >> $GITHUB_ENV
+
+      - name: Install JS dependencies
         run: npm ci
 
-      - name: Generate Android project
-        run: npx expo prebuild --platform android --clean --non-interactive
+      - name: Generate Android project via Expo prebuild
+        run: npx expo prebuild --platform android --clean --no-install --non-interactive
 
-      - name: Enable APK density and ABI splits
+      - name: Make Gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Inject APK density + ABI splits into build.gradle
         shell: pwsh
         run: |
           $path = "android/app/build.gradle"
+
+          if (!(Test-Path $path)) {
+            throw "Expected Gradle file was not found at: $path"
+          }
+
           $gradle = Get-Content $path -Raw
-          $splits = @'
+
+          if ($gradle -notmatch 'android\s*\{') {
+            throw "Could not locate the android { } block in: $path"
+          }
+
+          $splits = @"
 
               splits {
                   density {
                       enable true
                       reset()
-                      include "ldpi", "mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"
+                      include "mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"
                       compatibleScreens "small", "normal", "large", "xlarge"
                   }
                   abi {
                       enable true
                       reset()
                       include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-                      universalApk false
+                      universalApk true
                   }
               }
-'@
-          $gradle = $gradle -replace '(?s)(android\s*\{)', "`$1$splits"
-          Set-Content $path $gradle
+
+          "@
+
+          $gradle = $gradle -replace '(android\s*\{)', "`$1$splits"
+          Set-Content $path $gradle -Encoding UTF8
+          Write-Host "splits {} block injected successfully."
 
       - name: Build release APKs
         working-directory: android
-        run: ./gradlew :app:assembleRelease --no-daemon
+        run: ./gradlew :app:assembleRelease --stacktrace
 
-      - name: Collect APKs
+      - name: Collect APK artifacts
         shell: bash
         run: |
           mkdir -p artifacts/apk-splits
-          find android/app/build/outputs/apk/release -name "*.apk" -print -exec cp {} artifacts/apk-splits/ \;
+          find android/app/build/outputs/apk/release -name "*.apk" \
+            -print -exec cp {} artifacts/apk-splits/ \;
+          echo "--- APKs collected ---"
+          ls -lh artifacts/apk-splits/
 
-      - name: Upload APK split artifacts
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: curium-android-apk-splits
+          name: curium-apk-splits-${{ github.ref_name }}-${{ github.run_number }}
           path: artifacts/apk-splits/*.apk
           if-no-files-found: error
+          retention-days: 14
