@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     padding: Spacing.xl,
   },
-  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: "center" },
+  overlay: { ...StyleSheet.absoluteFill, justifyContent: "center" },
 
   topBar: {
     flexDirection: "row",

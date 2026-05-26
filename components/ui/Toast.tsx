@@ -40,7 +40,7 @@ export function Toast({
   const insets = useSafeAreaInsets();
   const ty = useSharedValue(-80);
   const op = useSharedValue(0);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const dismiss = () => {
     ty.value = withTiming(-80, { duration: 250 });
