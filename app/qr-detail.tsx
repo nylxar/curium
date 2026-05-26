@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   Share,
 } from "react-native";
+import Animated, { FadeInUp, LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,6 +24,7 @@ import { QRCanvas } from "@/components/qr/QRCanvas";
 import { DEFAULT_QR_STYLE } from "@/types/qr";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { PressableScale } from "@/components/ui/PressableScale";
 
 export default function QRDetailScreen() {
   const { index: indexStr, ids } = useLocalSearchParams<{
@@ -108,7 +110,11 @@ export default function QRDetailScreen() {
       </View>
 
       {/* Meta */}
-      <View style={styles.meta}>
+      <Animated.View
+        entering={FadeInUp.delay(80).duration(220)}
+        layout={LinearTransition.springify().damping(18)}
+        style={styles.meta}
+      >
         <View
           style={[styles.badge, { backgroundColor: colors.primary + "22" }]}
         >
@@ -139,7 +145,7 @@ export default function QRDetailScreen() {
             year: "numeric",
           })}
         </Text>
-      </View>
+      </Animated.View>
 
       {/* Actions */}
       <View style={styles.actions}>
@@ -153,7 +159,7 @@ export default function QRDetailScreen() {
             danger: true,
           },
         ].map((a) => (
-          <TouchableOpacity
+          <PressableScale
             key={a.label}
             style={[
               styles.actionBtn,
@@ -165,6 +171,7 @@ export default function QRDetailScreen() {
               },
             ]}
             onPress={a.fn}
+            pressedScale={0.97}
           >
             <Ionicons
               name={a.icon}
@@ -182,7 +189,7 @@ export default function QRDetailScreen() {
             >
               {a.label}
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         ))}
       </View>
     </View>

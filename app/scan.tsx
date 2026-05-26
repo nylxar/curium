@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import Animated, {
+  FadeInUp,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -235,7 +236,8 @@ export default function ScanScreen() {
 
         {/* Result panel */}
         {scanned && result && (
-          <View
+          <Animated.View
+            entering={FadeInUp.duration(220).springify().damping(18)}
             style={[
               styles.resultPanel,
               { paddingBottom: insets.bottom + Spacing.lg },
@@ -304,7 +306,7 @@ export default function ScanScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         )}
       </View>
     </View>

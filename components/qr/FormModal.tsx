@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+import Animated, { FadeInUp, LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
@@ -417,7 +418,9 @@ export function FormModal({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={mStyles.kav}
       >
-        <View
+        <Animated.View
+          entering={FadeInUp.duration(220).springify().damping(18)}
+          layout={LinearTransition.springify().damping(18)}
           style={[
             mStyles.sheet,
             {
@@ -460,7 +463,7 @@ export function FormModal({
 
           {/* Fields — no ScrollView needed, modal expands to fit */}
           <View style={{ gap: Spacing.sm }}>{renderFields()}</View>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );

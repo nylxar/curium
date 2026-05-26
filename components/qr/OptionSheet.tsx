@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Radius, Spacing, FontSize } from "@/constants/theme";
@@ -39,7 +40,8 @@ export function OptionSheet({
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable
+        <Animated.View
+          entering={FadeInUp.duration(220).springify().damping(18)}
           style={[
             styles.sheet,
             {
@@ -48,28 +50,29 @@ export function OptionSheet({
               paddingBottom: insets.bottom + Spacing.lg,
             },
           ]}
-          onPress={(e) => e.stopPropagation()}
         >
-          {/* Handle */}
-          <View
-            style={[styles.handle, { backgroundColor: tintColor + "40" }]}
-          />
+          <Pressable style={styles.sheetContent} onPress={(e) => e.stopPropagation()}>
+            {/* Handle */}
+            <View
+              style={[styles.handle, { backgroundColor: tintColor + "40" }]}
+            />
 
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: tintColor }]}>{title}</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <Ionicons
-                name="close-circle"
-                size={24}
-                color={tintColor + "70"}
-              />
-            </TouchableOpacity>
-          </View>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: tintColor }]}>{title}</Text>
+              <TouchableOpacity onPress={onClose} hitSlop={12}>
+                <Ionicons
+                  name="close-circle"
+                  size={24}
+                  color={tintColor + "70"}
+                />
+              </TouchableOpacity>
+            </View>
 
-          {/* Content */}
-          <View style={styles.body}>{children}</View>
-        </Pressable>
+            {/* Content */}
+            <View style={styles.body}>{children}</View>
+          </Pressable>
+        </Animated.View>
       </Pressable>
     </Modal>
   );
@@ -88,6 +91,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
     paddingHorizontal: Spacing.base,
   },
+  sheetContent: { width: "100%" },
   handle: {
     width: 36,
     height: 4,

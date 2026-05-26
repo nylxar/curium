@@ -2,15 +2,16 @@ import { ReactNode, useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   Modal,
   Pressable,
   StyleSheet,
 } from "react-native";
+import Animated, { FadeInUp, LinearTransition } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { PressableScale } from "@/components/ui/PressableScale";
 
 interface OptionRowProps {
   label: string;
@@ -50,13 +51,12 @@ export function OptionRow({
 
   return (
     <>
-      <TouchableOpacity
+      <PressableScale
         style={[
           styles.row,
           { backgroundColor: colors.surface, borderColor: colors.border },
         ]}
         onPress={doOpen}
-        activeOpacity={0.7}
       >
         <View style={[styles.iconBox, { backgroundColor: tintColor + "18" }]}>
           <Ionicons name={iconName} size={18} color={tintColor} />
@@ -73,7 +73,7 @@ export function OptionRow({
           {preview && <View>{preview}</View>}
           <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
         </View>
-      </TouchableOpacity>
+      </PressableScale>
 
       <Modal
         visible={isOpen}
@@ -82,7 +82,9 @@ export function OptionRow({
         onRequestClose={doClose}
       >
         <Pressable style={styles.backdrop} onPress={doClose} />
-        <View
+        <Animated.View
+          entering={FadeInUp.duration(220).springify().damping(18)}
+          layout={LinearTransition.springify().damping(18)}
           style={[
             styles.sheet,
             {
@@ -110,18 +112,18 @@ export function OptionRow({
             >
               {label}
             </Text>
-            <TouchableOpacity onPress={doClose} hitSlop={12}>
+            <Pressable onPress={doClose} hitSlop={12}>
               <Ionicons
                 name="close-circle"
                 size={24}
                 color={colors.textFaint}
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {/* Content */}
           <View style={styles.content}>{children}</View>
-        </View>
+        </Animated.View>
       </Modal>
     </>
   );

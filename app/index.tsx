@@ -10,6 +10,11 @@ import {
   KeyboardAvoidingView,
   useWindowDimensions,
 } from "react-native";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  LinearTransition,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { saveToHistory } from "@/services/history";
 import * as Clipboard from "expo-clipboard";
@@ -36,6 +41,7 @@ import { LogoPicker } from "@/components/qr/LogoPicker";
 import { TypeSelector } from "@/components/qr/TypeSelector";
 import { ColorPicker } from "@/components/qr/ColorPicker";
 import { useToast } from "@/components/ui/Toast";
+import { PressableScale } from "@/components/ui/PressableScale";
 import { ExportSheet } from "@/components/qr/ExportSheet";
 import {
   URLFormView,
@@ -195,7 +201,7 @@ export default function CreateScreen() {
   const { width } = useWindowDimensions();
   const QR_SIZE = Math.min(Math.floor(width) - Spacing.xl * 2, 360);
   const [formModalOpen, setFormModalOpen] = useState(false);
-  const { show: showToast } = useToast();
+  const { show: showToast, node: toastNode } = useToast();
 
   // Derived — no hooks
   const qrStyleRef = useRef(qrStyle);
@@ -274,6 +280,7 @@ export default function CreateScreen() {
     if (!hasQR) return;
     await Clipboard.setStringAsync(qrValue);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    showToast("Copied to clipboard", "success");
   }, [qrValue, hasQR]);
 
   const handleShare = useCallback(() => {
@@ -374,7 +381,11 @@ export default function CreateScreen() {
     <View style={[styles.screen, { backgroundColor: qrStyle.bgColor }]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* ── STATIC TOP SECTION ── */}
-        <View style={styles.staticTop}>
+        <Animated.View
+          entering={FadeInDown.duration(260).springify().damping(18)}
+          layout={LinearTransition.springify().damping(18)}
+          style={styles.staticTop}
+        >
           {/* QR canvas — always visible */}
           <View style={styles.canvasWrap}>
             <View
@@ -400,7 +411,7 @@ export default function CreateScreen() {
             behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={styles.formWrap}
           ></KeyboardAvoidingView>
-          <TouchableOpacity
+          <PressableScale
             style={[
               styles.formTrigger,
               {
@@ -409,7 +420,7 @@ export default function CreateScreen() {
               },
             ]}
             onPress={() => setFormModalOpen(true)}
-            activeOpacity={0.7}
+            pressedScale={0.985}
           >
             <View
               style={[styles.formTriggerIcon, { backgroundColor: tint + "18" }]}
@@ -443,8 +454,8 @@ export default function CreateScreen() {
               </Text>
             </View>
             <Ionicons name="create-outline" size={16} color={tint} />
-          </TouchableOpacity>
-        </View>
+          </PressableScale>
+        </Animated.View>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={[
@@ -454,26 +465,29 @@ export default function CreateScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <TypeSelector
-            selected={activeType}
-            tintColor={tint}
-            onChange={(t) => {
-              setActiveType(t);
-              lastSaved.current = "";
-            }}
-          />
+          <Animated.View entering={FadeInUp.delay(60).duration(220)}>
+            <TypeSelector
+              selected={activeType}
+              tintColor={tint}
+              onChange={(t) => {
+                setActiveType(t);
+                lastSaved.current = "";
+              }}
+            />
+          </Animated.View>
 
           {/* Option rows */}
-          <OptionRow
-            label="Color"
-            iconName="color-palette-outline"
-            tintColor={tint}
-            bgColor={qrStyle.bgColor}
-            sheetOpen={activeSheet === "color"}
-            onOpen={() => openSheet("color")}
-            onClose={closeSheet}
-            preview={<View style={[styles.dot, { backgroundColor: tint }]} />}
-          >
+          <Animated.View entering={FadeInUp.delay(90).duration(220)}>
+            <OptionRow
+              label="Color"
+              iconName="color-palette-outline"
+              tintColor={tint}
+              bgColor={qrStyle.bgColor}
+              sheetOpen={activeSheet === "color"}
+              onOpen={() => openSheet("color")}
+              onClose={closeSheet}
+              preview={<View style={[styles.dot, { backgroundColor: tint }]} />}
+            >
             <ColorPalette
               selectedId={qrStyle.colorId}
               onSelect={(id, fg, bg) => {
@@ -548,20 +562,22 @@ export default function CreateScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </OptionRow>
+            </OptionRow>
+          </Animated.View>
 
-          <OptionRow
-            label="Eye Style"
-            iconName="eye-outline"
-            tintColor={tint}
-            bgColor={qrStyle.bgColor}
-            sheetOpen={activeSheet === "eye"}
-            onOpen={() => openSheet("eye")}
-            onClose={closeSheet}
-            preview={
-              <Ionicons name="scan-outline" size={15} color={tint + "90"} />
-            }
-          >
+          <Animated.View entering={FadeInUp.delay(120).duration(220)}>
+            <OptionRow
+              label="Eye Style"
+              iconName="eye-outline"
+              tintColor={tint}
+              bgColor={qrStyle.bgColor}
+              sheetOpen={activeSheet === "eye"}
+              onOpen={() => openSheet("eye")}
+              onClose={closeSheet}
+              preview={
+                <Ionicons name="scan-outline" size={15} color={tint + "90"} />
+              }
+            >
             <EyeShapeSelector
               selected={qrStyle.eyeShape}
               fgColor={tint}
@@ -570,20 +586,22 @@ export default function CreateScreen() {
                 closeSheet();
               }}
             />
-          </OptionRow>
+            </OptionRow>
+          </Animated.View>
 
-          <OptionRow
-            label="Pixel Style"
-            iconName="grid-outline"
-            tintColor={tint}
-            bgColor={qrStyle.bgColor}
-            sheetOpen={activeSheet === "pixel"}
-            onOpen={() => openSheet("pixel")}
-            onClose={closeSheet}
-            preview={
-              <Ionicons name="apps-outline" size={15} color={tint + "90"} />
-            }
-          >
+          <Animated.View entering={FadeInUp.delay(150).duration(220)}>
+            <OptionRow
+              label="Pixel Style"
+              iconName="grid-outline"
+              tintColor={tint}
+              bgColor={qrStyle.bgColor}
+              sheetOpen={activeSheet === "pixel"}
+              onOpen={() => openSheet("pixel")}
+              onClose={closeSheet}
+              preview={
+                <Ionicons name="apps-outline" size={15} color={tint + "90"} />
+              }
+            >
             <PixelShapeSelector
               selected={qrStyle.pixelShape}
               fgColor={tint}
@@ -592,28 +610,30 @@ export default function CreateScreen() {
                 closeSheet();
               }}
             />
-          </OptionRow>
+            </OptionRow>
+          </Animated.View>
 
-          <OptionRow
-            label="Logo"
-            iconName="image-outline"
-            tintColor={tint}
-            bgColor={qrStyle.bgColor}
-            sheetOpen={activeSheet === "logo"}
-            onOpen={() => openSheet("logo")}
-            onClose={closeSheet}
-            preview={
-              qrStyle.logoUri ? (
-                <Ionicons name="checkmark-circle" size={15} color={tint} />
-              ) : (
-                <Ionicons
-                  name="add-circle-outline"
-                  size={15}
-                  color={tint + "80"}
-                />
-              )
-            }
-          >
+          <Animated.View entering={FadeInUp.delay(180).duration(220)}>
+            <OptionRow
+              label="Logo"
+              iconName="image-outline"
+              tintColor={tint}
+              bgColor={qrStyle.bgColor}
+              sheetOpen={activeSheet === "logo"}
+              onOpen={() => openSheet("logo")}
+              onClose={closeSheet}
+              preview={
+                qrStyle.logoUri ? (
+                  <Ionicons name="checkmark-circle" size={15} color={tint} />
+                ) : (
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={15}
+                    color={tint + "80"}
+                  />
+                )
+              }
+            >
             <LogoPicker
               logoUri={qrStyle.logoUri}
               onChange={(uri) => {
@@ -621,22 +641,24 @@ export default function CreateScreen() {
                 closeSheet();
               }}
             />
-          </OptionRow>
+            </OptionRow>
+          </Animated.View>
 
-          <OptionRow
-            label="Error Correction"
-            iconName="shield-checkmark-outline"
-            tintColor={tint}
-            bgColor={qrStyle.bgColor}
-            sheetOpen={activeSheet === "ecl"}
-            onOpen={() => openSheet("ecl")}
-            onClose={closeSheet}
-            preview={
-              <Text style={[styles.eclPreview, { color: tint }]}>
-                {qrStyle.ecl}
-              </Text>
-            }
-          >
+          <Animated.View entering={FadeInUp.delay(210).duration(220)}>
+            <OptionRow
+              label="Error Correction"
+              iconName="shield-checkmark-outline"
+              tintColor={tint}
+              bgColor={qrStyle.bgColor}
+              sheetOpen={activeSheet === "ecl"}
+              onOpen={() => openSheet("ecl")}
+              onClose={closeSheet}
+              preview={
+                <Text style={[styles.eclPreview, { color: tint }]}>
+                  {qrStyle.ecl}
+                </Text>
+              }
+            >
             <View style={styles.eclRow}>
               {ECL_OPTIONS.map((e) => (
                 <TouchableOpacity
@@ -667,7 +689,8 @@ export default function CreateScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-          </OptionRow>
+            </OptionRow>
+          </Animated.View>
         </ScrollView>
         <FabBar
           tintColor={tint}
@@ -708,6 +731,7 @@ export default function CreateScreen() {
           }}
           onClose={() => setColorTarget(null)}
         />
+        {toastNode}
       </SafeAreaView>
       <ColorPicker
         visible={activeSheet === "fgColor"}

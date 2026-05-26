@@ -9,6 +9,7 @@ import {
   TextInput,
   useWindowDimensions,
 } from "react-native";
+import Animated, { FadeInUp, LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,6 +23,7 @@ import {
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { useTheme } from "@/context/ThemeContext";
 import { DEFAULT_QR_STYLE } from "@/types/qr";
+import { PressableScale } from "@/components/ui/PressableScale";
 
 const THUMB = 80;
 
@@ -102,13 +104,17 @@ export default function HistoryScreen() {
     item: HistoryItem;
     index: number;
   }) => (
-    <TouchableOpacity
+    <Animated.View
+      entering={FadeInUp.delay(Math.min(index * 25, 180)).duration(220)}
+      layout={LinearTransition.springify().damping(18)}
+    >
+    <PressableScale
       style={[
         styles.card,
         { backgroundColor: colors.surface, borderColor: colors.border },
       ]}
       onPress={() => openDetail(index)}
-      activeOpacity={0.8}
+      pressedScale={0.985}
     >
       {/* Icon instead of QR thumbnail */}
       <View style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}>
@@ -160,7 +166,8 @@ export default function HistoryScreen() {
       >
         <Ionicons name="trash-outline" size={16} color={colors.error} />
       </TouchableOpacity>
-    </TouchableOpacity>
+    </PressableScale>
+    </Animated.View>
   );
 
   return (

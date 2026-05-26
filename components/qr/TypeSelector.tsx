@@ -2,17 +2,21 @@ import { useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   Modal,
   Pressable,
 } from "react-native";
+import Animated, {
+  FadeInUp,
+  LinearTransition,
+} from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { QRType } from "@/types/qr";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { PressableScale } from "@/components/ui/PressableScale";
 
 const TYPES: {
   id: QRType;
@@ -44,7 +48,7 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
   return (
     <>
       {/* Option row — tappable */}
-      <TouchableOpacity
+      <PressableScale
         style={[
           styles.row,
           { backgroundColor: colors.surface, borderColor: colors.border },
@@ -53,7 +57,6 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
           Haptics.selectionAsync();
           setOpen(true);
         }}
-        activeOpacity={0.75}
       >
         <View style={[styles.rowIcon, { backgroundColor: tintColor + "18" }]}>
           <Ionicons name={current.icon} size={18} color={tintColor} />
@@ -77,7 +80,7 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
-      </TouchableOpacity>
+      </PressableScale>
 
       {/* Modal picker */}
       <Modal
@@ -87,7 +90,9 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
         onRequestClose={() => setOpen(false)}
       >
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
-        <View
+        <Animated.View
+          entering={FadeInUp.duration(220).springify().damping(18)}
+          layout={LinearTransition.springify().damping(18)}
           style={[
             styles.sheet,
             {
@@ -109,7 +114,7 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
             {TYPES.map((t) => {
               const active = t.id === selected;
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={t.id}
                   style={[
                     styles.cell,
@@ -125,7 +130,7 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
                     onChange(t.id);
                     setOpen(false);
                   }}
-                  activeOpacity={0.7}
+                  pressedScale={0.94}
                 >
                   <Ionicons
                     name={t.icon}
@@ -144,11 +149,11 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
                   >
                     {t.label}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>
-        </View>
+        </Animated.View>
       </Modal>
     </>
   );

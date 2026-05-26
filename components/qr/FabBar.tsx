@@ -2,16 +2,17 @@ import { useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   Modal,
   StyleSheet,
   Pressable,
 } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Radius, Spacing, FontSize } from "@/constants/theme";
+import { PressableScale } from "@/components/ui/PressableScale";
 
 const NAV_ITEMS = [
   { route: "/", label: "Create", icon: "add-circle-outline" },
@@ -40,16 +41,16 @@ function Btn({
   disabled,
 }: BtnProps) {
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={() => {
         if (!disabled) {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onPress();
         }
       }}
-      activeOpacity={0.82}
       disabled={disabled}
-      style={[styles.btnWrap, { opacity: disabled ? 0.4 : 1 }]}
+      style={styles.btnWrap}
+      pressedScale={0.92}
     >
       <View
         style={[
@@ -68,7 +69,7 @@ function Btn({
       <Text style={[styles.btnLabel, { color: tintColor + "cc" }]}>
         {label}
       </Text>
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 
@@ -156,7 +157,8 @@ export function FabBar({
         onRequestClose={() => setMenuOpen(false)}
       >
         <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
-          <Pressable
+          <Animated.View
+            entering={FadeInUp.duration(220).springify().damping(18)}
             style={[
               styles.sheet,
               {
@@ -165,45 +167,52 @@ export function FabBar({
                 paddingBottom: insets.bottom + Spacing.lg,
               },
             ]}
-            onPress={(e) => e.stopPropagation()}
           >
-            <View
-              style={[styles.handle, { backgroundColor: tintColor + "40" }]}
-            />
+            <Pressable
+              style={styles.sheetContent}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <View
+                style={[styles.handle, { backgroundColor: tintColor + "40" }]}
+              />
 
-            {NAV_ITEMS.map((item, i) => (
-              <TouchableOpacity
-                key={item.route}
-                style={[
-                  styles.navRow,
-                  i < NAV_ITEMS.length - 1 && {
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: tintColor + "20",
-                  },
-                ]}
-                onPress={() => go(item.route)}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[styles.navIcon, { backgroundColor: tintColor + "18" }]}
+              {NAV_ITEMS.map((item, i) => (
+                <PressableScale
+                  key={item.route}
+                  style={[
+                    styles.navRow,
+                    i < NAV_ITEMS.length - 1 && {
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderBottomColor: tintColor + "20",
+                    },
+                  ]}
+                  onPress={() => go(item.route)}
+                  pressedScale={0.98}
                 >
+                  <View
+                    style={[
+                      styles.navIcon,
+                      { backgroundColor: tintColor + "18" },
+                    ]}
+                  >
+                    <Ionicons
+                      name={item.icon as any}
+                      size={20}
+                      color={tintColor}
+                    />
+                  </View>
+                  <Text style={[styles.navLabel, { color: tintColor }]}>
+                    {item.label}
+                  </Text>
                   <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color={tintColor}
+                    name="chevron-forward"
+                    size={16}
+                    color={tintColor + "40"}
                   />
-                </View>
-                <Text style={[styles.navLabel, { color: tintColor }]}>
-                  {item.label}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={tintColor + "40"}
-                />
-              </TouchableOpacity>
-            ))}
-          </Pressable>
+                </PressableScale>
+              ))}
+            </Pressable>
+          </Animated.View>
         </Pressable>
       </Modal>
     </>
@@ -243,6 +252,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingHorizontal: Spacing.base,
   },
+  sheetContent: { width: "100%" },
   handle: {
     width: 36,
     height: 4,

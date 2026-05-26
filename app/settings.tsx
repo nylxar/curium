@@ -9,6 +9,7 @@ import {
   Switch,
   Alert,
 } from "react-native";
+import Animated, { FadeInUp, LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +17,7 @@ import * as Haptics from "expo-haptics";
 import { clearHistory } from "@/services/history";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts, AppTheme } from "@/constants/theme";
+import { PressableScale } from "@/components/ui/PressableScale";
 
 const THEME_OPTIONS: {
   id: AppTheme;
@@ -153,10 +155,10 @@ export default function SettingsScreen() {
     danger?: boolean;
     iconBg?: string;
   }) => (
-    <TouchableOpacity
-            style={S.row}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
+    <PressableScale
+      style={S.row}
+      onPress={onPress ?? (() => {})}
+      pressedScale={onPress ? 0.985 : 1}
     >
       <View
         style={[
@@ -183,7 +185,7 @@ export default function SettingsScreen() {
         (onPress && (
           <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
         ))}
-    </TouchableOpacity>
+    </PressableScale>
   );
 
   return (
@@ -204,11 +206,15 @@ export default function SettingsScreen() {
       >
         {/* Theme */}
         <Text style={S.sectionTitle}>Appearance</Text>
-        <View style={S.themeRow}>
+        <Animated.View
+          entering={FadeInUp.duration(220)}
+          layout={LinearTransition.springify().damping(18)}
+          style={S.themeRow}
+        >
           {THEME_OPTIONS.map((t) => {
             const active = theme === t.id;
             return (
-              <TouchableOpacity
+              <PressableScale
                 key={t.id}
                 style={[
                   S.themeBtn,
@@ -223,6 +229,7 @@ export default function SettingsScreen() {
                   Haptics.selectionAsync();
                   setTheme(t.id);
                 }}
+                pressedScale={0.96}
               >
                 <Ionicons
                   name={t.icon}
@@ -237,10 +244,10 @@ export default function SettingsScreen() {
                 >
                   {t.label}
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             );
           })}
-        </View>
+        </Animated.View>
         {theme === "dynamic" && (
           <View
             style={[
