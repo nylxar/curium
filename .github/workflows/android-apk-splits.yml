@@ -1,0 +1,77 @@
+name: Android APK Splits
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-apk-splits:
+    name: Build density and ABI APKs
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --clean --non-interactive
+
+      - name: Enable APK density and ABI splits
+        shell: pwsh
+        run: |
+          $path = "android/app/build.gradle"
+          $gradle = Get-Content $path -Raw
+          $splits = @'
+
+              splits {
+                  density {
+                      enable true
+                      reset()
+                      include "ldpi", "mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"
+                      compatibleScreens "small", "normal", "large", "xlarge"
+                  }
+                  abi {
+                      enable true
+                      reset()
+                      include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                      universalApk false
+                  }
+              }
+'@
+          $gradle = $gradle -replace '(?s)(android\s*\{)', "`$1$splits"
+          Set-Content $path $gradle
+
+      - name: Build release APKs
+        working-directory: android
+        run: ./gradlew :app:assembleRelease --no-daemon
+
+      - name: Collect APKs
+        shell: bash
+        run: |
+          mkdir -p artifacts/apk-splits
+          find android/app/build/outputs/apk/release -name "*.apk" -print -exec cp {} artifacts/apk-splits/ \;
+
+      - name: Upload APK split artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: curium-android-apk-splits
+          path: artifacts/apk-splits/*.apk
+          if-no-files-found: error
