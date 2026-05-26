@@ -88,7 +88,7 @@ export function ExpandableField({
       <Modal
         visible={open}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setOpen(false)}
       >
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   rowContent: { flex: 1, gap: 2 },
   fieldLabel: { fontSize: FontSize.xs, fontWeight: "600" },
   preview: { fontSize: FontSize.base },
-  backdrop: { flex: 1, backgroundColor: "#00000073" },
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.18)" },
   sheet: {
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,

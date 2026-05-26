@@ -410,7 +410,7 @@ export function FormModal({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
     >
       <Pressable style={mStyles.backdrop} onPress={onClose} />
@@ -419,8 +419,8 @@ export function FormModal({
         style={mStyles.kav}
       >
         <Animated.View
-          entering={FadeInUp.duration(220).springify().damping(18)}
-          layout={LinearTransition.springify().damping(18)}
+          entering={FadeInUp.duration(180)}
+          layout={LinearTransition.duration(140)}
           style={[
             mStyles.sheet,
             {
@@ -470,7 +470,7 @@ export function FormModal({
 }
 
 const mStyles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "#00000073" },
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.18)" },
   kav: { justifyContent: "flex-end" },
   sheet: {
     borderTopLeftRadius: Radius.xl,

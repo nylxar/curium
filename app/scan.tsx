@@ -237,7 +237,7 @@ export default function ScanScreen() {
         {/* Result panel */}
         {scanned && result && (
           <Animated.View
-            entering={FadeInUp.duration(220).springify().damping(18)}
+            entering={FadeInUp.duration(180)}
             style={[
               styles.resultPanel,
               { paddingBottom: insets.bottom + Spacing.lg },

@@ -41,7 +41,7 @@ export function OptionSheet({
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Animated.View
-          entering={FadeInUp.duration(220).springify().damping(18)}
+          entering={FadeInUp.duration(180)}
           style={[
             styles.sheet,
             {
@@ -51,7 +51,10 @@ export function OptionSheet({
             },
           ]}
         >
-          <Pressable style={styles.sheetContent} onPress={(e) => e.stopPropagation()}>
+          <Pressable
+            style={styles.sheetContent}
+            onPress={(e) => e.stopPropagation()}
+          >
             {/* Handle */}
             <View
               style={[styles.handle, { backgroundColor: tintColor + "40" }]}
@@ -81,7 +84,7 @@ export function OptionSheet({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.48)",
+    backgroundColor: "rgba(0,0,0,0.18)",
     justifyContent: "flex-end",
   },
   sheet: {

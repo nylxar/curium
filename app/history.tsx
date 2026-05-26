@@ -106,7 +106,7 @@ export default function HistoryScreen() {
   }) => (
     <Animated.View
       entering={FadeInUp.delay(Math.min(index * 25, 180)).duration(220)}
-      layout={LinearTransition.springify().damping(18)}
+      layout={LinearTransition.duration(140)}
     >
     <PressableScale
       style={[

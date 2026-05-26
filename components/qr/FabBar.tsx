@@ -158,7 +158,7 @@ export function FabBar({
       >
         <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
           <Animated.View
-            entering={FadeInUp.duration(220).springify().damping(18)}
+            entering={FadeInUp.duration(180)}
             style={[
               styles.sheet,
               {
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
 
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.48)",
+    backgroundColor: "rgba(0,0,0,0.18)",
     justifyContent: "flex-end",
   },
   sheet: {

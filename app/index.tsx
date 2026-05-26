@@ -382,8 +382,8 @@ export default function CreateScreen() {
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* ── STATIC TOP SECTION ── */}
         <Animated.View
-          entering={FadeInDown.duration(260).springify().damping(18)}
-          layout={LinearTransition.springify().damping(18)}
+          entering={FadeInDown.duration(180)}
+          layout={LinearTransition.duration(140)}
           style={styles.staticTop}
         >
           {/* QR canvas — always visible */}

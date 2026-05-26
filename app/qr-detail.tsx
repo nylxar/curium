@@ -112,7 +112,7 @@ export default function QRDetailScreen() {
       {/* Meta */}
       <Animated.View
         entering={FadeInUp.delay(80).duration(220)}
-        layout={LinearTransition.springify().damping(18)}
+        layout={LinearTransition.duration(140)}
         style={styles.meta}
       >
         <View

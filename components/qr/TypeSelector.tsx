@@ -86,13 +86,13 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
       <Modal
         visible={open}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setOpen(false)}
       >
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
         <Animated.View
-          entering={FadeInUp.duration(220).springify().damping(18)}
-          layout={LinearTransition.springify().damping(18)}
+          entering={FadeInUp.duration(180)}
+          layout={LinearTransition.duration(140)}
           style={[
             styles.sheet,
             {
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: FontSize.base, fontWeight: "600" },
   rowSub: { fontSize: FontSize.sm, marginTop: 2 },
 
-  backdrop: { flex: 1, backgroundColor: "#00000073" },
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.18)" },
   sheet: {
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,

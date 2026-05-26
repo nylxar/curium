@@ -78,13 +78,13 @@ export function OptionRow({
       <Modal
         visible={isOpen}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={doClose}
       >
         <Pressable style={styles.backdrop} onPress={doClose} />
         <Animated.View
-          entering={FadeInUp.duration(220).springify().damping(18)}
-          layout={LinearTransition.springify().damping(18)}
+          entering={FadeInUp.duration(180)}
+          layout={LinearTransition.duration(140)}
           style={[
             styles.sheet,
             {
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   },
   label: { flex: 1, fontSize: FontSize.base, fontWeight: "600" },
   right: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  backdrop: { flex: 1, backgroundColor: "#00000073" },
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.18)" },
   sheet: {
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,

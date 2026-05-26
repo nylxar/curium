@@ -208,7 +208,7 @@ export default function SettingsScreen() {
         <Text style={S.sectionTitle}>Appearance</Text>
         <Animated.View
           entering={FadeInUp.duration(220)}
-          layout={LinearTransition.springify().damping(18)}
+          layout={LinearTransition.duration(140)}
           style={S.themeRow}
         >
           {THEME_OPTIONS.map((t) => {

@@ -1,6 +1,7 @@
 {
   "name": "curium",
   "version": "1.0.0",
+  "license": "GPL-3.0-only",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
