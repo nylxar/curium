@@ -1,0 +1,134 @@
+# Created: May 27, 2026
+
+name: Android APK Splits
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk-splits:
+    name: Build signed density + ABI split APKs
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Generate Android project via Expo prebuild
+        run: npx expo prebuild --platform android --clean --no-install --non-interactive
+
+      - name: Make Gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Decode release keystore
+        shell: bash
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+
+      - name: Inject signing + splits into build.gradle
+        shell: pwsh
+        run: |
+          $path = "android/app/build.gradle"
+
+          if (!(Test-Path $path)) {
+            throw "Expected Gradle file not found at: $path"
+          }
+
+          $gradle = Get-Content $path -Raw
+
+          if ($gradle -notmatch 'android\s*\{') {
+            throw "Could not locate android block in $path"
+          }
+
+          if ($gradle -notmatch 'signingConfigs\s*\{') {
+            $signingBlock = @"
+
+            signingConfigs {
+                release {
+                    storeFile file("release.keystore")
+                    storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                    keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                    keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                }
+            }
+
+          "@
+            $gradle = $gradle -replace '(android\s*\{)', "`$1$signingBlock"
+          }
+
+          if ($gradle -notmatch 'splits\s*\{') {
+            $splitsBlock = @"
+
+            splits {
+                density {
+                    enable true
+                    reset()
+                    include "mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"
+                    compatibleScreens "small", "normal", "large", "xlarge"
+                }
+                abi {
+                    enable true
+                    reset()
+                    include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                    universalApk true
+                }
+            }
+
+          "@
+            $gradle = $gradle -replace '(android\s*\{)', "`$1$splitsBlock"
+          }
+
+          if ($gradle -match 'buildTypes') {
+            $gradle = $gradle -replace '(?s)(buildTypes\s*\{.*?release\s*\{)', "`$1`n                signingConfig signingConfigs.release"
+          }
+
+          Set-Content $path $gradle -Encoding UTF8
+          Write-Host "build.gradle patched successfully."
+
+      - name: Build release APKs
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew :app:assembleRelease --stacktrace
+
+      - name: Collect APK artifacts
+        shell: bash
+        run: |
+          mkdir -p artifacts/apk-splits
+          find android/app/build/outputs/apk/release -name "*.apk" \
+            -print -exec cp {} artifacts/apk-splits/ \;
+          echo "--- APKs collected ---"
+          ls -lh artifacts/apk-splits/
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: curium-apk-splits-${{ github.ref_name }}-${{ github.run_number }}
+          path: artifacts/apk-splits/*.apk
+          if-no-files-found: error
+          retention-days: 14
