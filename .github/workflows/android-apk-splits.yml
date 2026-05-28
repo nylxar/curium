@@ -1,4 +1,5 @@
 # Updated: May 28, 2026
+
 name: Android APK Splits
 
 on:
@@ -7,7 +8,7 @@ on:
     tags:
       - "v*"
 
-# Force all actions to use Node 24 runtime (Node 20 deprecated Jun 2026)
+# Node 20 EOL April 2026 — force all action internals to Node 24 runtime
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -21,47 +22,42 @@ jobs:
     timeout-minutes: 45
 
     steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── Node ──────────────────────────────────────────────────────────────
+      # ── 2. Node (app runtime — your JS/TS code runs on this) ──────────────
       - name: Set up Node 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      # ── Java (NO gradle cache here — android/ doesn't exist yet) ─────────
+      # ── 3. Java — NO cache here, gradle files don't exist yet ─────────────
       - name: Set up Java 17 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # ── JS deps ───────────────────────────────────────────────────────────
+      # ── 4. JS deps ─────────────────────────────────────────────────────────
       - name: Install JS dependencies
         run: npm ci
 
-      # ── Expo prebuild — generates android/ with gradle files ──────────────
+      # ── 5. Expo prebuild — THIS generates android/ and gradle files ────────
       - name: Generate Android project via Expo prebuild
         run: npx expo prebuild --platform android --clean --no-install --non-interactive
 
-      # ── Gradle cache (AFTER prebuild so gradle-wrapper.properties exists) ─
-      - name: Cache Gradle home
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('android/gradle/wrapper/gradle-wrapper.properties', 'android/**/*.gradle*') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
+      # ── 6. Gradle setup + cache (AFTER prebuild — gradle files now exist) ──
+      #    gradle/actions/setup-gradle@v4 caches ~/.gradle automatically
+      #    and never does a pre-build file lookup like setup-java cache: gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-      # ── Speed: inject Gradle performance flags ────────────────────────────
+      # ── 7. Tune Gradle performance via gradle.properties ───────────────────
       - name: Tune Gradle performance
         shell: bash
         run: |
-          mkdir -p android
           cat >> android/gradle.properties << 'EOF'
           org.gradle.jvmargs=-Xmx4g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8
           org.gradle.parallel=true
@@ -69,17 +65,17 @@ jobs:
           org.gradle.configureondemand=true
           EOF
 
-      # ── Make gradlew executable ───────────────────────────────────────────
+      # ── 8. Make gradlew executable ─────────────────────────────────────────
       - name: Make Gradlew executable
         run: chmod +x android/gradlew
 
-      # ── Signing: decode keystore ──────────────────────────────────────────
+      # ── 9. Decode keystore ─────────────────────────────────────────────────
       - name: Decode release keystore
         shell: bash
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
 
-      # ── Inject signing + splits into build.gradle ─────────────────────────
+      # ── 10. Inject signing + splits into build.gradle ──────────────────────
       - name: Inject signing + splits into build.gradle
         shell: pwsh
         run: |
@@ -95,7 +91,6 @@ jobs:
             throw "Could not locate android block in $path"
           }
 
-          # Inject signingConfigs block
           if ($gradle -notmatch 'signingConfigs\s*\{') {
             $signingBlock = @"
 
@@ -112,7 +107,6 @@ jobs:
             $gradle = $gradle -replace '(android\s*\{)', "`$1$signingBlock"
           }
 
-          # Inject splits block
           if ($gradle -notmatch 'splits\s*\{') {
             $splitsBlock = @"
 
@@ -135,7 +129,6 @@ jobs:
             $gradle = $gradle -replace '(android\s*\{)', "`$1$splitsBlock"
           }
 
-          # Wire signingConfig into release buildType
           if ($gradle -match 'buildTypes') {
             $gradle = $gradle -replace '(?s)(buildTypes\s*\{.*?release\s*\{)', "`$1`n                signingConfig signingConfigs.release"
           }
@@ -143,7 +136,7 @@ jobs:
           Set-Content $path $gradle -Encoding UTF8
           Write-Host "build.gradle patched successfully."
 
-      # ── Build ─────────────────────────────────────────────────────────────
+      # ── 11. Build ──────────────────────────────────────────────────────────
       - name: Build release APKs
         working-directory: android
         env:
@@ -154,10 +147,9 @@ jobs:
           ./gradlew :app:assembleRelease \
             --build-cache \
             --parallel \
-            --stacktrace \
-            --no-daemon
+            --stacktrace
 
-      # ── Collect APKs ──────────────────────────────────────────────────────
+      # ── 12. Collect APKs ───────────────────────────────────────────────────
       - name: Collect APK artifacts
         shell: bash
         run: |
@@ -167,7 +159,7 @@ jobs:
           echo "--- APKs collected ---"
           ls -lh artifacts/apk-splits/
 
-      # ── Upload ────────────────────────────────────────────────────────────
+      # ── 13. Upload ─────────────────────────────────────────────────────────
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
