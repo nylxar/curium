@@ -19,60 +19,67 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6 # Node 24 native (v6.0.2)
 
-      # ── Node / pnpm ──────────────────────────────────────────────────────────
+      # pnpm must be set up BEFORE setup-node so the pnpm store path
+      # is available for the cache key resolution in the next step
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v4 # Node 24 native (v4.x)
         with:
-          version: 9
+          version: 10
           run_install: false
 
-      # RN 0.85 requires Node >= 20.19.4; use 20 LTS for stability
-      - name: Set up Node 20
-        uses: actions/setup-node@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v5 # Node 24 native (v5.x)
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      # ── Java ─────────────────────────────────────────────────────────────────
-      # Java 21 is what EAS uses for SDK 56 / compileSdk 36 builds
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5 # Node 24 native (v5.0.0)
         with:
           distribution: temurin
           java-version: 21
 
-      # ── JS deps ──────────────────────────────────────────────────────────────
+      # --ignore-workspace prevents "packages field missing or empty" when
+      # pnpm-workspace.yaml exists with only onlyBuiltDependencies (no packages:)
       - name: Install JS dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-workspace
 
-      # ── Expo prebuild ────────────────────────────────────────────────────────
-      # Must run BEFORE any android/ modifications; --clean regenerates android/
+      # MUST run BEFORE any android/ changes — --clean deletes & regenerates the
+      # entire android/ folder, wiping any earlier modifications
       - name: Expo prebuild
         run: pnpm exec expo prebuild --platform android --clean --non-interactive
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
-      # ── Keystore (placed AFTER prebuild so --clean doesn't delete it) ────────
+      # expo prebuild pins the wrapper to whatever Gradle version ships in the
+      # SDK template. Force-upgrade to 9.5.1 (latest stable) afterward.
+      # Must run wrapper twice — first updates properties, second replaces the JAR.
+      - name: Upgrade Gradle wrapper to 9.5.1
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew wrapper --gradle-version=9.5.1 --distribution-type=bin
+          ./gradlew wrapper --gradle-version=9.5.1 --distribution-type=bin
+
+      # Placed AFTER prebuild so --clean doesn't delete the keystore
       - name: Decode release keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode \
             > android/app/release.keystore
 
-      # ── Inject signingConfig + splits into build.gradle ──────────────────────
-      # Uses Python instead of PowerShell regex to handle the generated Groovy
-      # file safely regardless of whitespace / Expo SDK template changes.
+      # Python handles the generated Groovy file reliably across SDK template
+      # versions; PowerShell regex is fragile when indentation/structure changes
       - name: Inject signing + splits into build.gradle
         run: |
           python3 - << 'PYEOF'
-          import re, pathlib, sys
+          import re, pathlib
 
           path = pathlib.Path("android/app/build.gradle")
           text = path.read_text(encoding="utf-8")
 
-          # ── signingConfigs block ──────────────────────────────────────────────
           signing_block = """
               signingConfigs {
                   release {
@@ -84,7 +91,6 @@ jobs:
               }
           """
 
-          # ── splits block ──────────────────────────────────────────────────────
           splits_block = """
               splits {
                   density {
@@ -102,47 +108,33 @@ jobs:
               }
           """
 
-          # Insert signingConfigs after the opening `android {` brace
           if "signingConfigs" not in text:
-              text = re.sub(
-                  r'(android\s*\{)',
-                  r'\1' + signing_block,
-                  text, count=1
-              )
-              print("✅ Injected signingConfigs")
+              text = re.sub(r'(android\s*\{)', r'\1' + signing_block, text, count=1)
+              print("Injected signingConfigs")
           else:
-              print("ℹ️  signingConfigs already present, skipping")
+              print("signingConfigs already present")
 
-          # Insert splits after the opening `android {` brace
           if "splits" not in text:
-              text = re.sub(
-                  r'(android\s*\{)',
-                  r'\1' + splits_block,
-                  text, count=1
-              )
-              print("✅ Injected splits")
+              text = re.sub(r'(android\s*\{)', r'\1' + splits_block, text, count=1)
+              print("Injected splits")
           else:
-              print("ℹ️  splits already present, skipping")
+              print("splits already present")
 
-          # Wire signingConfig into the release buildType
           if "signingConfig signingConfigs.release" not in text:
-              # Find the release { block inside buildTypes and append inside it
               text = re.sub(
                   r'(buildTypes\s*\{[^}]*?release\s*\{)',
                   r'\1\n            signingConfig signingConfigs.release',
                   text, count=1, flags=re.DOTALL
               )
-              print("✅ Wired signingConfig into buildTypes.release")
+              print("Wired signingConfig into buildTypes.release")
           else:
-              print("ℹ️  signingConfig already wired, skipping")
+              print("signingConfig already wired")
 
           path.write_text(text, encoding="utf-8")
-          print("Done.")
           PYEOF
 
-      # ── Gradle ───────────────────────────────────────────────────────────────
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6 # Node 24 native (v6.x)
 
       - name: Tune Gradle performance
         run: |
@@ -153,10 +145,6 @@ jobs:
           org.gradle.configureondemand=true
           EOF
 
-      - name: Make Gradlew executable
-        run: chmod +x android/gradlew
-
-      # ── Build ─────────────────────────────────────────────────────────────────
       - name: Build release APKs
         working-directory: android
         env:
@@ -165,9 +153,8 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew :app:assembleRelease --build-cache --parallel --stacktrace
 
-      # ── Upload ────────────────────────────────────────────────────────────────
       - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6 # Node 24 native (v6.x)
         with:
           name: curium-apk-splits-${{ github.ref_name }}-${{ github.run_number }}
           path: android/app/build/outputs/apk/release/*.apk
