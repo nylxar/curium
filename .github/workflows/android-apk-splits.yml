@@ -19,25 +19,32 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
 
       - name: Set up Node 24
-        uses: actions/setup-node@v4.4.0
+        uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4.7.1
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
       - name: Install JS dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Expo prebuild
-        run: npx expo prebuild --platform android --clean --no-install --non-interactive
+        run: pnpm exec expo prebuild --platform android --clean --no-install --non-interactive
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -114,7 +121,7 @@ jobs:
         run: ./gradlew :app:assembleRelease --build-cache --parallel --stacktrace
 
       - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v4
         with:
           name: curium-apk-splits-${{ github.ref_name }}-${{ github.run_number }}
           path: android/app/build/outputs/apk/release/*.apk
