@@ -390,7 +390,11 @@ export function ColorPicker({
     <GestureHandlerRootView style={StyleSheet.absoluteFill}>
       {/* Backdrop — tinted dark over the app */}
       <Animated.View
-        style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }, bgStyle]}
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: "#000" },
+          bgStyle,
+        ]}
         pointerEvents="auto"
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />

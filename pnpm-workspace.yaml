@@ -1,1 +1,26 @@
+allowBuilds:
+  msgpackr-extract: false
+minimumReleaseAgeExclude:
+  - '@expo/cli@56.1.12'
+  - '@expo/fingerprint@0.19.3'
+  - '@expo/inline-modules@0.0.10'
+  - '@expo/local-build-cache-provider@56.0.8'
+  - '@expo/metro-config@56.0.13'
+  - '@expo/metro-runtime@56.0.13'
+  - '@expo/prebuild-config@56.0.13'
+  - '@expo/router-server@56.0.12'
+  - babel-preset-expo@56.0.13
+  - expo-asset@56.0.15
+  - expo-constants@56.0.16
+  - expo-dev-client@56.0.16
+  - expo-image-picker@56.0.14
+  - expo-linking@56.0.12
+  - expo-modules-autolinking@56.0.13
+  - expo-modules-core@56.0.13
+  - expo-router@56.2.7
+  - expo-sharing@56.0.14
+  - expo@56.0.5
+  - '@expo/ui@56.0.14'
+  - expo-dev-launcher@56.0.16
+  - expo-dev-menu@56.0.15
 nodeLinker: hoisted

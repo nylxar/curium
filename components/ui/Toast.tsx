@@ -38,28 +38,34 @@ const TOAST_CONFIG: Record<ToastType, { icon: string; color: string }> = {
 
 function ToastItem({ msg, onDone }: { msg: ToastMsg; onDone: () => void }) {
   const insets = useSafeAreaInsets();
-  const opacity   = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(-12)).current;
-  const scale = useRef(new Animated.Value(0.92)).current;
-  const cfg = TOAST_CONFIG[msg.type];
+  const ty = useSharedValue(-80);
+  const op = useSharedValue(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  React.useEffect(() => {
-    Animated.parallel([
-      Animated.spring(opacity,    { toValue: 1, useNativeDriver: true, speed: 20 }),
-      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, speed: 20 }),
-      Animated.spring(scale,      { toValue: 1, useNativeDriver: true, damping: 15, stiffness: 200 }),
-    ]).start();
+  const dismiss = () => {
+    ty.value = withTiming(-80, { duration: 250 });
+    op.value = withTiming(0, { duration: 250 }, () => {
+      scheduleOnRN(onHide);
+    });
+  };
 
-    const t = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(opacity,    { toValue: 0, duration: 250, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: -12, duration: 250, useNativeDriver: true }),
-        Animated.timing(scale,      { toValue: 0.92, duration: 250, useNativeDriver: true }),
-      ]).start(onDone);
-    }, 2600);
+  useEffect(() => {
+    if (visible) {
+      op.value = withTiming(1, { duration: 200 });
+      ty.value = withSpring(0, { damping: 20, stiffness: 280, mass: 0.6 });
+      clearTimeout(timer.current);
+      timer.current = setTimeout(dismiss, duration);
+    }
+    return () => clearTimeout(timer.current);
+  }, [visible, message]);
 
-    return () => clearTimeout(t);
-  }, []);
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: op.value,
+    transform: [{ translateY: ty.value }],
+  }));
+
+  if (!visible) return null;
+  const meta = META[type];
 
   return (
     <Animated.View
