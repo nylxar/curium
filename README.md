@@ -86,4 +86,4 @@ The workflow:
 
 ## License
 
-No license has been declared yet.
+Curium is licensed under the GNU General Public License v3.0. See `LICENSE` for the full text.
