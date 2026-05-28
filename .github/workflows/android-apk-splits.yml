@@ -22,22 +22,22 @@ jobs:
         uses: actions/checkout@v4
 
       # ── Node / pnpm ──────────────────────────────────────────────────────────
+      # pnpm must be set up BEFORE setup-node so the cache key is available
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10          # v10 fixes "packages field missing or empty" (pnpm/pnpm#9361)
           run_install: false
 
-      # RN 0.85 requires Node >= 20.19.4; use 20 LTS for stability
-      - name: Set up Node 20
+      - name: Set up Node 24
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
       # ── Java ─────────────────────────────────────────────────────────────────
-      # Java 21 is what EAS uses for SDK 56 / compileSdk 36 builds
+      # Java 21 matches what EAS uses for SDK 56 / compileSdk 36
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
@@ -45,11 +45,16 @@ jobs:
           java-version: 21
 
       # ── JS deps ──────────────────────────────────────────────────────────────
+      # --ignore-workspace prevents the "packages field missing or empty" error
+      # that occurs when pnpm-workspace.yaml exists without a packages: field
+      # (created by `pnpm approve-builds` for onlyBuiltDependencies only).
       - name: Install JS dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-workspace
 
       # ── Expo prebuild ────────────────────────────────────────────────────────
-      # Must run BEFORE any android/ modifications; --clean regenerates android/
+      # MUST run BEFORE keystore decode + build.gradle injection.
+      # --clean deletes and regenerates the entire android/ folder,
+      # which would wipe any changes made before this step.
       - name: Expo prebuild
         run: pnpm exec expo prebuild --platform android --clean --non-interactive
         env:
@@ -62,17 +67,16 @@ jobs:
             > android/app/release.keystore
 
       # ── Inject signingConfig + splits into build.gradle ──────────────────────
-      # Uses Python instead of PowerShell regex to handle the generated Groovy
-      # file safely regardless of whitespace / Expo SDK template changes.
+      # Python is used instead of PowerShell regex: the generated Groovy file
+      # structure can vary across SDK/template versions and regex is fragile.
       - name: Inject signing + splits into build.gradle
         run: |
           python3 - << 'PYEOF'
-          import re, pathlib, sys
+          import re, pathlib
 
           path = pathlib.Path("android/app/build.gradle")
           text = path.read_text(encoding="utf-8")
 
-          # ── signingConfigs block ──────────────────────────────────────────────
           signing_block = """
               signingConfigs {
                   release {
@@ -84,7 +88,6 @@ jobs:
               }
           """
 
-          # ── splits block ──────────────────────────────────────────────────────
           splits_block = """
               splits {
                   density {
@@ -102,31 +105,19 @@ jobs:
               }
           """
 
-          # Insert signingConfigs after the opening `android {` brace
           if "signingConfigs" not in text:
-              text = re.sub(
-                  r'(android\s*\{)',
-                  r'\1' + signing_block,
-                  text, count=1
-              )
+              text = re.sub(r'(android\s*\{)', r'\1' + signing_block, text, count=1)
               print("✅ Injected signingConfigs")
           else:
-              print("ℹ️  signingConfigs already present, skipping")
+              print("ℹ️  signingConfigs already present")
 
-          # Insert splits after the opening `android {` brace
           if "splits" not in text:
-              text = re.sub(
-                  r'(android\s*\{)',
-                  r'\1' + splits_block,
-                  text, count=1
-              )
+              text = re.sub(r'(android\s*\{)', r'\1' + splits_block, text, count=1)
               print("✅ Injected splits")
           else:
-              print("ℹ️  splits already present, skipping")
+              print("ℹ️  splits already present")
 
-          # Wire signingConfig into the release buildType
           if "signingConfig signingConfigs.release" not in text:
-              # Find the release { block inside buildTypes and append inside it
               text = re.sub(
                   r'(buildTypes\s*\{[^}]*?release\s*\{)',
                   r'\1\n            signingConfig signingConfigs.release',
@@ -134,10 +125,9 @@ jobs:
               )
               print("✅ Wired signingConfig into buildTypes.release")
           else:
-              print("ℹ️  signingConfig already wired, skipping")
+              print("ℹ️  signingConfig already wired")
 
           path.write_text(text, encoding="utf-8")
-          print("Done.")
           PYEOF
 
       # ── Gradle ───────────────────────────────────────────────────────────────
