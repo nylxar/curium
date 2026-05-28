@@ -1,55 +1,84 @@
 import React from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
 import { QR_COLORS } from "@/constants/theme";
-import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { Spacing, Radius } from "@/constants/theme";
 
 interface ColorPaletteProps {
   selectedId: string;
   onSelect: (id: string, fg: string, bg: string) => void;
 }
 
-export function ColorPalette({ selectedId, onSelect }: ColorPaletteProps) {
-  const { colors } = useTheme();
+function ColorSwatch({
+  color,
+  isSelected,
+  onSelect,
+}: {
+  color: typeof QR_COLORS[number];
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const scale = useSharedValue(1);
 
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: withSpring(scale.value, { damping: 12, stiffness: 250 }) }],
+  }));
+
+  return (
+    <TouchableOpacity
+      onPressIn={() => { scale.value = 1.15; }}
+      onPressOut={() => { scale.value = 1; }}
+      onPress={onSelect}
+      activeOpacity={0.75}
+    >
+      <Animated.View
+        style={[
+          styles.swatch,
+          { backgroundColor: color.bg },
+          isSelected && { borderColor: "#fff", borderWidth: 2.5 },
+          !isSelected && { borderColor: "transparent", borderWidth: 2.5 },
+          animStyle,
+        ]}
+      >
+        {/* Foreground preview dot */}
+        <View style={[styles.fgDot, { backgroundColor: color.fg }]} />
+        {/* Selected checkmark */}
+        {isSelected && (
+          <View style={[styles.checkWrap, { backgroundColor: color.fg + "cc" }]}>
+            <Ionicons name="checkmark" size={10} color={color.bg} />
+          </View>
+        )}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+export function ColorPalette({ selectedId, onSelect }: ColorPaletteProps) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.row}
     >
-      {QR_COLORS.map((c) => {
-        const isSelected = selectedId === c.id;
-        return (
-          <TouchableOpacity
-            key={c.id}
-            onPress={() => onSelect(c.id, c.fg, c.bg)}
-            activeOpacity={0.75}
-            style={[
-              styles.swatch,
-              { backgroundColor: c.bg },
-              isSelected && { borderColor: colors.text, borderWidth: 2.5 },
-              !isSelected && { borderColor: "transparent", borderWidth: 2.5 },
-            ]}
-          >
-            {/* Foreground preview dot */}
-            <View style={[styles.fgDot, { backgroundColor: c.fg }]} />
-            {/* Selected checkmark */}
-            {isSelected && (
-              <View style={styles.checkWrap}>
-                <Ionicons name="checkmark" size={10} color={c.bg} />
-              </View>
-            )}
-          </TouchableOpacity>
-        );
-      })}
+      {QR_COLORS.map((c) => (
+        <ColorSwatch
+          key={c.id}
+          color={c}
+          isSelected={selectedId === c.id}
+          onSelect={() => onSelect(c.id, c.fg, c.bg)}
+        />
+      ))}
     </ScrollView>
   );
 }
@@ -81,7 +110,6 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "rgba(0,0,0,0.55)",
     alignItems: "center",
     justifyContent: "center",
   },

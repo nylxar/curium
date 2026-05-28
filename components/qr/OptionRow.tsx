@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,11 @@ import {
   Platform,
   UIManager,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
@@ -37,16 +42,22 @@ export function OptionRow({
 }: OptionRowProps) {
   const [open, setOpen] = useState(false);
   const { colors } = useTheme();
+  const rotation = useSharedValue(0);
+
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
 
   const toggle = useCallback(() => {
     LayoutAnimation.configureNext(
-      LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity),
+      LayoutAnimation.create(280, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity),
     );
     const next = !open;
     setOpen(next);
+    rotation.value = withSpring(next ? 180 : 0, { damping: 15, stiffness: 200 });
     if (next) onOpen?.();
     else       onClose?.();
-  }, [open, onOpen, onClose]);
+  }, [open, onOpen, onClose, rotation]);
 
   return (
     <View
@@ -71,11 +82,13 @@ export function OptionRow({
           {preview && !open && (
             <View style={styles.previewWrap}>{preview}</View>
           )}
-          <Ionicons
-            name={open ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={colors.textFaint}
-          />
+          <Animated.View style={chevronStyle}>
+            <Ionicons
+              name="chevron-down"
+              size={16}
+              color={colors.textFaint}
+            />
+          </Animated.View>
         </View>
       </TouchableOpacity>
 

@@ -16,6 +16,16 @@ import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, {
+  FadeInDown,
+  FadeIn,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withRepeat,
+  withTiming,
+  interpolate,
+} from "react-native-reanimated";
 
 import { QRCanvas } from "@/components/qr/QRCanvas";
 import { OptionRow } from "@/components/qr/OptionRow";
@@ -43,6 +53,7 @@ import {
   ContactFormView,
   LocationFormView,
 } from "@/components/qr/InputForms";
+import { FadeInView } from "@/components/ui/FadeInView";
 
 import { Fonts, Spacing, Radius, FontSize, QR_COLORS } from "@/constants/theme";
 import {
@@ -337,13 +348,17 @@ export default function CreateScreen() {
         </View>
 
         {/* ── QR canvas ── */}
-        <View style={[styles.canvasWrap, { borderBottomColor: colors.border }]}>
-          <View
+        <Animated.View
+          entering={FadeIn.delay(150).duration(500)}
+          style={[styles.canvasWrap, { borderBottomColor: colors.border }]}
+        >
+          <Animated.View
             ref={qrRef}
             collapsable={false}
             style={[
               styles.qrCard,
               { width: QR_SIZE, height: QR_SIZE, backgroundColor: qrStyle.bgColor, borderColor: colors.border },
+              hasQR && { shadowColor: tint, shadowOpacity: 0.25, shadowRadius: 20, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
             ]}
           >
             <QRCanvas
@@ -359,8 +374,8 @@ export default function CreateScreen() {
                 onRemove={() => setQrStyle((p: QRStyle) => ({ ...p, logoUri: undefined }))}
               />
             )}
-          </View>
-          <View style={styles.canvasMeta}>
+          </Animated.View>
+          <Animated.View entering={FadeIn.delay(300).duration(400)} style={styles.canvasMeta}>
             <View style={[styles.statusPill, { backgroundColor: hasQR ? tint + "18" : colors.surface, borderColor: hasQR ? tint + "35" : colors.border }]}>
               <Ionicons
                 name={hasQR ? "checkmark-circle" : "create-outline"}
@@ -371,8 +386,8 @@ export default function CreateScreen() {
                 {hasQR ? "Ready to export" : "Add content to activate"}
               </Text>
             </View>
-          </View>
-        </View>
+          </Animated.View>
+        </Animated.View>
 
         <ScrollView
           style={styles.scroll}
@@ -381,40 +396,45 @@ export default function CreateScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* ── Type selector — uses selected/tintColor/onChange ── */}
-          <TypeSelector
-            selected={activeType}
-            tintColor={tint}
-            onChange={(t) => {
-              setActiveType(t);
-              lastSaved.current = "";
-            }}
-          />
+          <FadeInView delay={200} animation="fadeDown">
+            <TypeSelector
+              selected={activeType}
+              tintColor={tint}
+              onChange={(t) => {
+                setActiveType(t);
+                lastSaved.current = "";
+              }}
+            />
+          </FadeInView>
 
           {/* ── Form trigger card ── */}
-          <TouchableOpacity
-            onPress={() => setFormModalOpen(true)}
-            activeOpacity={0.75}
-            style={[styles.formTrigger, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          >
-            <View style={[styles.formTriggerIcon, { backgroundColor: tint + "18" }]}>
-              <Ionicons name={activeTypeMeta?.icon as any} size={18} color={tint} />
-            </View>
-            <View style={styles.formTriggerText}>
-              <Text style={[styles.formTriggerLabel, { color: colors.textMuted, fontFamily: Fonts.mono }]}>
-                {activeTypeMeta?.label}
-              </Text>
-              <Text
-                style={[styles.formTriggerValue, { color: qrValue ? colors.text : colors.textFaint, fontFamily: Fonts.mono }]}
-                numberOfLines={1}
-              >
-                {qrValue || "Tap to enter data…"}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.textFaint} />
-          </TouchableOpacity>
+          <FadeInView delay={280} animation="fadeDown">
+            <TouchableOpacity
+              onPress={() => setFormModalOpen(true)}
+              activeOpacity={0.75}
+              style={[styles.formTrigger, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            >
+              <View style={[styles.formTriggerIcon, { backgroundColor: tint + "18" }]}>
+                <Ionicons name={activeTypeMeta?.icon as any} size={18} color={tint} />
+              </View>
+              <View style={styles.formTriggerText}>
+                <Text style={[styles.formTriggerLabel, { color: colors.textMuted, fontFamily: Fonts.mono }]}>
+                  {activeTypeMeta?.label}
+                </Text>
+                <Text
+                  style={[styles.formTriggerValue, { color: qrValue ? colors.text : colors.textFaint, fontFamily: Fonts.mono }]}
+                  numberOfLines={1}
+                >
+                  {qrValue || "Tap to enter data\u2026"}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textFaint} />
+            </TouchableOpacity>
+          </FadeInView>
 
           {/* ── Style options ── */}
-          <View style={styles.options}>
+          <FadeInView delay={360} animation="fadeDown">
+            <View style={styles.options}>
 
             {/* Color preset */}
             <OptionRow
@@ -551,6 +571,7 @@ export default function CreateScreen() {
               </View>
             </OptionRow>
           </View>
+          </FadeInView>
 
           <View style={{ height: 48 }} />
         </ScrollView>
@@ -635,6 +656,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: { elevation: 3 },
+    }),
   },
   canvasMeta: { marginTop: Spacing.md, alignItems: "center" },
   statusPill: {

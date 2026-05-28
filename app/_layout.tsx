@@ -34,25 +34,38 @@ export default function RootLayout() {
             <ToastProvider>
               <StatusBar style="auto" />
               <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="index" options={{ animation: "none" }} />
+                <Stack.Screen
+                  name="index"
+                  options={{ animation: "fade", animationDuration: 280 }}
+                />
                 <Stack.Screen
                   name="scan"
                   options={{
                     animation: "slide_from_bottom",
                     presentation: "modal",
+                    animationDuration: 350,
                   }}
                 />
                 <Stack.Screen
                   name="history"
-                  options={{ animation: "slide_from_right" }}
+                  options={{
+                    animation: "slide_from_right",
+                    animationDuration: 300,
+                  }}
                 />
                 <Stack.Screen
                   name="settings"
-                  options={{ animation: "slide_from_right" }}
+                  options={{
+                    animation: "slide_from_right",
+                    animationDuration: 300,
+                  }}
                 />
                 <Stack.Screen
                   name="qr-detail"
-                  options={{ animation: "slide_from_bottom" }}
+                  options={{
+                    animation: "slide_from_bottom",
+                    animationDuration: 350,
+                  }}
                 />
               </Stack>
             </ToastProvider>

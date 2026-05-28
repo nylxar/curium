@@ -20,6 +20,10 @@ import Animated, {
   withTiming,
   useAnimatedStyle,
   Easing,
+  FadeInDown,
+  FadeIn,
+  SlideInDown,
+  withSpring,
 } from "react-native-reanimated";
 import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
 
@@ -129,21 +133,23 @@ export default function ScanScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <View style={[styles.permIconWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Animated.View entering={FadeIn.delay(100).duration(500)} style={[styles.permIconWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Ionicons name="camera" size={52} color={colors.primary} />
-        </View>
-        <Text style={[styles.permTitle, { color: colors.text, fontFamily: Fonts.monoBold }]}>Camera Access Needed</Text>
-        <Text style={[styles.permSub, { color: colors.textMuted, fontFamily: Fonts.mono }]}>
+        </Animated.View>
+        <Animated.Text entering={FadeInDown.delay(200).duration(400)} style={[styles.permTitle, { color: colors.text, fontFamily: Fonts.monoBold }]}>Camera Access Needed</Animated.Text>
+        <Animated.Text entering={FadeInDown.delay(300).duration(400)} style={[styles.permSub, { color: colors.textMuted, fontFamily: Fonts.mono }]}>
           Allow camera access to scan QR codes and barcodes.
-        </Text>
-        <TouchableOpacity
-          onPress={requestPermission}
-          style={[styles.permBtn, { backgroundColor: colors.primary }]}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="camera-outline" size={18} color="#fff" />
-          <Text style={[styles.permBtnLabel, { fontFamily: Fonts.monoBold }]}>Allow Camera</Text>
-        </TouchableOpacity>
+        </Animated.Text>
+        <Animated.View entering={FadeInDown.delay(400).duration(400)}>
+          <TouchableOpacity
+            onPress={requestPermission}
+            style={[styles.permBtn, { backgroundColor: colors.primary }]}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="camera-outline" size={18} color="#fff" />
+            <Text style={[styles.permBtnLabel, { fontFamily: Fonts.monoBold }]}>Allow Camera</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     );
   }
@@ -189,8 +195,9 @@ export default function ScanScreen() {
             { bottom: -2, left:  -2, borderBottomWidth: 3, borderLeftWidth:  3 },
             { bottom: -2, right: -2, borderBottomWidth: 3, borderRightWidth: 3 },
           ] as const).map((c, i) => (
-            <View
+            <Animated.View
               key={i}
+              entering={FadeIn.delay(200 + i * 80).duration(400)}
               style={[styles.corner, c, { borderColor: scanned ? "#4ade80" : "#fff" }]}
             />
           ))}
@@ -199,14 +206,17 @@ export default function ScanScreen() {
             <Animated.View style={[styles.laser, laserStyle]} />
           )}
         </View>
-        <Text style={styles.hint}>
+        <Animated.Text entering={FadeIn.delay(400).duration(400)} style={styles.hint}>
           {scanned ? "Scanned" : "Point at a QR code"}
-        </Text>
+        </Animated.Text>
       </View>
 
       {/* Result panel */}
       {scanned && result && (
-        <View style={[styles.resultPanel, { paddingBottom: insets.bottom + Spacing.md }]}>
+        <Animated.View
+          entering={SlideInDown.springify().damping(18).stiffness(120)}
+          style={[styles.resultPanel, { paddingBottom: insets.bottom + Spacing.md }]}
+        >
           <View style={styles.resultHandle} />
           <Text style={styles.resultLabel}>Scanned Content</Text>
           <Text style={styles.resultText} numberOfLines={4}>{result}</Text>
@@ -248,7 +258,7 @@ export default function ScanScreen() {
               <Text style={styles.resultBtnLabelDark}>Edit</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
       )}
     </View>
   );
@@ -340,12 +350,14 @@ const styles = StyleSheet.create({
     position: "relative",
     borderRadius: Radius.lg,
     backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
   corner: {
     position: "absolute",
-    width: 28,
-    height: 28,
-    borderRadius: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 6,
   },
   laser: {
     position: "absolute",
@@ -370,19 +382,19 @@ const styles = StyleSheet.create({
   resultPanel: {
     position: "absolute",
     bottom: 0, left: 0, right: 0,
-    backgroundColor: "rgba(10,10,10,0.94)",
+    backgroundColor: "rgba(10,10,10,0.96)",
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.12)",
+    borderTopColor: "rgba(255,255,255,0.15)",
     padding: Spacing.lg,
     gap: Spacing.md,
   },
   resultHandle: {
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.25)",
+    backgroundColor: "rgba(255,255,255,0.30)",
     alignSelf: "center",
     marginBottom: Spacing.xs,
   },

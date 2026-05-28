@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import {
@@ -89,12 +90,13 @@ function Field({
   autoFocus?: boolean;
 }) {
   const { colors } = useTheme();
+  const [focused, setFocused] = useState(false);
   return (
     <View style={fStyles.wrap}>
       <Text
         style={[
           fStyles.label,
-          { color: colors.textMuted, fontFamily: Fonts.mono },
+          { color: focused ? tintColor : colors.textMuted, fontFamily: Fonts.mono },
         ]}
       >
         {label}
@@ -104,7 +106,7 @@ function Field({
           fStyles.input,
           {
             backgroundColor: colors.surfaceOffset,
-            borderColor: colors.border,
+            borderColor: focused ? tintColor : colors.border,
             color: colors.text,
             fontFamily: Fonts.mono,
             height: multiline ? 88 : 48,
@@ -122,6 +124,8 @@ function Field({
         autoCorrect={false}
         textAlignVertical={multiline ? "top" : "center"}
         selectionColor={tintColor}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
       />
     </View>
   );
@@ -484,7 +488,7 @@ const mStyles = StyleSheet.create({
     padding: Spacing.lg,
     gap: Spacing.md,
   },
-  handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center" },
+  handle: { width: 40, height: 4, borderRadius: Radius.full, alignSelf: "center" },
   header: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
   fields: { gap: Spacing.sm, paddingBottom: Spacing.xs },
   iconBox: {

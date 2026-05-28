@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
@@ -52,7 +53,7 @@ export function LogoPicker({ currentUri, tintColor, onSelect }: LogoPickerProps)
 
   if (currentUri) {
     return (
-      <View style={styles.previewRow}>
+      <Animated.View entering={FadeInDown.duration(300)} style={styles.previewRow}>
         <Image
           source={{ uri: currentUri }}
           style={[styles.preview, { borderColor: colors.border }]}
@@ -80,7 +81,7 @@ export function LogoPicker({ currentUri, tintColor, onSelect }: LogoPickerProps)
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     );
   }
 

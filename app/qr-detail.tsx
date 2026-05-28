@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as MediaLibrary from "expo-media-library";
 import { captureRef } from "react-native-view-shot";
+import Animated, { FadeIn, FadeInDown, useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import {
   loadHistory,
   HistoryItem,
@@ -97,7 +98,8 @@ export default function QRDetailScreen() {
   const renderItem = ({ item }: { item: HistoryItem }) => (
     <View style={[styles.page, { width, paddingTop: insets.top + 64 }]}>
       {/* QR */}
-      <View
+      <Animated.View
+        entering={FadeIn.delay(100).duration(400)}
         ref={(r) => {
           qrRefs.current[item.id] = r;
         }}
@@ -105,10 +107,10 @@ export default function QRDetailScreen() {
         style={[styles.qrWrap, { width: QR_SIZE, height: QR_SIZE }]}
       >
         <QRCanvas value={item.value} size={QR_SIZE} qrStyle={item.qrStyle} />
-      </View>
+      </Animated.View>
 
       {/* Meta */}
-      <View style={styles.meta}>
+      <Animated.View entering={FadeInDown.delay(200).duration(400)} style={styles.meta}>
         <View
           style={[styles.badge, { backgroundColor: colors.primary + "22" }]}
         >
@@ -139,10 +141,10 @@ export default function QRDetailScreen() {
             year: "numeric",
           })}
         </Text>
-      </View>
+      </Animated.View>
 
       {/* Actions */}
-      <View style={styles.actions}>
+      <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.actions}>
         {[
           { icon: "download-outline" as const, label: "Save", fn: handleSave },
           { icon: "share-outline" as const, label: "Share", fn: handleShare },
@@ -184,7 +186,7 @@ export default function QRDetailScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </Animated.View>
     </View>
   );
 
@@ -237,19 +239,21 @@ export default function QRDetailScreen() {
         <View
           style={[styles.dots, { paddingBottom: insets.bottom + Spacing.md }]}
         >
-          {items.map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                {
-                  backgroundColor:
-                    i === activeIndex ? colors.primary : colors.border,
-                  width: i === activeIndex ? 20 : 6,
-                },
-              ]}
-            />
-          ))}
+          {items.map((_, i) => {
+            const isActive = i === activeIndex;
+            return (
+              <Animated.View
+                key={i}
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor: isActive ? colors.primary : colors.border,
+                    width: isActive ? 20 : 6,
+                  },
+                ]}
+              />
+            );
+          })}
         </View>
       )}
     </View>

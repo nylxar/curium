@@ -133,7 +133,7 @@ const HUE_STOPS = [
 function SvgSVSquare({ hue, size }: { hue: number; size: number }) {
   const pureHue = hsvToHex(hue, 1, 1);
   return (
-    <Svg width={size} height={size} style={StyleSheet.absoluteFillObject}>
+    <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
       <Defs>
         <SvgGrad id="s" x1="0" y1="0.5" x2="1" y2="0.5">
           <Stop offset="0" stopColor="#fff" stopOpacity="1" />
@@ -387,17 +387,13 @@ export function ColorPicker({
   const applyTextColor = luminance(hex) > 0.45 ? "#000" : "#fff";
 
   return (
-    <GestureHandlerRootView style={StyleSheet.absoluteFillObject}>
+    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
       {/* Backdrop — tinted dark over the app */}
       <Animated.View
-        style={[
-          StyleSheet.absoluteFillObject,
-          { backgroundColor: "#000" },
-          bgStyle,
-        ]}
+        style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }, bgStyle]}
         pointerEvents="auto"
       >
-        <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
 
       {/* Sheet — uses app surface color */}

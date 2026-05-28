@@ -2,15 +2,17 @@ import React from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   Platform,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { AnimatedScale } from "@/components/ui/FadeInView";
 
 interface FabBarProps {
   tintColor: string;
@@ -68,7 +70,8 @@ export function FabBar({
   ];
 
   return (
-    <View
+    <Animated.View
+      entering={FadeInDown.delay(400).duration(500).springify().damping(18)}
       style={[
         styles.bar,
         {
@@ -79,51 +82,57 @@ export function FabBar({
       ]}
     >
       {actions.map((action) => (
-        <TouchableOpacity
+        <AnimatedScale
           key={action.label}
           onPress={action.onPress}
           disabled={disabled}
-          activeOpacity={0.72}
-          style={[
-            styles.btn,
-            action.primary
-              ? [
-                  styles.btnPrimary,
-                  {
-                    backgroundColor: disabled
-                      ? colors.border
-                      : tintColor,
-                  },
-                ]
-              : [
-                  styles.btnSecondary,
-                  {
-                    backgroundColor: colors.bg,
-                    borderColor: colors.border,
-                    opacity: disabled ? 0.4 : 1,
-                  },
-                ],
-          ]}
+          style={{ flex: 1 }}
         >
-          <Ionicons
-            name={action.icon as any}
-            size={20}
-            color={action.primary ? "#fff" : colors.text}
-          />
-          <Text
-            style={[
-              styles.btnLabel,
-              {
-                color: action.primary ? "#fff" : colors.textMuted,
-                fontFamily: Fonts.mono,
-              },
-            ]}
-          >
-            {action.label}
-          </Text>
-        </TouchableOpacity>
+          {action.primary ? (
+            <LinearGradient
+              colors={disabled ? [colors.border, colors.border] : [tintColor, tintColor + "cc"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.btn, styles.btnPrimary]}
+            >
+              <Ionicons
+                name={action.icon as any}
+                size={20}
+                color="#fff"
+              />
+              <Text
+                style={[styles.btnLabel, { color: "#fff", fontFamily: Fonts.mono }]}
+              >
+                {action.label}
+              </Text>
+            </LinearGradient>
+          ) : (
+            <View
+              style={[
+                styles.btn,
+                styles.btnSecondary,
+                {
+                  backgroundColor: colors.bg,
+                  borderColor: colors.border,
+                  opacity: disabled ? 0.4 : 1,
+                },
+              ]}
+            >
+              <Ionicons
+                name={action.icon as any}
+                size={20}
+                color={colors.text}
+              />
+              <Text
+                style={[styles.btnLabel, { color: colors.textMuted, fontFamily: Fonts.mono }]}
+              >
+                {action.label}
+              </Text>
+            </View>
+          )}
+        </AnimatedScale>
       ))}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -137,15 +146,14 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
       },
-      android: { elevation: 4 },
+      android: { elevation: 8 },
     }),
   },
   btn: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

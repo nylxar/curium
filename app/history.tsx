@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
 import { useHistory } from "@/context/HistoryContext";
 import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
@@ -85,71 +86,75 @@ function HistoryCard({
   onPress,
   onDelete,
   colors,
+  index,
 }: {
   item: HistoryItem;
   onPress: () => void;
   onDelete: () => void;
   colors: ReturnType<typeof useTheme>["colors"];
+  index: number;
 }) {
   const tint = item.qrStyle?.fgColor ?? colors.primary;
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.72}
-      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-    >
-      {/* Icon */}
-      <View style={[styles.cardIcon, { backgroundColor: tint + "18" }]}>
-        <Ionicons
-          name={(TYPE_ICONS[item.type] ?? "qr-code-outline") as any}
-          size={20}
-          color={tint}
-        />
-      </View>
-
-      {/* Content */}
-      <View style={styles.cardBody}>
-        <Text
-          style={[styles.cardValue, { color: colors.text, fontFamily: Fonts.mono }]}
-          numberOfLines={1}
-        >
-          {item.value}
-        </Text>
-        <View style={styles.cardMeta}>
-          <Text style={[styles.cardType, { color: tint, fontFamily: Fonts.mono }]}>
-            {item.type.toUpperCase()}
-          </Text>
-          <Text style={[styles.cardDot, { color: colors.textFaint }]}>·</Text>
-          <Text style={[styles.cardTime, { color: colors.textMuted, fontFamily: Fonts.mono }]}>
-            {relativeTime(item.createdAt)}
-          </Text>
-        </View>
-      </View>
-
-      {/* Delete */}
+    <Animated.View entering={FadeInDown.delay(index * 60).duration(400)}>
       <TouchableOpacity
-        onPress={onDelete}
-        hitSlop={10}
-        style={styles.cardDelete}
+        onPress={onPress}
+        activeOpacity={0.72}
+        style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
       >
-        <Ionicons name="trash-outline" size={16} color={colors.textFaint} />
+        {/* Icon */}
+        <View style={[styles.cardIcon, { backgroundColor: tint + "18" }]}>
+          <Ionicons
+            name={(TYPE_ICONS[item.type] ?? "qr-code-outline") as any}
+            size={20}
+            color={tint}
+          />
+        </View>
+
+        {/* Content */}
+        <View style={styles.cardBody}>
+          <Text
+            style={[styles.cardValue, { color: colors.text, fontFamily: Fonts.mono }]}
+            numberOfLines={1}
+          >
+            {item.value}
+          </Text>
+          <View style={styles.cardMeta}>
+            <Text style={[styles.cardType, { color: tint, fontFamily: Fonts.mono }]}>
+              {item.type.toUpperCase()}
+            </Text>
+            <Text style={[styles.cardDot, { color: colors.textFaint }]}>·</Text>
+            <Text style={[styles.cardTime, { color: colors.textMuted, fontFamily: Fonts.mono }]}>
+              {relativeTime(item.createdAt)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Delete */}
+        <TouchableOpacity
+          onPress={onDelete}
+          hitSlop={10}
+          style={styles.cardDelete}
+        >
+          <Ionicons name="trash-outline" size={16} color={colors.textFaint} />
+        </TouchableOpacity>
       </TouchableOpacity>
-    </TouchableOpacity>
+    </Animated.View>
   );
 }
 
 function EmptyState({ colors }: { colors: ReturnType<typeof useTheme>["colors"] }) {
   return (
-    <View style={styles.empty}>
-      <View style={[styles.emptyIcon, { backgroundColor: colors.surface }]}>
+    <Animated.View entering={FadeIn.delay(200).duration(500)} style={styles.empty}>
+      <Animated.View entering={FadeInDown.delay(300).duration(400)} style={[styles.emptyIcon, { backgroundColor: colors.surface }]}>
         <Ionicons name="time-outline" size={36} color={colors.textFaint} />
-      </View>
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>No history yet</Text>
-      <Text style={[styles.emptySub, { color: colors.textMuted }]}>
+      </Animated.View>
+      <Animated.Text entering={FadeInDown.delay(400).duration(400)} style={[styles.emptyTitle, { color: colors.text }]}>No history yet</Animated.Text>
+      <Animated.Text entering={FadeInDown.delay(500).duration(400)} style={[styles.emptySub, { color: colors.textMuted }]}>
         QR codes you create will appear here.
-      </Text>
-    </View>
+      </Animated.Text>
+    </Animated.View>
   );
 }
 
@@ -218,10 +223,11 @@ export default function HistoryScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <HistoryCard
               item={item}
               colors={colors}
+              index={index}
               onPress={() => handlePress(item)}
               onDelete={() => handleDelete(item.id)}
             />
@@ -262,8 +268,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   cardIcon: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: Radius.md,
     alignItems: "center",
     justifyContent: "center",

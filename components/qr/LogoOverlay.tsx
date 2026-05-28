@@ -64,7 +64,7 @@ export function LogoOverlay({
     // Outer View: full container size, pointerEvents="box-none" so taps pass through
     <View
       style={[
-        StyleSheet.absoluteFillObject,
+        StyleSheet.absoluteFill,
         { width: containerSize, height: containerSize },
       ]}
       pointerEvents="box-none"

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
 import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
 
@@ -73,52 +74,56 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Appearance */}
-        <SectionHeader title="Appearance" colors={colors} />
-        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <SettingRow
-            icon={isDark ? "moon" : "sunny"}
-            label="Dark Mode"
-            sublabel={isDark ? "On" : "Off"}
-            colors={colors}
-            right={
-              <Switch
-                value={isDark}
-                onValueChange={(next) => setTheme(next ? "dark" : "light")}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={isDark ? "#fff" : "#fff"}
-              />
-            }
-          />
-        </View>
+        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+          <SectionHeader title="Appearance" colors={colors} />
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <SettingRow
+              icon={isDark ? "moon" : "sunny"}
+              label="Dark Mode"
+              sublabel={isDark ? "On" : "Off"}
+              colors={colors}
+              right={
+                <Switch
+                  value={isDark}
+                  onValueChange={(next) => setTheme(next ? "dark" : "light")}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={isDark ? "#fff" : "#fff"}
+                />
+              }
+            />
+          </View>
+        </Animated.View>
 
         {/* About */}
-        <SectionHeader title="About" colors={colors} />
-        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <SettingRow
-            icon="information-circle-outline"
-            label="Version"
-            sublabel="1.0.0"
-            colors={colors}
-          />
-          <SettingRow
-            icon="logo-github"
-            label="Source Code"
-            sublabel="github.com/leviathnan/curium"
-            colors={colors}
-            onPress={() => Linking.openURL("https://github.com/leviathnan/curium")}
-          />
-          <SettingRow
-            icon="shield-checkmark-outline"
-            label="Privacy Policy"
-            colors={colors}
-            onPress={() => Linking.openURL("https://curium.app/privacy")}
-          />
-        </View>
+        <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+          <SectionHeader title="About" colors={colors} />
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <SettingRow
+              icon="information-circle-outline"
+              label="Version"
+              sublabel="1.0.0"
+              colors={colors}
+            />
+            <SettingRow
+              icon="logo-github"
+              label="Source Code"
+              sublabel="github.com/leviathnan/curium"
+              colors={colors}
+              onPress={() => Linking.openURL("https://github.com/leviathnan/curium")}
+            />
+            <SettingRow
+              icon="shield-checkmark-outline"
+              label="Privacy Policy"
+              colors={colors}
+              onPress={() => Linking.openURL("https://curium.app/privacy")}
+            />
+          </View>
+        </Animated.View>
 
         {/* Footer */}
-        <Text style={[styles.footer, { color: colors.textFaint, fontFamily: Fonts.mono }]}>
+        <Animated.Text entering={FadeInDown.delay(300).duration(400)} style={[styles.footer, { color: colors.textFaint, fontFamily: Fonts.mono }]}>
           Made with ♥  · Curium v1.0.0
-        </Text>
+        </Animated.Text>
       </ScrollView>
     </SafeAreaView>
   );

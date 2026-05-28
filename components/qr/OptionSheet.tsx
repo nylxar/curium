@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { Radius, Spacing, FontSize } from "@/constants/theme";
 
 interface Props {
@@ -42,7 +43,8 @@ export function OptionSheet({
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable
+        <Animated.View
+          entering={FadeInDown.delay(80).duration(300)}
           style={[
             styles.sheet,
             {
@@ -52,7 +54,7 @@ export function OptionSheet({
               maxHeight: height * 0.78,
             },
           ]}
-          onPress={(e) => e.stopPropagation()}
+          onStartShouldSetResponder={() => true}
         >
           {/* Handle */}
           <View
@@ -78,7 +80,7 @@ export function OptionSheet({
           >
             {children}
           </ScrollView>
-        </Pressable>
+        </Animated.View>
       </Pressable>
     </Modal>
   );
@@ -87,7 +89,7 @@ export function OptionSheet({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.50)",
     justifyContent: "flex-end",
   },
   sheet: {
@@ -98,7 +100,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
   },
   handle: {
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: Radius.full,
     alignSelf: "center",
