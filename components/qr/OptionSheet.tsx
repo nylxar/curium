@@ -6,9 +6,12 @@ import {
   Pressable,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { Radius, Spacing, FontSize } from "@/constants/theme";
 
 interface Props {
@@ -29,6 +32,7 @@ export function OptionSheet({
   children,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
 
   return (
     <Modal
@@ -39,16 +43,18 @@ export function OptionSheet({
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable
+        <Animated.View
+          entering={FadeInDown.delay(80).duration(300)}
           style={[
             styles.sheet,
             {
               backgroundColor: bgColor,
               borderColor: tintColor + "25",
               paddingBottom: insets.bottom + Spacing.lg,
+              maxHeight: height * 0.78,
             },
           ]}
-          onPress={(e) => e.stopPropagation()}
+          onStartShouldSetResponder={() => true}
         >
           {/* Handle */}
           <View
@@ -68,8 +74,13 @@ export function OptionSheet({
           </View>
 
           {/* Content */}
-          <View style={styles.body}>{children}</View>
-        </Pressable>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.body}
+          >
+            {children}
+          </ScrollView>
+        </Animated.View>
       </Pressable>
     </Modal>
   );
@@ -78,7 +89,7 @@ export function OptionSheet({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.50)",
     justifyContent: "flex-end",
   },
   sheet: {
@@ -89,7 +100,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
   },
   handle: {
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: Radius.full,
     alignSelf: "center",
@@ -103,5 +114,5 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   title: { fontSize: FontSize.lg, fontWeight: "700" },
-  body: { gap: Spacing.md },
+  body: { gap: Spacing.md, paddingBottom: Spacing.xs },
 });

@@ -227,6 +227,8 @@ export function SMSFormView({ form, onChange, tintColor }: SMSFormProps) {
 }
 
 export function WiFiFormView({ form, onChange, tintColor }: WiFiFormProps) {
+  const { colors } = useTheme();
+
   return (
     <View style={{ gap: Spacing.sm }}>
       <ExpandableField
@@ -245,29 +247,29 @@ export function WiFiFormView({ form, onChange, tintColor }: WiFiFormProps) {
         secureTextEntry
       />
       {/* Encryption — segmented control, not expandable */}
-      <View style={{ flexDirection: "row", gap: Spacing.sm }}>
+      <View style={styles.segRow}>
         {(["WPA", "WEP", "nopass"] as const).map((enc) => {
           const active = form.encryption === enc;
           return (
             <TouchableOpacity
               key={enc}
               onPress={() => onChange({ ...form, encryption: enc })}
-              style={{
-                flex: 1,
-                paddingVertical: Spacing.sm,
-                alignItems: "center",
-                borderRadius: Radius.md,
-                borderWidth: 1,
-                backgroundColor: active ? tintColor + "20" : "transparent",
-                borderColor: active ? tintColor : "#ccc",
-              }}
+              style={[
+                styles.seg,
+                {
+                  backgroundColor: active ? tintColor + "20" : colors.surfaceOffset,
+                  borderColor: active ? tintColor : colors.border,
+                },
+              ]}
             >
               <Text
-                style={{
-                  fontSize: FontSize.sm,
-                  fontFamily: Fonts.mono,
-                  color: active ? tintColor : "#888",
-                }}
+                style={[
+                  styles.segLabel,
+                  {
+                    fontFamily: active ? Fonts.monoBold : Fonts.mono,
+                    color: active ? tintColor : colors.textMuted,
+                  },
+                ]}
               >
                 {enc === "nopass" ? "None" : enc}
               </Text>

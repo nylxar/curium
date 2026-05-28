@@ -1,42 +1,42 @@
-import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
+import React, {
+  createContext,
+  useContext,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Platform,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Spacing, Radius, FontSize } from "@/constants/theme";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
-export type ToastType = "success" | "error" | "info";
+type ToastType = "success" | "error" | "info";
 
-const META: Record<
-  ToastType,
-  { icon: keyof typeof Ionicons.glyphMap; color: string }
-> = {
-  success: { icon: "checkmark-circle", color: "#22c55e" },
-  error: { icon: "close-circle", color: "#ef4444" },
-  info: { icon: "information-circle", color: "#60a5fa" },
-};
-
-interface ToastProps {
-  visible: boolean;
+interface ToastMsg {
+  id: number;
   message: string;
-  type?: ToastType;
-  duration?: number;
-  onHide: () => void;
+  type: ToastType;
 }
 
-export function Toast({
-  visible,
-  message,
-  type = "info",
-  duration = 2800,
-  onHide,
-}: ToastProps) {
+interface ToastCtx {
+  show: (message: string, type?: ToastType) => void;
+}
+
+const ToastContext = createContext<ToastCtx>({ show: () => {} });
+
+const TOAST_CONFIG: Record<ToastType, { icon: string; color: string }> = {
+  success: { icon: "checkmark-circle",  color: "#4ade80" },
+  error:   { icon: "close-circle",      color: "#f87171" },
+  info:    { icon: "information-circle", color: "#60a5fa" },
+};
+
+function ToastItem({ msg, onDone }: { msg: ToastMsg; onDone: () => void }) {
   const insets = useSafeAreaInsets();
   const ty = useSharedValue(-80);
   const op = useSharedValue(0);
@@ -69,69 +69,83 @@ export function Toast({
 
   return (
     <Animated.View
-      style={[styles.wrap, { top: insets.top + Spacing.sm }, animStyle]}
+      style={[
+        styles.toast,
+        { top: insets.top + Spacing.sm },
+        { opacity, transform: [{ translateY }, { scale }] },
+      ]}
     >
-      <Ionicons name={meta.icon} size={18} color={meta.color} />
-      <Text style={styles.msg} numberOfLines={2}>
-        {message}
+      <View style={[styles.iconCircle, { backgroundColor: cfg.color + "22" }]}>
+        <Ionicons name={cfg.icon as any} size={16} color={cfg.color} />
+      </View>
+      <Text style={[styles.toastText, { fontFamily: Fonts.mono }]}>
+        {msg.message}
       </Text>
-      <Pressable onPress={dismiss} hitSlop={14}>
-        <Ionicons name="close" size={15} color="#666" />
-      </Pressable>
     </Animated.View>
   );
 }
 
-export function useToast() {
-  const [state, setState] = React.useState<{
-    visible: boolean;
-    message: string;
-    type: ToastType;
-  }>({ visible: false, message: "", type: "info" });
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const counter = useRef(0);
 
-  const show = React.useCallback(
-    (message: string, type: ToastType = "info") => {
-      setState({ visible: true, message, type });
-    },
-    [],
-  );
-
-  const hide = React.useCallback(() => {
-    setState((p) => ({ ...p, visible: false }));
+  const show = useCallback((message: string, type: ToastType = "info") => {
+    const id = ++counter.current;
+    setToasts((p) => [...p, { id, message, type }]);
   }, []);
 
-  const node = (
-    <Toast
-      visible={state.visible}
-      message={state.message}
-      type={state.type}
-      onHide={hide}
-    />
-  );
+  const remove = useCallback((id: number) => {
+    setToasts((p) => p.filter((t) => t.id !== id));
+  }, []);
 
-  return { show, node };
+  return (
+    <ToastContext.Provider value={{ show }}>
+      {children}
+      {toasts.map((msg) => (
+        <ToastItem key={msg.id} msg={msg} onDone={() => remove(msg.id)} />
+      ))}
+    </ToastContext.Provider>
+  );
+}
+
+export function useToast() {
+  return useContext(ToastContext);
 }
 
 const styles = StyleSheet.create({
-  wrap: {
+  toast: {
     position: "absolute",
-    left: 16,
-    right: 16,
+    alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: Radius.lg,
-    backgroundColor: "#1c1b19",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#333",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: Radius.full,
     zIndex: 9999,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 14,
+    backgroundColor: "rgba(24,24,27,0.92)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.12)",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 20,
+      },
+      android: { elevation: 12 },
+    }),
   },
-  msg: { flex: 1, fontSize: FontSize.sm, color: "#ddd" },
+  iconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toastText: {
+    color: "#fff",
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+  },
 });

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { QRType } from "@/types/qr";
 import { useTheme } from "@/context/ThemeContext";
@@ -106,44 +107,49 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
             Select QR Type
           </Text>
           <View style={styles.grid}>
-            {TYPES.map((t) => {
+            {TYPES.map((t, i) => {
               const active = t.id === selected;
               return (
-                <TouchableOpacity
+                <Animated.View
                   key={t.id}
-                  style={[
-                    styles.cell,
-                    {
-                      backgroundColor: active
-                        ? tintColor + "18"
-                        : colors.surfaceOffset,
-                      borderColor: active ? tintColor : colors.border,
-                    },
-                  ]}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    onChange(t.id);
-                    setOpen(false);
-                  }}
-                  activeOpacity={0.7}
+                  entering={FadeInDown.delay(i * 40 + 100).duration(300)}
+                  style={{ width: "22%", flexGrow: 1 }}
                 >
-                  <Ionicons
-                    name={t.icon}
-                    size={22}
-                    color={active ? tintColor : colors.textMuted}
-                  />
-                  <Text
+                  <TouchableOpacity
                     style={[
-                      styles.cellLabel,
+                      styles.cell,
                       {
-                        color: active ? tintColor : colors.textMuted,
-                        fontFamily: active ? Fonts.monoBold : Fonts.mono,
+                        backgroundColor: active
+                          ? tintColor + "18"
+                          : colors.surfaceOffset,
+                        borderColor: active ? tintColor : colors.border,
                       },
                     ]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      onChange(t.id);
+                      setOpen(false);
+                    }}
+                    activeOpacity={0.7}
                   >
-                    {t.label}
-                  </Text>
-                </TouchableOpacity>
+                    <Ionicons
+                      name={t.icon}
+                      size={22}
+                      color={active ? tintColor : colors.textMuted}
+                    />
+                    <Text
+                      style={[
+                        styles.cellLabel,
+                        {
+                          color: active ? tintColor : colors.textMuted,
+                          fontFamily: active ? Fonts.monoBold : Fonts.mono,
+                        },
+                      ]}
+                    >
+                      {t.label}
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
               );
             })}
           </View>
@@ -184,14 +190,12 @@ const styles = StyleSheet.create({
   sheetTitle: { fontSize: FontSize.md, textAlign: "center" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
   cell: {
-    width: "22%",
     aspectRatio: 1,
     borderRadius: Radius.md,
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.xs,
-    flexGrow: 1,
   },
   cellLabel: { fontSize: FontSize.xs },
 });

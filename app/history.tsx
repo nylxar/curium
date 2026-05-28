@@ -1,331 +1,303 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
+  StyleSheet,
   TouchableOpacity,
   Alert,
-  TextInput,
-  useWindowDimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect, useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import {
-  loadHistory,
-  deleteFromHistory,
-  clearHistory,
-  HistoryItem,
-} from "@/services/history";
-import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { useTheme } from "@/context/ThemeContext";
-import { DEFAULT_QR_STYLE } from "@/types/qr";
+import { useHistory } from "@/context/HistoryContext";
+import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
+import type { HistoryItem } from "@/services/history";
 
-const THUMB = 80;
+const TYPE_ICONS: Record<string, string> = {
+  url:      "link-outline",
+  text:     "text-outline",
+  wifi:     "wifi-outline",
+  email:    "mail-outline",
+  phone:    "call-outline",
+  sms:      "chatbubble-outline",
+  contact:  "person-outline",
+  location: "location-outline",
+};
+
+function relativeTime(createdAt: number | string): string {
+  const time = typeof createdAt === "number" ? createdAt : new Date(createdAt).getTime();
+  const diff = Date.now() - time;
+  const m = Math.floor(diff / 60_000);
+  if (m < 1)  return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+}
+
+function formPayloadFor(item: HistoryItem): Record<string, string> {
+  const value = item.value;
+
+  switch (item.type) {
+    case "url":
+      return { url: value };
+    case "email": {
+      const [to, qs] = value.replace(/^mailto:/i, "").split("?");
+      const params = Object.fromEntries(new URLSearchParams(qs ?? ""));
+      return { to, subject: params.subject ?? "", body: params.body ?? "" };
+    }
+    case "phone":
+      return { phone: value.replace(/^tel:/i, "") };
+    case "sms": {
+      const [phone, qs] = value.replace(/^sms:/i, "").split("?");
+      const params = Object.fromEntries(new URLSearchParams(qs ?? ""));
+      return { phone, message: params.body ?? "" };
+    }
+    case "wifi":
+      return {
+        ssid: value.match(/S:([^;]*)/)?.[1] ?? "",
+        password: value.match(/P:([^;]*)/)?.[1] ?? "",
+        encryption: value.match(/T:([^;]*)/)?.[1] ?? "WPA",
+      };
+    case "contact":
+      return {
+        name: value.match(/FN:([^\n]*)/)?.[1] ?? "",
+        phone: value.match(/TEL:([^\n]*)/)?.[1] ?? "",
+        email: value.match(/EMAIL:([^\n]*)/)?.[1] ?? "",
+        org: value.match(/ORG:([^\n]*)/)?.[1] ?? "",
+      };
+    case "location": {
+      const coords = value.replace(/^geo:/i, "").split(",");
+      return { lat: coords[0] ?? "", lng: coords[1]?.split("?")[0] ?? "", label: "" };
+    }
+    case "text":
+    default:
+      return { text: value };
+  }
+}
+
+function HistoryCard({
+  item,
+  onPress,
+  onDelete,
+  colors,
+  index,
+}: {
+  item: HistoryItem;
+  onPress: () => void;
+  onDelete: () => void;
+  colors: ReturnType<typeof useTheme>["colors"];
+  index: number;
+}) {
+  const tint = item.qrStyle?.fgColor ?? colors.primary;
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 60).duration(400)}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.72}
+        style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      >
+        {/* Icon */}
+        <View style={[styles.cardIcon, { backgroundColor: tint + "18" }]}>
+          <Ionicons
+            name={(TYPE_ICONS[item.type] ?? "qr-code-outline") as any}
+            size={20}
+            color={tint}
+          />
+        </View>
+
+        {/* Content */}
+        <View style={styles.cardBody}>
+          <Text
+            style={[styles.cardValue, { color: colors.text, fontFamily: Fonts.mono }]}
+            numberOfLines={1}
+          >
+            {item.value}
+          </Text>
+          <View style={styles.cardMeta}>
+            <Text style={[styles.cardType, { color: tint, fontFamily: Fonts.mono }]}>
+              {item.type.toUpperCase()}
+            </Text>
+            <Text style={[styles.cardDot, { color: colors.textFaint }]}>·</Text>
+            <Text style={[styles.cardTime, { color: colors.textMuted, fontFamily: Fonts.mono }]}>
+              {relativeTime(item.createdAt)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Delete */}
+        <TouchableOpacity
+          onPress={onDelete}
+          hitSlop={10}
+          style={styles.cardDelete}
+        >
+          <Ionicons name="trash-outline" size={16} color={colors.textFaint} />
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+function EmptyState({ colors }: { colors: ReturnType<typeof useTheme>["colors"] }) {
+  return (
+    <Animated.View entering={FadeIn.delay(200).duration(500)} style={styles.empty}>
+      <Animated.View entering={FadeInDown.delay(300).duration(400)} style={[styles.emptyIcon, { backgroundColor: colors.surface }]}>
+        <Ionicons name="time-outline" size={36} color={colors.textFaint} />
+      </Animated.View>
+      <Animated.Text entering={FadeInDown.delay(400).duration(400)} style={[styles.emptyTitle, { color: colors.text }]}>No history yet</Animated.Text>
+      <Animated.Text entering={FadeInDown.delay(500).duration(400)} style={[styles.emptySub, { color: colors.textMuted }]}>
+        QR codes you create will appear here.
+      </Animated.Text>
+    </Animated.View>
+  );
+}
 
 export default function HistoryScreen() {
   const { colors } = useTheme();
-  const [items, setItems] = useState<HistoryItem[]>([]);
-  const [query, setQuery] = useState("");
-  const insets = useSafeAreaInsets();
+  const { entries, removeEntry, clearAll } = useHistory();
   const router = useRouter();
 
-  // useFocusEffect = loads every time screen comes into focus, no delay
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      loadHistory().then((data) => {
-        if (active) setItems(data);
-      });
-      return () => {
-        active = false;
-      };
-    }, []),
+  const handleDelete = useCallback(
+    (id: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      removeEntry(id);
+    },
+    [removeEntry],
   );
 
-  const filtered = query.trim()
-    ? items.filter(
-        (i) =>
-          i.value.toLowerCase().includes(query.toLowerCase()) ||
-          i.type.toLowerCase().includes(query.toLowerCase()),
-      )
-    : items;
-
-  const handleDelete = useCallback(async (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const updated = await deleteFromHistory(id);
-    setItems(updated);
-  }, []);
-
-  const handleClear = useCallback(() => {
-    Alert.alert("Clear History", "Delete all QR codes?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Clear All",
-        style: "destructive",
-        onPress: async () => {
-          await clearHistory();
-          setItems([]);
+  const handleClearAll = useCallback(() => {
+    Alert.alert(
+      "Clear History",
+      "Delete all history entries? This can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear All",
+          style: "destructive",
+          onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            clearAll();
+          },
         },
-      },
-    ]);
-  }, []);
+      ],
+    );
+  }, [clearAll]);
 
-  const openDetail = (index: number) => {
-    // Pass index + serialized items via params
-    router.push({
-      pathname: "/qr-detail",
-      params: {
-        index: String(index),
-        ids: filtered.map((i) => i.id).join(","),
-      },
-    });
-  };
-
-  const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-    url: "link-outline",
-    text: "text-outline",
-    wifi: "wifi-outline",
-    email: "mail-outline",
-    phone: "call-outline",
-    sms: "chatbubble-outline",
-    contact: "person-outline",
-    location: "location-outline",
-  };
-
-  const renderItem = ({
-    item,
-    index,
-  }: {
-    item: HistoryItem;
-    index: number;
-  }) => (
-    <TouchableOpacity
-      style={[
-        styles.card,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-      ]}
-      onPress={() => openDetail(index)}
-      activeOpacity={0.8}
-    >
-      {/* Icon instead of QR thumbnail */}
-      <View style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}>
-        <Ionicons
-          name={TYPE_ICONS[item.type] ?? "qr-code-outline"}
-          size={22}
-          color={colors.primary}
-        />
-      </View>
-
-      <View style={styles.info}>
-        <View style={styles.row}>
-          <View
-            style={[styles.badge, { backgroundColor: colors.surfaceOffset }]}
-          >
-            <Text
-              style={[
-                styles.badgeText,
-                { color: colors.primary, fontFamily: Fonts.monoBold },
-              ]}
-            >
-              {item.type.toUpperCase()}
-            </Text>
-          </View>
-          <Text
-            style={[
-              styles.date,
-              { color: colors.textFaint, fontFamily: Fonts.mono },
-            ]}
-          >
-            {new Date(item.createdAt).toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-            })}
-          </Text>
-        </View>
-        <Text
-          style={[styles.value, { color: colors.text, fontFamily: Fonts.mono }]}
-          numberOfLines={2}
-        >
-          {item.value}
-        </Text>
-      </View>
-
-      <TouchableOpacity
-        onPress={() => handleDelete(item.id)}
-        hitSlop={12}
-        style={styles.del}
-      >
-        <Ionicons name="trash-outline" size={16} color={colors.error} />
-      </TouchableOpacity>
-    </TouchableOpacity>
+  const handlePress = useCallback(
+    (item: HistoryItem) => {
+      router.push({
+        pathname: "/",
+        params: { loadType: item.type, loadData: JSON.stringify(formPayloadFor(item)) },
+      });
+    },
+    [router],
   );
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + Spacing.sm,
-            borderBottomColor: colors.border,
-          },
-        ]}
-      >
-        <Text
-          style={[
-            styles.title,
-            { color: colors.text, fontFamily: Fonts.monoBold },
-          ]}
-        >
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
+      {/* App bar */}
+      <View style={[styles.appBar, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.appTitle, { color: colors.text, fontFamily: Fonts.monoBold }]}>
           History
         </Text>
-        {items.length > 0 && (
-          <TouchableOpacity onPress={handleClear} hitSlop={12}>
-            <Ionicons name="trash-outline" size={20} color={colors.error} />
+        {entries.length > 0 && (
+          <TouchableOpacity onPress={handleClearAll} hitSlop={10}>
+            <Text style={[styles.clearBtn, { color: colors.error ?? "#e05" }]}>
+              Clear all
+            </Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Search */}
-      {items.length > 0 && (
-        <View
-          style={[
-            styles.searchWrap,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <Ionicons name="search-outline" size={16} color={colors.textMuted} />
-          <TextInput
-            style={[
-              styles.searchInput,
-              { color: colors.text, fontFamily: Fonts.mono },
-            ]}
-            placeholder="Search..."
-            placeholderTextColor={colors.textFaint}
-            value={query}
-            onChangeText={setQuery}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery("")}>
-              <Ionicons
-                name="close-circle"
-                size={16}
-                color={colors.textMuted}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {filtered.length === 0 ? (
-        <View style={styles.empty}>
-          <Ionicons name="albums-outline" size={52} color={colors.textFaint} />
-          <Text
-            style={[
-              styles.emptyTitle,
-              { color: colors.text, fontFamily: Fonts.monoBold },
-            ]}
-          >
-            {query ? "No results" : "No history yet"}
-          </Text>
-          <Text
-            style={[
-              styles.emptySub,
-              { color: colors.textMuted, fontFamily: Fonts.mono },
-            ]}
-          >
-            {query
-              ? "Try a different search"
-              : "QR codes you create appear here"}
-          </Text>
-        </View>
+      {entries.length === 0 ? (
+        <EmptyState colors={colors} />
       ) : (
         <FlatList
-          data={filtered}
-          keyExtractor={(i) => i.id}
-          renderItem={renderItem}
-          initialNumToRender={20}
-          maxToRenderPerBatch={20}
-          windowSize={10}
-          getItemLayout={(_, i) => ({
-            length: 80 + Spacing.sm,
-            offset: (80 + Spacing.sm) * i,
-            index: i,
-          })}
-          contentContainerStyle={{
-            padding: Spacing.base,
-            gap: Spacing.sm,
-            paddingBottom: insets.bottom + Spacing.xl,
-          }}
+          data={entries}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          renderItem={({ item, index }) => (
+            <HistoryCard
+              item={item}
+              colors={colors}
+              index={index}
+              onPress={() => handlePress(item)}
+              onDelete={() => handleDelete(item.id)}
+            />
+          )}
+          ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  header: {
+  safe: { flex: 1 },
+
+  appBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingVertical: Spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  title: { fontSize: FontSize.lg },
-  searchWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: Spacing.base,
-    marginTop: Spacing.md,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.sm,
+  appTitle: { fontSize: FontSize.lg },
+  clearBtn:  { fontSize: FontSize.sm, fontWeight: "600" },
+
+  listContent: {
+    padding: Spacing.base,
+    paddingBottom: Spacing.xxl ?? 48,
   },
-  searchInput: { flex: 1, fontSize: FontSize.sm, padding: 0 },
+
+  // Card
   card: {
     flexDirection: "row",
     alignItems: "center",
+    gap: Spacing.md,
+    padding: Spacing.md,
     borderRadius: Radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.md,
-    gap: Spacing.md,
-    height: 80,
   },
-  iconBox: {
-    width: 48,
-    height: 48,
+  cardIcon: {
+    width: 42,
+    height: 42,
     borderRadius: Radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
-  thumb: { width: THUMB, height: THUMB },
-  info: { flex: 1, gap: Spacing.xs },
-  row: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
-  badge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: Radius.sm,
-  },
-  badgeText: { fontSize: FontSize.xs },
-  date: { fontSize: FontSize.xs },
-  value: { fontSize: FontSize.sm, lineHeight: 18 },
-  del: { padding: Spacing.xs },
+  cardBody: { flex: 1, gap: 3 },
+  cardValue: { fontSize: FontSize.sm },
+  cardMeta:  { flexDirection: "row", alignItems: "center", gap: Spacing.xs },
+  cardType:  { fontSize: FontSize.xs, fontWeight: "600" },
+  cardDot:   { fontSize: FontSize.xs },
+  cardTime:  { fontSize: FontSize.xs },
+  cardDelete: { padding: Spacing.xs },
+
+  // Empty
   empty: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: Spacing.sm,
-    padding: Spacing.xxl,
+    gap: Spacing.md,
+    padding: Spacing.xl,
   },
-  emptyTitle: { fontSize: FontSize.lg },
-  emptySub: { fontSize: FontSize.sm, textAlign: "center" },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.sm,
+  },
+  emptyTitle: { fontSize: FontSize.lg, fontWeight: "700", textAlign: "center" },
+  emptySub:   { fontSize: FontSize.sm, textAlign: "center", maxWidth: 260, lineHeight: 22 },
 });

@@ -1,147 +1,116 @@
-import { useEffect } from "react";
+import React from "react";
 import {
-  ScrollView,
   View,
-  Text,
-  StyleSheet,
   TouchableOpacity,
+  ScrollView,
+  StyleSheet,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
-  withSpring,
   useAnimatedStyle,
+  withSpring,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
 import { QR_COLORS } from "@/constants/theme";
-import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
-import * as Haptics from "expo-haptics";
+import { Spacing, Radius } from "@/constants/theme";
 
-interface Props {
+interface ColorPaletteProps {
   selectedId: string;
   onSelect: (id: string, fg: string, bg: string) => void;
 }
 
 function ColorSwatch({
-  item,
-  selected,
-  onPress,
+  color,
+  isSelected,
+  onSelect,
 }: {
-  item: (typeof QR_COLORS)[number];
-  selected: boolean;
-  onPress: () => void;
+  color: typeof QR_COLORS[number];
+  isSelected: boolean;
+  onSelect: () => void;
 }) {
   const scale = useSharedValue(1);
 
-  useEffect(() => {
-    scale.value = withSpring(selected ? 1.15 : 1, {
-      damping: 12,
-      stiffness: 220,
-    });
-  }, [selected]);
-
-  // Ring/check visibility via JS conditional — NOT in Reanimated worklet
   const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: withSpring(scale.value, { damping: 12, stiffness: 250 }) }],
   }));
 
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPressIn={() => { scale.value = 1.15; }}
+      onPressOut={() => { scale.value = 1; }}
+      onPress={onSelect}
       activeOpacity={0.75}
-      style={styles.swatchWrap}
     >
-      <Animated.View style={animStyle}>
-        <View
-          style={[
-            styles.swatch,
-            { backgroundColor: item.bg },
-            selected && { borderColor: item.fg, borderWidth: 2.5 },
-          ]}
-        >
-          <View style={[styles.swatchInner, { backgroundColor: item.fg }]} />
-          {selected && (
-            <View style={styles.check}>
-              <Ionicons name="checkmark" size={10} color={item.bg} />
-            </View>
-          )}
-        </View>
-      </Animated.View>
-      <Text
-        style={[styles.swatchLabel, selected && { color: item.fg }]}
-        numberOfLines={1}
+      <Animated.View
+        style={[
+          styles.swatch,
+          { backgroundColor: color.bg },
+          isSelected && { borderColor: "#fff", borderWidth: 2.5 },
+          !isSelected && { borderColor: "transparent", borderWidth: 2.5 },
+          animStyle,
+        ]}
       >
-        {item.label}
-      </Text>
+        {/* Foreground preview dot */}
+        <View style={[styles.fgDot, { backgroundColor: color.fg }]} />
+        {/* Selected checkmark */}
+        {isSelected && (
+          <View style={[styles.checkWrap, { backgroundColor: color.fg + "cc" }]}>
+            <Ionicons name="checkmark" size={10} color={color.bg} />
+          </View>
+        )}
+      </Animated.View>
     </TouchableOpacity>
   );
 }
 
-export function ColorPalette({ selectedId, onSelect }: Props) {
+export function ColorPalette({ selectedId, onSelect }: ColorPaletteProps) {
   return (
-    <View>
-      <Text style={styles.sectionTitle}>Color Presets</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {QR_COLORS.map((item) => (
-          <ColorSwatch
-            key={item.id}
-            item={item}
-            selected={selectedId === item.id}
-            onPress={() => {
-              Haptics.selectionAsync();
-              onSelect(item.id, item.fg, item.bg);
-            }}
-          />
-        ))}
-      </ScrollView>
-    </View>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.row}
+    >
+      {QR_COLORS.map((c) => (
+        <ColorSwatch
+          key={c.id}
+          color={c}
+          isSelected={selectedId === c.id}
+          onSelect={() => onSelect(c.id, c.fg, c.bg)}
+        />
+      ))}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: {
-    fontSize: FontSize.xs,
-    fontWeight: "600",
-    color: Colors.textFaint,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-    marginLeft: Spacing.base,
-    marginBottom: Spacing.sm,
-  },
   row: {
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.md,
-    paddingBottom: Spacing.sm,
+    flexDirection: "row",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: 2,
   },
-  swatchWrap: { alignItems: "center", gap: 5, width: 58 },
   swatch: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.lg,
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 0.5,
-    borderColor: Colors.border,
+    position: "relative",
   },
-  swatchInner: { width: 22, height: 22, borderRadius: 11 },
-  check: {
+  fgDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  checkWrap: {
     position: "absolute",
     bottom: 3,
     right: 3,
-    width: 17,
-    height: 17,
-    borderRadius: 9,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-  },
-  swatchLabel: {
-    fontSize: 9,
-    color: Colors.textFaint,
-    textAlign: "center",
-    width: 58,
   },
 });

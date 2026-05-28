@@ -8,8 +8,9 @@ import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { OptionSheet } from "./OptionSheet";
-import { Spacing, Radius, FontSize } from "@/constants/theme";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
 interface ExportAction {
   icon: keyof typeof Ionicons.glyphMap;
@@ -99,7 +100,7 @@ export function ExportSheet({
     {
       icon: "image-outline",
       label: "Save to Gallery",
-      sub: "PNG · High quality",
+      sub: "PNG \u00b7 High quality",
       onPress: saveToGallery,
     },
     {
@@ -131,27 +132,31 @@ export function ExportSheet({
       bgColor={bgColor}
     >
       {ACTIONS.map((action, i) => (
-        <TouchableOpacity
+        <Animated.View
           key={i}
-          style={[styles.row, { borderColor: tintColor + "20" }]}
-          onPress={action.onPress}
-          activeOpacity={0.7}
+          entering={FadeInDown.delay(i * 60 + 100).duration(300)}
         >
-          <View
-            style={[styles.iconWrap, { backgroundColor: tintColor + "18" }]}
+          <TouchableOpacity
+            style={[styles.row, { borderColor: tintColor + "20" }]}
+            onPress={action.onPress}
+            activeOpacity={0.7}
           >
-            <Ionicons name={action.icon} size={20} color={tintColor} />
-          </View>
-          <View style={styles.text}>
-            <Text style={[styles.label, { color: tintColor }]}>
-              {action.label}
-            </Text>
-            <Text style={[styles.sub, { color: tintColor + "70" }]}>
-              {action.sub}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={tintColor + "40"} />
-        </TouchableOpacity>
+            <View
+              style={[styles.iconWrap, { backgroundColor: tintColor + "18" }]}
+            >
+              <Ionicons name={action.icon} size={20} color={tintColor} />
+            </View>
+            <View style={styles.text}>
+              <Text style={[styles.label, { color: tintColor, fontFamily: Fonts.mono }]}>
+                {action.label}
+              </Text>
+              <Text style={[styles.sub, { color: tintColor + "70", fontFamily: Fonts.mono }]}>
+                {action.sub}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={tintColor + "40"} />
+          </TouchableOpacity>
+        </Animated.View>
       ))}
     </OptionSheet>
   );
