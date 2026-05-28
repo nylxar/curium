@@ -15,37 +15,132 @@ permissions:
 jobs:
   build-apk-splits:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ── Node / pnpm ──────────────────────────────────────────────────────────
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
           run_install: false
 
-      - name: Set up Node 24
+      # RN 0.85 requires Node >= 20.19.4; use 20 LTS for stability
+      - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Set up Java 17
+      # ── Java ─────────────────────────────────────────────────────────────────
+      # Java 21 is what EAS uses for SDK 56 / compileSdk 36 builds
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
+      # ── JS deps ──────────────────────────────────────────────────────────────
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
+      # ── Expo prebuild ────────────────────────────────────────────────────────
+      # Must run BEFORE any android/ modifications; --clean regenerates android/
       - name: Expo prebuild
-        run: pnpm exec expo prebuild --platform android --clean --no-install --non-interactive
+        run: pnpm exec expo prebuild --platform android --clean --non-interactive
+        env:
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
+      # ── Keystore (placed AFTER prebuild so --clean doesn't delete it) ────────
+      - name: Decode release keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode \
+            > android/app/release.keystore
+
+      # ── Inject signingConfig + splits into build.gradle ──────────────────────
+      # Uses Python instead of PowerShell regex to handle the generated Groovy
+      # file safely regardless of whitespace / Expo SDK template changes.
+      - name: Inject signing + splits into build.gradle
+        run: |
+          python3 - << 'PYEOF'
+          import re, pathlib, sys
+
+          path = pathlib.Path("android/app/build.gradle")
+          text = path.read_text(encoding="utf-8")
+
+          # ── signingConfigs block ──────────────────────────────────────────────
+          signing_block = """
+              signingConfigs {
+                  release {
+                      storeFile file("release.keystore")
+                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                  }
+              }
+          """
+
+          # ── splits block ──────────────────────────────────────────────────────
+          splits_block = """
+              splits {
+                  density {
+                      enable true
+                      reset()
+                      include "mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"
+                      compatibleScreens "small", "normal", "large", "xlarge"
+                  }
+                  abi {
+                      enable true
+                      reset()
+                      include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                      universalApk true
+                  }
+              }
+          """
+
+          # Insert signingConfigs after the opening `android {` brace
+          if "signingConfigs" not in text:
+              text = re.sub(
+                  r'(android\s*\{)',
+                  r'\1' + signing_block,
+                  text, count=1
+              )
+              print("✅ Injected signingConfigs")
+          else:
+              print("ℹ️  signingConfigs already present, skipping")
+
+          # Insert splits after the opening `android {` brace
+          if "splits" not in text:
+              text = re.sub(
+                  r'(android\s*\{)',
+                  r'\1' + splits_block,
+                  text, count=1
+              )
+              print("✅ Injected splits")
+          else:
+              print("ℹ️  splits already present, skipping")
+
+          # Wire signingConfig into the release buildType
+          if "signingConfig signingConfigs.release" not in text:
+              # Find the release { block inside buildTypes and append inside it
+              text = re.sub(
+                  r'(buildTypes\s*\{[^}]*?release\s*\{)',
+                  r'\1\n            signingConfig signingConfigs.release',
+                  text, count=1, flags=re.DOTALL
+              )
+              print("✅ Wired signingConfig into buildTypes.release")
+          else:
+              print("ℹ️  signingConfig already wired, skipping")
+
+          path.write_text(text, encoding="utf-8")
+          print("Done.")
+          PYEOF
+
+      # ── Gradle ───────────────────────────────────────────────────────────────
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
@@ -61,57 +156,7 @@ jobs:
       - name: Make Gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Decode release keystore
-        run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
-
-      - name: Inject signing + splits into build.gradle
-        shell: pwsh
-        run: |
-          $path = "android/app/build.gradle"
-          $gradle = Get-Content $path -Raw
-
-          if ($gradle -notmatch 'signingConfigs\s*\{') {
-            $block = @"
-
-            signingConfigs {
-                release {
-                    storeFile file("release.keystore")
-                    storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                    keyAlias System.getenv("ANDROID_KEY_ALIAS")
-                    keyPassword System.getenv("ANDROID_KEY_PASSWORD")
-                }
-            }
-
-          "@
-            $gradle = $gradle -replace '(android\s*\{)', "`$1$block"
-          }
-
-          if ($gradle -notmatch 'splits\s*\{') {
-            $block = @"
-
-            splits {
-                density {
-                    enable true
-                    reset()
-                    include "mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"
-                    compatibleScreens "small", "normal", "large", "xlarge"
-                }
-                abi {
-                    enable true
-                    reset()
-                    include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-                    universalApk true
-                }
-            }
-
-          "@
-            $gradle = $gradle -replace '(android\s*\{)', "`$1$block"
-          }
-
-          $gradle = $gradle -replace '(?s)(buildTypes\s*\{.*?release\s*\{)', "`$1`n                signingConfig signingConfigs.release"
-          Set-Content $path $gradle -Encoding UTF8
-
+      # ── Build ─────────────────────────────────────────────────────────────────
       - name: Build release APKs
         working-directory: android
         env:
@@ -120,6 +165,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew :app:assembleRelease --build-cache --parallel --stacktrace
 
+      # ── Upload ────────────────────────────────────────────────────────────────
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
