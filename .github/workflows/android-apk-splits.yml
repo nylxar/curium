@@ -2,113 +2,76 @@ name: Android APK Splits
 
 on:
   workflow_dispatch:
+
   push:
     tags:
       - "v*"
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 permissions:
   contents: read
 
+concurrency:
+  group: apk-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-apk-splits:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
-      # Best Practice: Use Node's built-in Corepack instead of a third-party action
-      - name: Enable Corepack (for pnpm)
-        run: corepack enable pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
 
-      # Best Practice: `setup-node` natively handles pnpm caching
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
 
-      - name: Setup Java JDK
+      - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Install JS dependencies
-        run: pnpm install --frozen-lockfile --ignore-workspace
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Expo prebuild
         run: pnpm exec expo prebuild --platform android --clean --non-interactive
-        env:
-          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
-      - name: Pin Gradle wrapper to 8.14.3
-        working-directory: android
-        run: |
-          chmod +x gradlew
-          ./gradlew wrapper --gradle-version=8.14.3 --distribution-type=bin
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Decode release keystore
+        shell: bash
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode \
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
+            | base64 --decode \
             > android/app/release.keystore
 
-      # Best Practice: Gradle merges duplicate configuration blocks. 
-      # Appending cleanly completely removes the need for Regex/Python hacks.
-      - name: Apply signing and APK splits configuration
-        working-directory: android/app
+      - name: Configure Gradle properties
         run: |
-          cat << 'EOF' >> build.gradle
-
-          android {
-              signingConfigs {
-                  release {
-                      storeFile file("release.keystore")
-                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
-                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
-                  }
-              }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.release
-                  }
-              }
-              splits {
-                  density {
-                      enable true
-                      reset()
-                      include "mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"
-                      compatibleScreens "small", "normal", "large", "xlarge"
-                  }
-                  abi {
-                      enable true
-                      reset()
-                      include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-                      universalApk true
-                  }
-              }
-          }
-          EOF
-
-      # Best Practice: `cache-provider: basic` strictly opts out of Gradle Inc.'s proprietary cache layer
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-provider: basic
-
-      - name: Tune Gradle performance
-        run: |
-          cat >> android/gradle.properties << 'EOF'
-          org.gradle.jvmargs=-Xmx4g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8
+          cat >> android/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8
           org.gradle.parallel=true
           org.gradle.caching=true
-          org.gradle.configureondemand=true
           EOF
+
+      # Only keep this step if Curium does NOT already define
+      # signingConfigs and splits in source control.
+      - name: Inject signing and APK splits
+        run: |
+          python3 .github/scripts/configure_android_build.py
 
       - name: Build release APKs
         working-directory: android
@@ -116,12 +79,15 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleRelease --build-cache --parallel --stacktrace
+        run: |
+          ./gradlew \
+            :app:assembleRelease \
+            --stacktrace
 
-      - name: Upload APK Splits
-        uses: actions/upload-artifact@v7
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: curium-apk-splits-${{ github.ref_name }}-${{ github.run_number }}
+          name: curium-apk-splits-${{ github.ref_name }}
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14
