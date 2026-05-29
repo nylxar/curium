@@ -18,67 +18,53 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10
-          run_install: false
+      # Best Practice: Use Node's built-in Corepack instead of a third-party action
+      - name: Enable Corepack (for pnpm)
+        run: corepack enable pnpm
 
-      - uses: actions/setup-node@v6
+      # Best Practice: `setup-node` natively handles pnpm caching
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
           node-version: 24
+          cache: pnpm
 
-      - uses: actions/setup-java@v5
+      - name: Setup Java JDK
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Get pnpm store path
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v5                              # v5 is Node 24 native
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: pnpm-${{ runner.os }}-
-
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile --ignore-workspace
 
-      # MUST run before any android/ changes — --clean wipes and regenerates it
       - name: Expo prebuild
         run: pnpm exec expo prebuild --platform android --clean --non-interactive
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
-      # The Expo SDK 56 / RN 0.85 Kotlin plugins are compiled against Gradle 8.x.
-      # Upgrading to Gradle 9.x causes an internal Kotlin compiler error in
-      # expo-gradle-plugin and gradle-plugin:settings-plugin.
-      # 8.14.3 is the latest Gradle 8 release and what the SDK 56 template ships.
       - name: Pin Gradle wrapper to 8.14.3
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew wrapper --gradle-version=8.14.3 --distribution-type=bin
-          ./gradlew wrapper --gradle-version=8.14.3 --distribution-type=bin
 
-      # Placed after prebuild so --clean doesn't delete it
       - name: Decode release keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode \
             > android/app/release.keystore
 
-      - name: Inject signing + splits into build.gradle
+      # Best Practice: Gradle merges duplicate configuration blocks. 
+      # Appending cleanly completely removes the need for Regex/Python hacks.
+      - name: Apply signing and APK splits configuration
+        working-directory: android/app
         run: |
-          python3 - << 'PYEOF'
-          import re, pathlib
+          cat << 'EOF' >> build.gradle
 
-          path = pathlib.Path("android/app/build.gradle")
-          text = path.read_text(encoding="utf-8")
-
-          signing_block = """
+          android {
               signingConfigs {
                   release {
                       storeFile file("release.keystore")
@@ -87,9 +73,11 @@ jobs:
                       keyPassword System.getenv("ANDROID_KEY_PASSWORD")
                   }
               }
-          """
-
-          splits_block = """
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
               splits {
                   density {
                       enable true
@@ -104,34 +92,14 @@ jobs:
                       universalApk true
                   }
               }
-          """
+          }
+          EOF
 
-          if "signingConfigs" not in text:
-              text = re.sub(r'(android\s*\{)', r'\1' + signing_block, text, count=1)
-              print("Injected signingConfigs")
-          else:
-              print("signingConfigs already present")
-
-          if "splits" not in text:
-              text = re.sub(r'(android\s*\{)', r'\1' + splits_block, text, count=1)
-              print("Injected splits")
-          else:
-              print("splits already present")
-
-          if "signingConfig signingConfigs.release" not in text:
-              text = re.sub(
-                  r'(buildTypes\s*\{[^}]*?release\s*\{)',
-                  r'\1\n            signingConfig signingConfigs.release',
-                  text, count=1, flags=re.DOTALL
-              )
-              print("Wired signingConfig into buildTypes.release")
-          else:
-              print("signingConfig already wired")
-
-          path.write_text(text, encoding="utf-8")
-          PYEOF
-
-      - uses: gradle/actions/setup-gradle@v6
+      # Best Practice: `cache-provider: basic` strictly opts out of Gradle Inc.'s proprietary cache layer
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
 
       - name: Tune Gradle performance
         run: |
@@ -150,7 +118,8 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew :app:assembleRelease --build-cache --parallel --stacktrace
 
-      - uses: actions/upload-artifact@v6
+      - name: Upload APK Splits
+        uses: actions/upload-artifact@v7
         with:
           name: curium-apk-splits-${{ github.ref_name }}-${{ github.run_number }}
           path: android/app/build/outputs/apk/release/*.apk
