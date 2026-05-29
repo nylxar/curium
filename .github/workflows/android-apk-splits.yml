@@ -20,27 +20,25 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6        # Node 24 native
+      - uses: pnpm/action-setup@v6
         with:
           version: 10
           run_install: false
 
-      - uses: actions/setup-node@v6       # Node 24 native
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
 
-      - uses: actions/setup-java@v5       # Node 24 native
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
 
-      # Manual pnpm store cache — avoids the broken store path resolution
-      # that occurs when using cache: pnpm in setup-node with action-setup@v6
       - name: Get pnpm store path
         id: pnpm-store
         run: echo "path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5                              # v5 is Node 24 native
         with:
           path: ${{ steps.pnpm-store.outputs.path }}
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
@@ -49,21 +47,24 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile --ignore-workspace
 
-      # MUST be before keystore/build.gradle changes — --clean wipes android/
+      # MUST run before any android/ changes — --clean wipes and regenerates it
       - name: Expo prebuild
         run: pnpm exec expo prebuild --platform android --clean --non-interactive
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
-      # Force wrapper to Gradle 9.5.1 (latest stable) after prebuild regenerates it.
-      # Run twice: first pass updates properties, second replaces the wrapper JAR.
-      - name: Upgrade Gradle wrapper to 9.5.1
+      # The Expo SDK 56 / RN 0.85 Kotlin plugins are compiled against Gradle 8.x.
+      # Upgrading to Gradle 9.x causes an internal Kotlin compiler error in
+      # expo-gradle-plugin and gradle-plugin:settings-plugin.
+      # 8.14.3 is the latest Gradle 8 release and what the SDK 56 template ships.
+      - name: Pin Gradle wrapper to 8.14.3
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew wrapper --gradle-version=9.5.1 --distribution-type=bin
-          ./gradlew wrapper --gradle-version=9.5.1 --distribution-type=bin
+          ./gradlew wrapper --gradle-version=8.14.3 --distribution-type=bin
+          ./gradlew wrapper --gradle-version=8.14.3 --distribution-type=bin
 
+      # Placed after prebuild so --clean doesn't delete it
       - name: Decode release keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode \
@@ -130,7 +131,7 @@ jobs:
           path.write_text(text, encoding="utf-8")
           PYEOF
 
-      - uses: gradle/actions/setup-gradle@v6   # Node 24 native
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Tune Gradle performance
         run: |
@@ -149,7 +150,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew :app:assembleRelease --build-cache --parallel --stacktrace
 
-      - uses: actions/upload-artifact@v6       # Node 24 native
+      - uses: actions/upload-artifact@v6
         with:
           name: curium-apk-splits-${{ github.ref_name }}-${{ github.run_number }}
           path: android/app/build/outputs/apk/release/*.apk
