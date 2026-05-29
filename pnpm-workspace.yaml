@@ -1,5 +1,5 @@
 allowBuilds:
-  msgpackr-extract: false
+  msgpackr-extract: true
 minimumReleaseAgeExclude:
   - '@expo/cli@56.1.12'
   - '@expo/fingerprint@0.19.3'
