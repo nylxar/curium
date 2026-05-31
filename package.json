@@ -10,6 +10,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo/log-box": "~56.0.12",
+    "@expo/metro-runtime": "~56.0.13",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@types/qrcode": "^1.5.6",

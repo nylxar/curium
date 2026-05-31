@@ -1,3 +1,6 @@
 allowBuilds:
   msgpackr-extract: true
 nodeLinker: hoisted
+overrides:
+  "@expo/metro-runtime": "~56.0.13"
+  "@expo/log-box": "~56.0.12"
