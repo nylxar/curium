@@ -184,11 +184,11 @@ jobs:
                       "preview": (255, 153, 0),
                       "nightly": (255, 0, 0),
                   }
-                  base = Image.open(icon_src).convert("RGBA")
+                  fg = Image.open(icon_src).convert("RGBA")
+
                   for name, (cr, cg, cb) in variants.items():
-                      mask = base.split()[3]
-                      tinted = Image.new("RGBA", base.size, (cr, cg, cb, 255))
-                      tinted.putalpha(mask)
+                      bg = Image.new("RGBA", fg.size, (cr, cg, cb, 255))
+                      composited = Image.alpha_composite(bg, fg)
 
                       for density, folder in [("mdpi", "mipmap-mdpi"), ("hdpi", "mipmap-hdpi"),
                                                ("xhdpi", "mipmap-xhdpi"), ("xxhdpi", "mipmap-xxhdpi"),
@@ -196,7 +196,7 @@ jobs:
                           scale = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}[density]
                           out_dir = Path(f"android/app/src/{name}/res/{folder}")
                           out_dir.mkdir(parents=True, exist_ok=True)
-                          resized = tinted.resize((scale, scale), Image.LANCZOS)
+                          resized = composited.resize((scale, scale), Image.LANCZOS)
                           resized.save(out_dir / "ic_launcher.png")
                           resized.save(out_dir / "ic_launcher_round.png")
                   print("Variant icons generated")
