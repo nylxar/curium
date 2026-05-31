@@ -31,8 +31,28 @@ jobs:
     timeout-minutes: 90
 
     steps:
+      - name: Resolve flavor and branch
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "flavor=nightly" >> "$GITHUB_OUTPUT"
+            echo "ref=nightly" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "flavor=stable" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            FLAVOR="${{ inputs.flavor || 'stable' }}"
+            echo "flavor=$FLAVOR" >> "$GITHUB_OUTPUT"
+            case "$FLAVOR" in
+              stable)  echo "ref=master" >> "$GITHUB_OUTPUT" ;;
+              preview) echo "ref=preview" >> "$GITHUB_OUTPUT" ;;
+              nightly) echo "ref=nightly" >> "$GITHUB_OUTPUT" ;;
+            esac
+          fi
+
       - uses: actions/checkout@v6
         with:
+          ref: ${{ steps.resolve.outputs.ref }}
           persist-credentials: false
 
       - uses: pnpm/action-setup@v6
@@ -206,17 +226,6 @@ jobs:
               print("WARNING: No foreground icon found, skipping icon generation")
           PY
 
-      - name: Resolve flavor
-        id: flavor
-        run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "name=nightly" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            echo "name=stable" >> "$GITHUB_OUTPUT"
-          else
-            echo "name=${{ inputs.flavor || 'stable' }}" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: gradle/actions/setup-gradle@v6
 
       - name: Build release APKs
@@ -224,15 +233,15 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          FLAVOR: ${{ steps.flavor.outputs.name }}
+          FLAVOR: ${{ steps.resolve.outputs.flavor }}
         working-directory: android
         run: ./gradlew ":app:assemble${FLAVOR^}Release" --build-cache --parallel --stacktrace
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: curium-${{ steps.flavor.outputs.name }}-${{ github.ref_name || github.run_number }}
-          path: android/app/build/outputs/apk/${{ steps.flavor.outputs.name }}/release/*.apk
+          name: curium-${{ steps.resolve.outputs.flavor }}-${{ github.ref_name || github.run_number }}
+          path: android/app/build/outputs/apk/${{ steps.resolve.outputs.flavor }}/release/*.apk
           if-no-files-found: error
           retention-days: 14
 
@@ -240,7 +249,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          FLAVOR: ${{ steps.flavor.outputs.name }}
+          FLAVOR: ${{ steps.resolve.outputs.flavor }}
         run: |
           set -euo pipefail
 
