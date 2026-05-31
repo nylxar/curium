@@ -10,6 +10,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo/dom-webview": "~56.0.5",
     "@expo/log-box": "~56.0.12",
     "@expo/metro-runtime": "~56.0.13",
     "@expo/vector-icons": "^15.1.1",
