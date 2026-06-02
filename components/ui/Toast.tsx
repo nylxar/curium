@@ -3,6 +3,7 @@ import React, {
   useContext,
   useRef,
   useState,
+  useEffect,
   useCallback,
 } from "react";
 import {
@@ -38,45 +39,38 @@ const TOAST_CONFIG: Record<ToastType, { icon: string; color: string }> = {
 
 function ToastItem({ msg, onDone }: { msg: ToastMsg; onDone: () => void }) {
   const insets = useSafeAreaInsets();
-  const ty = useSharedValue(-80);
-  const op = useSharedValue(0);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-60)).current;
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  const meta = TOAST_CONFIG[msg.type];
+
   const dismiss = () => {
-    ty.value = withTiming(-80, { duration: 250 });
-    op.value = withTiming(0, { duration: 250 }, () => {
-      scheduleOnRN(onHide);
-    });
+    Animated.parallel([
+      Animated.timing(translateY, { toValue: -60, duration: 220, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0, duration: 220, useNativeDriver: true }),
+    ]).start(() => onDone());
   };
 
   useEffect(() => {
-    if (visible) {
-      op.value = withTiming(1, { duration: 200 });
-      ty.value = withSpring(0, { damping: 20, stiffness: 280, mass: 0.6 });
-      clearTimeout(timer.current);
-      timer.current = setTimeout(dismiss, duration);
-    }
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }),
+      Animated.spring(translateY, { toValue: 0, damping: 18, stiffness: 260, mass: 0.5, useNativeDriver: true }),
+    ]).start();
+    timer.current = setTimeout(dismiss, 2800);
     return () => clearTimeout(timer.current);
-  }, [visible, message]);
-
-  const animStyle = useAnimatedStyle(() => ({
-    opacity: op.value,
-    transform: [{ translateY: ty.value }],
-  }));
-
-  if (!visible) return null;
-  const meta = META[type];
+  }, []);
 
   return (
     <Animated.View
       style={[
         styles.toast,
         { top: insets.top + Spacing.sm },
-        { opacity, transform: [{ translateY }, { scale }] },
+        { opacity, transform: [{ translateY }] },
       ]}
     >
-      <View style={[styles.iconCircle, { backgroundColor: cfg.color + "22" }]}>
-        <Ionicons name={cfg.icon as any} size={16} color={cfg.color} />
+      <View style={[styles.iconCircle, { backgroundColor: meta.color + "22" }]}>
+        <Ionicons name={meta.icon as any} size={16} color={meta.color} />
       </View>
       <Text style={[styles.toastText, { fontFamily: Fonts.mono }]}>
         {msg.message}

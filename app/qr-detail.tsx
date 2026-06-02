@@ -100,7 +100,7 @@ export default function QRDetailScreen() {
       {/* QR */}
       <Animated.View
         entering={FadeIn.delay(100).duration(400)}
-        ref={(r) => {
+        ref={(r: View | null) => {
           qrRefs.current[item.id] = r;
         }}
         collapsable={false}

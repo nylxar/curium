@@ -274,6 +274,44 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     padding: Spacing.xl,
   },
+  permBack: {
+    position: "absolute",
+    left: Spacing.lg,
+  },
+  permIconWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    marginBottom: Spacing.sm,
+  },
+  permTitle: {
+    fontSize: FontSize.xl,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  permSub: {
+    fontSize: FontSize.sm,
+    textAlign: "center",
+    maxWidth: 260,
+    lineHeight: 22,
+  },
+  permBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md + 2,
+    borderRadius: Radius.lg,
+    marginTop: Spacing.sm,
+  },
+  permBtnLabel: {
+    color: "#fff",
+    fontSize: FontSize.base,
+    fontWeight: "600",
+  },
   overlay: { ...StyleSheet.absoluteFill, justifyContent: "center" },
 
   // ── Overlays ──
