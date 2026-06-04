@@ -148,7 +148,7 @@ export default function ScanScreen() {
           onPress={() => router.back()}
           style={{ marginTop: Spacing.md }}
         >
-          <Text style={{ color: "#ffffff80", fontSize: FontSize.sm }}>
+          <Text style={{ color: "#ffffff80", fontSize: FontSize.sm, fontFamily: Fonts.mono }}>
             Go Back
           </Text>
         </TouchableOpacity>
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
     backgroundColor: "rgba(0,0,0,0.5)",
   },
-  topTitle: { color: "#fff", fontSize: FontSize.base, fontWeight: "600" },
+  topTitle: { color: "#fff", fontSize: FontSize.base, fontFamily: Fonts.monoMedium, fontWeight: "600" },
 
   frameWrap: { alignItems: "center", gap: Spacing.lg },
   frame: {
@@ -353,6 +353,7 @@ const styles = StyleSheet.create({
   hint: {
     color: "colors.text+'cc'",
     fontSize: FontSize.sm,
+    fontFamily: Fonts.mono,
     textAlign: "center",
   },
 
@@ -366,11 +367,12 @@ const styles = StyleSheet.create({
   resultLabel: {
     color: "#ffffff80",
     fontSize: FontSize.xs,
+    fontFamily: Fonts.monoMedium,
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 1,
   },
-  resultText: { color: "#fff", fontSize: FontSize.base, lineHeight: 22 },
+  resultText: { color: "#fff", fontSize: FontSize.base, fontFamily: Fonts.mono, lineHeight: 22 },
   resultActions: { flexDirection: "row", gap: Spacing.sm },
   resultBtn: {
     flex: 1,
@@ -381,17 +383,19 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderRadius: Radius.lg,
   },
-  resultBtnLabel: { color: "#fff", fontSize: FontSize.sm, fontWeight: "600" },
+  resultBtnLabel: { color: "#fff", fontSize: FontSize.sm, fontFamily: Fonts.monoMedium, fontWeight: "600" },
 
   permTitle: {
     color: "#fff",
     fontSize: FontSize.lg,
+    fontFamily: Fonts.monoBold,
     fontWeight: "700",
     textAlign: "center",
   },
   permSub: {
     color: "#ffffff80",
     fontSize: FontSize.sm,
+    fontFamily: Fonts.mono,
     textAlign: "center",
     maxWidth: 280,
   },
@@ -402,5 +406,5 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     marginTop: Spacing.sm,
   },
-  permBtnLabel: { color: "#000", fontSize: FontSize.base, fontWeight: "700" },
+  permBtnLabel: { color: "#000", fontSize: FontSize.base, fontFamily: Fonts.monoBold, fontWeight: "700" },
 });

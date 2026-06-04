@@ -1,6 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { View } from "react-native";
 import Svg, { Rect, Path } from "react-native-svg";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import { QRStyle } from "@/types/qr";
 
 const QRLib = require("qrcode");
@@ -125,6 +131,32 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
     [value, qrStyle.ecl, isEmpty],
   );
 
+  // Circular reveal — View mask with animated size
+  const maskSize = useSharedValue(0);
+  const containerOpacity = useSharedValue(0);
+
+  const maskStyle = useAnimatedStyle(() => ({
+    width: maskSize.value,
+    height: maskSize.value,
+  }));
+
+  const containerAnimStyle = useAnimatedStyle(() => ({
+    opacity: containerOpacity.value,
+  }));
+
+  useEffect(() => {
+    if (!isEmpty && matrix) {
+      containerOpacity.value = withTiming(1, { duration: 200 });
+      maskSize.value = withTiming(size, {
+        duration: 450,
+        easing: Easing.out(Easing.cubic),
+      });
+    } else {
+      containerOpacity.value = 0;
+      maskSize.value = 0;
+    }
+  }, [!isEmpty]);
+
   if (isEmpty || !matrix) {
     return (
       <View
@@ -153,14 +185,13 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
 
   const n = matrix.length;
   const PAD = Math.round(size * 0.045);
-  const pw = (size - PAD * 2) / n; // piece width — fills container exactly
+  const pw = (size - PAD * 2) / n;
 
   const cfg = PIXEL_CFG[qrStyle.pixelShape] ?? PIXEL_CFG.sharp;
   const inset = cfg.inset * pw;
   const drawSz = pw - inset * 2;
   const drawR = cfg.r * drawSz;
 
-  // Build data modules path
   const pieces: string[] = [];
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
@@ -186,7 +217,6 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
     }
   }
 
-  // Eye positions: top-left, top-right, bottom-left
   const eyePos = [
     { r: 0, c: 0 },
     { r: 0, c: n - 7 },
@@ -197,21 +227,39 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
     .join(" ");
 
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        backgroundColor: qrStyle.bgColor,
-        borderRadius: 20,
-        overflow: "hidden",
-      }}
+    <Animated.View
+      style={[
+        {
+          width: size,
+          height: size,
+          backgroundColor: qrStyle.bgColor,
+          borderRadius: 20,
+          overflow: "hidden",
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        containerAnimStyle,
+      ]}
     >
-      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <Rect width={size} height={size} fill={qrStyle.bgColor} />
-        <Path d={pieces.join(" ")} fill={qrStyle.fgColor} />
-        <Path d={eyePath} fill={qrStyle.eyeColor} fillRule="evenodd" />
-        <Path d={eyePath} fill={qrStyle.fgColor} fillRule="evenodd" />
-      </Svg>
-    </View>
+      {/* Circular mask — centered, reveals QR via size animation */}
+      <Animated.View
+        style={[
+          {
+            borderRadius: size,
+            overflow: "hidden",
+            alignItems: "center",
+            justifyContent: "center",
+          },
+          maskStyle,
+        ]}
+      >
+        <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <Rect width={size} height={size} fill={qrStyle.bgColor} />
+          <Path d={pieces.join(" ")} fill={qrStyle.fgColor} />
+          <Path d={eyePath} fill={qrStyle.eyeColor} fillRule="evenodd" />
+          <Path d={eyePath} fill={qrStyle.fgColor} fillRule="evenodd" />
+        </Svg>
+      </Animated.View>
+    </Animated.View>
   );
 }

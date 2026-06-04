@@ -9,7 +9,7 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Spacing, Radius, FontSize } from "@/constants/theme";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -133,5 +133,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 14,
   },
-  msg: { flex: 1, fontSize: FontSize.sm, color: "#ddd" },
+  msg: { flex: 1, fontSize: FontSize.sm, fontFamily: Fonts.mono, color: "#ddd" },
 });

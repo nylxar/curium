@@ -8,6 +8,12 @@ import {
   useWindowDimensions,
   Share,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,6 +29,71 @@ import { QRCanvas } from "@/components/qr/QRCanvas";
 import { DEFAULT_QR_STYLE } from "@/types/qr";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+
+// ─── Animated Action Button ──────────────────────────────────────────────────
+function AnimatedActionBtn({
+  icon,
+  label,
+  danger,
+  colors,
+  onPress,
+  index,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  danger?: boolean;
+  colors: any;
+  onPress: () => void;
+  index: number;
+}) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(10);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
+
+  useEffect(() => {
+    opacity.value = withDelay(index * 80, withTiming(1, { duration: 250 }));
+    translateY.value = withDelay(index * 80, withTiming(0, { duration: 300 }));
+  }, []);
+
+  return (
+    <Animated.View style={[styles.actionBtnWrap, animStyle]}>
+      <TouchableOpacity
+        style={[
+          styles.actionBtn,
+          {
+            backgroundColor: danger
+              ? colors.error + "18"
+              : colors.surface,
+            borderColor: danger ? colors.error + "40" : colors.border,
+          },
+        ]}
+        onPress={onPress}
+        activeOpacity={0.6}
+      >
+        <Ionicons
+          name={icon}
+          size={20}
+          color={danger ? colors.error : colors.text}
+        />
+        <Text
+          style={[
+            styles.actionLabel,
+            {
+              color: danger ? colors.error : colors.text,
+              fontFamily: Fonts.mono,
+            },
+          ]}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 export default function QRDetailScreen() {
   const { index: indexStr, ids } = useLocalSearchParams<{
@@ -152,37 +223,16 @@ export default function QRDetailScreen() {
             fn: handleDelete,
             danger: true,
           },
-        ].map((a) => (
-          <TouchableOpacity
+        ].map((a, i) => (
+          <AnimatedActionBtn
             key={a.label}
-            style={[
-              styles.actionBtn,
-              {
-                backgroundColor: a.danger
-                  ? colors.error + "18"
-                  : colors.surface,
-                borderColor: a.danger ? colors.error + "40" : colors.border,
-              },
-            ]}
+            icon={a.icon}
+            label={a.label}
+            danger={a.danger}
+            colors={colors}
             onPress={a.fn}
-          >
-            <Ionicons
-              name={a.icon}
-              size={20}
-              color={a.danger ? colors.error : colors.text}
-            />
-            <Text
-              style={[
-                styles.actionLabel,
-                {
-                  color: a.danger ? colors.error : colors.text,
-                  fontFamily: Fonts.mono,
-                },
-              ]}
-            >
-              {a.label}
-            </Text>
-          </TouchableOpacity>
+            index={i}
+          />
         ))}
       </View>
     </View>
@@ -283,6 +333,7 @@ const styles = StyleSheet.create({
   value: { fontSize: FontSize.sm, textAlign: "center", lineHeight: 22 },
   date: { fontSize: FontSize.xs },
   actions: { flexDirection: "row", gap: Spacing.sm, width: "100%" },
+  actionBtnWrap: { flex: 1 },
   actionBtn: {
     flex: 1,
     alignItems: "center",

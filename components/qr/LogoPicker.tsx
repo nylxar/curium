@@ -9,7 +9,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
+import { Colors, Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
 
 interface Props {
   logoUri?: string;
@@ -83,6 +83,7 @@ export function LogoPicker({ logoUri, onChange }: Props) {
 const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FontSize.xs,
+    fontFamily: Fonts.monoMedium,
     fontWeight: "600",
     color: Colors.textFaint,
     letterSpacing: 1.2,
@@ -118,8 +119,9 @@ const styles = StyleSheet.create({
   },
   pickLabel: {
     fontSize: FontSize.sm,
+    fontFamily: Fonts.monoMedium,
     color: Colors.primary,
     fontWeight: "600",
   },
-  hint: { fontSize: FontSize.xs, color: Colors.textFaint, flex: 1 },
+  hint: { fontSize: FontSize.xs, fontFamily: Fonts.mono, color: Colors.textFaint, flex: 1 },
 });

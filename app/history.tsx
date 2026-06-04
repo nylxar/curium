@@ -9,6 +9,12 @@ import {
   TextInput,
   useWindowDimensions,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,6 +30,117 @@ import { useTheme } from "@/context/ThemeContext";
 import { DEFAULT_QR_STYLE } from "@/types/qr";
 
 const THUMB = 80;
+
+function AnimatedHistoryCard({
+  item,
+  index,
+  colors,
+  onSelect,
+  onDelete,
+}: {
+  item: HistoryItem;
+  index: number;
+  colors: any;
+  onSelect: () => void;
+  onDelete: () => void;
+}) {
+  const translateY = useSharedValue(12);
+  const opacity = useSharedValue(0);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
+
+  // Staggered entrance — timing-based, no bounce
+  useFocusEffect(
+    useCallback(() => {
+      translateY.value = withDelay(
+        index * 40,
+        withTiming(0, { duration: 300 }),
+      );
+      opacity.value = withDelay(
+        index * 40,
+        withTiming(1, { duration: 250 }),
+      );
+    }, [index]),
+  );
+
+  const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+    url: "link-outline",
+    text: "text-outline",
+    wifi: "wifi-outline",
+    email: "mail-outline",
+    phone: "call-outline",
+    sms: "chatbubble-outline",
+    contact: "person-outline",
+    location: "location-outline",
+  };
+
+  return (
+    <Animated.View style={animStyle}>
+      <TouchableOpacity
+        style={[
+          styles.card,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+        onPress={onSelect}
+        activeOpacity={0.6}
+      >
+        <View style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}>
+          <Ionicons
+            name={TYPE_ICONS[item.type] ?? "qr-code-outline"}
+            size={22}
+            color={colors.primary}
+          />
+        </View>
+
+        <View style={styles.info}>
+          <View style={styles.row}>
+            <View style={[styles.badge, { backgroundColor: colors.surfaceOffset }]}>
+              <Text
+                style={[
+                  styles.badgeText,
+                  { color: colors.primary, fontFamily: Fonts.monoBold },
+                ]}
+              >
+                {item.type.toUpperCase()}
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.date,
+                { color: colors.textFaint, fontFamily: Fonts.mono },
+              ]}
+            >
+              {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+              })}
+            </Text>
+          </View>
+          <Text
+            style={[
+              styles.value,
+              { color: colors.text, fontFamily: Fonts.mono },
+            ]}
+            numberOfLines={2}
+          >
+            {item.value}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          onPress={onDelete}
+          hitSlop={12}
+          style={styles.del}
+        >
+          <Ionicons name="trash-outline" size={16} color={colors.error} />
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 export default function HistoryScreen() {
   const { colors } = useTheme();
@@ -84,17 +201,6 @@ export default function HistoryScreen() {
     });
   };
 
-  const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-    url: "link-outline",
-    text: "text-outline",
-    wifi: "wifi-outline",
-    email: "mail-outline",
-    phone: "call-outline",
-    sms: "chatbubble-outline",
-    contact: "person-outline",
-    location: "location-outline",
-  };
-
   const renderItem = ({
     item,
     index,
@@ -102,65 +208,13 @@ export default function HistoryScreen() {
     item: HistoryItem;
     index: number;
   }) => (
-    <TouchableOpacity
-      style={[
-        styles.card,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-      ]}
-      onPress={() => openDetail(index)}
-      activeOpacity={0.8}
-    >
-      {/* Icon instead of QR thumbnail */}
-      <View style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}>
-        <Ionicons
-          name={TYPE_ICONS[item.type] ?? "qr-code-outline"}
-          size={22}
-          color={colors.primary}
-        />
-      </View>
-
-      <View style={styles.info}>
-        <View style={styles.row}>
-          <View
-            style={[styles.badge, { backgroundColor: colors.surfaceOffset }]}
-          >
-            <Text
-              style={[
-                styles.badgeText,
-                { color: colors.primary, fontFamily: Fonts.monoBold },
-              ]}
-            >
-              {item.type.toUpperCase()}
-            </Text>
-          </View>
-          <Text
-            style={[
-              styles.date,
-              { color: colors.textFaint, fontFamily: Fonts.mono },
-            ]}
-          >
-            {new Date(item.createdAt).toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-            })}
-          </Text>
-        </View>
-        <Text
-          style={[styles.value, { color: colors.text, fontFamily: Fonts.mono }]}
-          numberOfLines={2}
-        >
-          {item.value}
-        </Text>
-      </View>
-
-      <TouchableOpacity
-        onPress={() => handleDelete(item.id)}
-        hitSlop={12}
-        style={styles.del}
-      >
-        <Ionicons name="trash-outline" size={16} color={colors.error} />
-      </TouchableOpacity>
-    </TouchableOpacity>
+    <AnimatedHistoryCard
+      item={item}
+      index={index}
+      colors={colors}
+      onSelect={() => openDetail(index)}
+      onDelete={() => handleDelete(item.id)}
+    />
   );
 
   return (

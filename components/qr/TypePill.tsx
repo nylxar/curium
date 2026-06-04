@@ -7,7 +7,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { QRType } from "@/types/qr";
-import { FontSize, Spacing, Radius } from "@/constants/theme";
+import { FontSize, Spacing, Radius, Fonts } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
 
 const TYPES: {
@@ -126,5 +126,5 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     borderWidth: 1,
   },
-  chipLabel: { fontSize: FontSize.sm },
+  chipLabel: { fontSize: FontSize.sm, fontFamily: Fonts.mono },
 });

@@ -5,9 +5,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
 } from "react-native";
-import { Spacing, Radius, FontSize } from "@/constants/theme";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
 import { EyeShape, PixelShape } from "@/types/qr";
 import Svg, { Rect, Circle, Path } from "react-native-svg";
@@ -28,7 +27,6 @@ function EyePreview({ shape, color }: { shape: EyeShape; color: string }) {
   const radius = r[shape];
   return (
     <Svg width={32} height={32} viewBox="0 0 32 32">
-      {/* Outer ring */}
       <Rect
         x={2}
         y={2}
@@ -40,7 +38,6 @@ function EyePreview({ shape, color }: { shape: EyeShape; color: string }) {
         strokeWidth={3}
         fill="none"
       />
-      {/* Inner fill */}
       <Rect
         x={9}
         y={9}
@@ -67,7 +64,6 @@ function PixelPreview({ shape, color }: { shape: PixelShape; color: string }) {
     star: { r: 1, s: 6 },
   };
   const { r, s } = configs[shape];
-  // 3x3 grid preview
   const positions = [0, 1, 2].flatMap((row) =>
     [0, 1, 2].map((col) => ({ x: col * 10 + 1, y: row * 10 + 1 })),
   );
@@ -173,7 +169,7 @@ function ShapeGrid<T extends string>({
               Haptics.selectionAsync();
               onChange(shape);
             }}
-            activeOpacity={0.7}
+            activeOpacity={0.6}
             style={[
               styles.cell,
               { borderColor: active ? fgColor : fgColor + "25" },
@@ -234,6 +230,7 @@ const styles = StyleSheet.create({
   },
   cell: {
     width: "30%",
+    flexGrow: 1,
     aspectRatio: 1,
     borderRadius: Radius.md,
     borderWidth: 1.5,
@@ -244,6 +241,7 @@ const styles = StyleSheet.create({
   },
   cellLabel: {
     fontSize: FontSize.xs,
+    fontFamily: Fonts.monoMedium,
     fontWeight: "600",
   },
 });

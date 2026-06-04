@@ -4,15 +4,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Modal,
-  Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { QRType } from "@/types/qr";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
 
 const TYPES: {
   id: QRType;
@@ -38,12 +36,10 @@ interface Props {
 export function TypeSelector({ selected, tintColor, onChange }: Props) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
-  const insets = useSafeAreaInsets();
   const current = TYPES.find((t) => t.id === selected)!;
 
   return (
     <>
-      {/* Option row — tappable */}
       <TouchableOpacity
         style={[
           styles.row,
@@ -53,7 +49,7 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
           Haptics.selectionAsync();
           setOpen(true);
         }}
-        activeOpacity={0.75}
+        activeOpacity={0.6}
       >
         <View style={[styles.rowIcon, { backgroundColor: tintColor + "18" }]}>
           <Ionicons name={current.icon} size={18} color={tintColor} />
@@ -79,76 +75,62 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
         <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
       </TouchableOpacity>
 
-      {/* Modal picker */}
-      <Modal
+      <AnimatedSheet
         visible={open}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setOpen(false)}
+        onClose={() => setOpen(false)}
+        bgColor={colors.surface}
+        borderColor={colors.border}
       >
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
-        <View
+        <Text
           style={[
-            styles.sheet,
-            {
-              backgroundColor: colors.surface,
-              paddingBottom: insets.bottom + Spacing.lg,
-            },
+            styles.sheetTitle,
+            { color: colors.text, fontFamily: Fonts.monoBold },
           ]}
         >
-          <View style={[styles.handle, { backgroundColor: colors.border }]} />
-          <Text
-            style={[
-              styles.sheetTitle,
-              { color: colors.text, fontFamily: Fonts.monoBold },
-            ]}
-          >
-            Select QR Type
-          </Text>
-          <View style={styles.grid}>
-            {TYPES.map((t) => {
-              const active = t.id === selected;
-              return (
-                <TouchableOpacity
-                  key={t.id}
+          Select QR Type
+        </Text>
+        <View style={styles.grid}>
+          {TYPES.map((t) => {
+            const active = t.id === selected;
+            return (
+              <TouchableOpacity
+                key={t.id}
+                style={[
+                  styles.cell,
+                  {
+                    backgroundColor: active ? tintColor + "18" : colors.surfaceOffset,
+                    borderColor: active ? tintColor : colors.border,
+                    borderWidth: active ? 2 : 1,
+                  },
+                ]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  onChange(t.id);
+                  setOpen(false);
+                }}
+                activeOpacity={0.6}
+              >
+                <Ionicons
+                  name={t.icon}
+                  size={22}
+                  color={active ? tintColor : colors.textMuted}
+                />
+                <Text
                   style={[
-                    styles.cell,
+                    styles.cellLabel,
                     {
-                      backgroundColor: active
-                        ? tintColor + "18"
-                        : colors.surfaceOffset,
-                      borderColor: active ? tintColor : colors.border,
+                      color: active ? tintColor : colors.textMuted,
+                      fontFamily: active ? Fonts.monoBold : Fonts.mono,
                     },
                   ]}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    onChange(t.id);
-                    setOpen(false);
-                  }}
-                  activeOpacity={0.7}
                 >
-                  <Ionicons
-                    name={t.icon}
-                    size={22}
-                    color={active ? tintColor : colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.cellLabel,
-                      {
-                        color: active ? tintColor : colors.textMuted,
-                        fontFamily: active ? Fonts.monoBold : Fonts.mono,
-                      },
-                    ]}
-                  >
-                    {t.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                  {t.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-      </Modal>
+      </AnimatedSheet>
     </>
   );
 }
@@ -173,25 +155,16 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: FontSize.base },
   rowSub: { fontSize: FontSize.xs, marginTop: 1 },
 
-  backdrop: { flex: 1, backgroundColor: "#00000066" },
-  sheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: Spacing.lg,
-    gap: Spacing.lg,
-  },
-  handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center" },
-  sheetTitle: { fontSize: FontSize.md, textAlign: "center" },
+  sheetTitle: { fontSize: FontSize.md, textAlign: "center", marginBottom: Spacing.md },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
   cell: {
     width: "22%",
+    flexGrow: 1,
     aspectRatio: 1,
     borderRadius: Radius.md,
-    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.xs,
-    flexGrow: 1,
   },
   cellLabel: { fontSize: FontSize.xs },
 });

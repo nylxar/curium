@@ -13,7 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { QR_COLORS } from "@/constants/theme";
-import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
+import { Colors, Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
 
 interface Props {
@@ -33,13 +33,12 @@ function ColorSwatch({
   const scale = useSharedValue(1);
 
   useEffect(() => {
-    scale.value = withSpring(selected ? 1.15 : 1, {
-      damping: 12,
-      stiffness: 220,
+    scale.value = withSpring(selected ? 1.08 : 1, {
+      damping: 14,
+      stiffness: 240,
     });
   }, [selected]);
 
-  // Ring/check visibility via JS conditional — NOT in Reanimated worklet
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
@@ -47,7 +46,7 @@ function ColorSwatch({
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.75}
+      activeOpacity={0.6}
       style={styles.swatchWrap}
     >
       <Animated.View style={animStyle}>
@@ -104,6 +103,7 @@ export function ColorPalette({ selectedId, onSelect }: Props) {
 const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FontSize.xs,
+    fontFamily: Fonts.monoMedium,
     fontWeight: "600",
     color: Colors.textFaint,
     letterSpacing: 1.2,
@@ -140,6 +140,7 @@ const styles = StyleSheet.create({
   },
   swatchLabel: {
     fontSize: 9,
+    fontFamily: Fonts.mono,
     color: Colors.textFaint,
     textAlign: "center",
     width: 58,

@@ -27,7 +27,7 @@ import Animated, {
   clamp,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors, Spacing, Radius, FontSize } from "@/constants/theme";
+import { Colors, Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
 // ─── Color math (worklet-safe) ────────────────────────────────────────────────
 function hsvToHex(h: number, s: number, v: number): string {
@@ -514,6 +514,7 @@ const s = StyleSheet.create({
   },
   title: {
     fontSize: FontSize.xs,
+    fontFamily: Fonts.monoMedium,
     color: Colors.textMuted,
     textAlign: "center",
     letterSpacing: 1.2,
@@ -569,7 +570,7 @@ const s = StyleSheet.create({
     height: 44,
     gap: 4,
   },
-  hexHash: { fontSize: FontSize.base, color: Colors.textMuted },
+  hexHash: { fontSize: FontSize.base, fontFamily: Fonts.mono, color: Colors.textMuted },
   hexInput: {
     flex: 1,
     fontSize: FontSize.base,
@@ -591,6 +592,7 @@ const s = StyleSheet.create({
   },
   cancelTxt: {
     fontSize: FontSize.sm,
+    fontFamily: Fonts.monoMedium,
     color: Colors.textMuted,
     fontWeight: "500",
   },
@@ -600,5 +602,5 @@ const s = StyleSheet.create({
     borderRadius: Radius.full,
     alignItems: "center",
   },
-  applyTxt: { fontSize: FontSize.sm, fontWeight: "700" },
+  applyTxt: { fontSize: FontSize.sm, fontFamily: Fonts.monoBold, fontWeight: "700" },
 });

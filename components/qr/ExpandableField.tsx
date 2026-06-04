@@ -4,16 +4,14 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Modal,
-  Pressable,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
 
 interface Props {
   label: string;
@@ -43,7 +41,6 @@ export function ExpandableField({
 }: Props) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
-  const insets = useSafeAreaInsets();
   const hasValue = value.trim().length > 0;
 
   return (
@@ -54,7 +51,7 @@ export function ExpandableField({
           { backgroundColor: colors.surfaceOffset, borderColor: colors.border },
         ]}
         onPress={() => setOpen(true)}
-        activeOpacity={0.7}
+        activeOpacity={0.6}
       >
         <View style={styles.rowContent}>
           <Text
@@ -85,72 +82,62 @@ export function ExpandableField({
         />
       </TouchableOpacity>
 
-      <Modal
+      <AnimatedSheet
         visible={open}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setOpen(false)}
+        onClose={() => setOpen(false)}
+        bgColor={colors.surface}
+        borderColor={colors.border}
+        disableSwipeDown
       >
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <View
+          <View style={styles.sheetHeader}>
+            <Text
+              style={[
+                styles.sheetTitle,
+                { color: colors.text, fontFamily: Fonts.monoBold },
+              ]}
+            >
+              {label}
+            </Text>
+            <TouchableOpacity
+              style={[styles.doneBtn, { backgroundColor: tintColor }]}
+              onPress={() => setOpen(false)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[styles.doneBtnText, { fontFamily: Fonts.monoBold }]}
+              >
+                Done
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TextInput
             style={[
-              styles.sheet,
+              styles.input,
               {
-                backgroundColor: colors.surface,
-                paddingBottom: insets.bottom + Spacing.lg,
+                backgroundColor: colors.surfaceOffset,
+                borderColor: colors.border,
+                color: colors.text,
+                fontFamily: Fonts.mono,
+                height: multiline ? 140 : 52,
               },
             ]}
-          >
-            <View style={[styles.handle, { backgroundColor: colors.border }]} />
-            <View style={styles.sheetHeader}>
-              <Text
-                style={[
-                  styles.sheetTitle,
-                  { color: colors.text, fontFamily: Fonts.monoBold },
-                ]}
-              >
-                {label}
-              </Text>
-              <TouchableOpacity
-                style={[styles.doneBtn, { backgroundColor: tintColor }]}
-                onPress={() => setOpen(false)}
-              >
-                <Text
-                  style={[styles.doneBtnText, { fontFamily: Fonts.monoBold }]}
-                >
-                  Done
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.surfaceOffset,
-                  borderColor: colors.border,
-                  color: colors.text,
-                  fontFamily: Fonts.mono,
-                  height: multiline ? 140 : 52,
-                },
-              ]}
-              value={value}
-              onChangeText={onChange}
-              placeholder={placeholder}
-              placeholderTextColor={colors.textFaint}
-              multiline={multiline}
-              autoFocus
-              textAlignVertical={multiline ? "top" : "center"}
-              keyboardType={keyboardType}
-              secureTextEntry={secureTextEntry}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
+            value={value}
+            onChangeText={onChange}
+            placeholder={placeholder}
+            placeholderTextColor={colors.textFaint}
+            multiline={multiline}
+            autoFocus
+            textAlignVertical={multiline ? "top" : "center"}
+            keyboardType={keyboardType}
+            secureTextEntry={secureTextEntry}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
         </KeyboardAvoidingView>
-      </Modal>
+      </AnimatedSheet>
     </>
   );
 }
@@ -169,18 +156,11 @@ const styles = StyleSheet.create({
   rowContent: { flex: 1, gap: 2 },
   fieldLabel: { fontSize: FontSize.xs },
   preview: { fontSize: FontSize.sm },
-  backdrop: { flex: 1, backgroundColor: "#00000066" },
-  sheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-  },
-  handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center" },
   sheetHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingBottom: Spacing.sm,
   },
   sheetTitle: { fontSize: FontSize.md },
   doneBtn: {

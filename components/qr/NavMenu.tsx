@@ -14,7 +14,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { Radius, Spacing, FontSize } from "@/constants/theme";
+import { Radius, Spacing, FontSize, Fonts } from "@/constants/theme";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -146,6 +146,7 @@ const styles = StyleSheet.create({
   },
   pillLabel: {
     fontSize: FontSize.sm,
+    fontFamily: Fonts.monoBold,
     fontWeight: "700",
   },
   backdrop: {
@@ -184,6 +185,7 @@ const styles = StyleSheet.create({
   navLabel: {
     flex: 1,
     fontSize: FontSize.md,
+    fontFamily: Fonts.monoMedium,
     fontWeight: "600",
   },
 });

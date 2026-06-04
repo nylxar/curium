@@ -3,15 +3,19 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
   StyleSheet,
-  Pressable,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { Radius, Spacing, FontSize } from "@/constants/theme";
+import { Radius, Spacing, FontSize, Fonts } from "@/constants/theme";
+import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
 
 const NAV_ITEMS = [
   { route: "/", label: "Create", icon: "add-circle-outline" },
@@ -40,35 +44,36 @@ function Btn({
   disabled,
 }: BtnProps) {
   return (
-    <TouchableOpacity
-      onPress={() => {
-        if (!disabled) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onPress();
-        }
-      }}
-      activeOpacity={0.75}
-      disabled={disabled}
-      style={[styles.btnWrap, { opacity: disabled ? 0.4 : 1 }]}
-    >
-      <View
-        style={[
-          styles.btnCircle,
-          primary
-            ? { backgroundColor: tintColor }
-            : {
-                backgroundColor: tintColor + "20",
-                borderWidth: 1,
-                borderColor: tintColor + "35",
-              },
-        ]}
+    <View style={[styles.btnWrap, { opacity: disabled ? 0.4 : 1 }]}>
+      <TouchableOpacity
+        onPress={() => {
+          if (!disabled) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onPress();
+          }
+        }}
+        activeOpacity={0.6}
+        disabled={disabled}
       >
-        <Ionicons name={icon} size={21} color={primary ? bgColor : tintColor} />
-      </View>
+        <View
+          style={[
+            styles.btnCircle,
+            primary
+              ? { backgroundColor: tintColor }
+              : {
+                  backgroundColor: tintColor + "20",
+                  borderWidth: 1,
+                  borderColor: tintColor + "35",
+                },
+          ]}
+        >
+          <Ionicons name={icon} size={21} color={primary ? bgColor : tintColor} />
+        </View>
+      </TouchableOpacity>
       <Text style={[styles.btnLabel, { color: tintColor + "cc" }]}>
         {label}
       </Text>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -95,8 +100,7 @@ export function FabBar({
 
   const go = (route: string) => {
     setMenuOpen(false);
-    setTimeout(() => router.push(route as any), 60);
-    Haptics.selectionAsync();
+    setTimeout(() => router.push(route as any), 80);
   };
 
   return (
@@ -111,7 +115,6 @@ export function FabBar({
           },
         ]}
       >
-        {/* Single row — Copy | Random | Share | Menu */}
         <View style={styles.row}>
           <Btn
             icon="copy-outline"
@@ -148,67 +151,38 @@ export function FabBar({
         </View>
       </View>
 
-      <Modal
+      <AnimatedSheet
         visible={menuOpen}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setMenuOpen(false)}
+        onClose={() => setMenuOpen(false)}
+        bgColor={bgColor}
+        borderColor={tintColor + "25"}
       >
-        <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
-          <Pressable
+        {NAV_ITEMS.map((item, i) => (
+          <TouchableOpacity
+            key={item.route}
             style={[
-              styles.sheet,
-              {
-                backgroundColor: bgColor,
-                borderColor: tintColor + "25",
-                paddingBottom: insets.bottom + Spacing.lg,
+              styles.navRow,
+              i < NAV_ITEMS.length - 1 && {
+                borderBottomWidth: StyleSheet.hairlineWidth,
+                borderBottomColor: tintColor + "20",
               },
             ]}
-            onPress={(e) => e.stopPropagation()}
+            onPress={() => {
+              Haptics.selectionAsync();
+              go(item.route);
+            }}
+            activeOpacity={0.6}
           >
-            <View
-              style={[styles.handle, { backgroundColor: tintColor + "40" }]}
-            />
-
-            {NAV_ITEMS.map((item, i) => (
-              <TouchableOpacity
-                key={item.route}
-                style={[
-                  styles.navRow,
-                  i < NAV_ITEMS.length - 1 && {
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: tintColor + "20",
-                  },
-                ]}
-                onPress={() => go(item.route)}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[
-                    styles.navIcon,
-                    { backgroundColor: tintColor + "18" },
-                  ]}
-                >
-                  <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color={tintColor}
-                  />
-                </View>
-                <Text style={[styles.navLabel, { color: tintColor }]}>
-                  {item.label}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={tintColor + "40"}
-                />
-              </TouchableOpacity>
-            ))}
-          </Pressable>
-        </Pressable>
-      </Modal>
+            <View style={[styles.navIcon, { backgroundColor: tintColor + "18" }]}>
+              <Ionicons name={item.icon as any} size={20} color={tintColor} />
+            </View>
+            <Text style={[styles.navLabel, { color: tintColor }]}>
+              {item.label}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={tintColor + "40"} />
+          </TouchableOpacity>
+        ))}
+      </AnimatedSheet>
     </>
   );
 }
@@ -232,27 +206,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  btnLabel: { fontSize: FontSize.xs, fontWeight: "600" },
+  btnLabel: { fontSize: FontSize.xs, fontFamily: Fonts.monoMedium, fontWeight: "600" },
 
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    borderWidth: 1,
-    paddingTop: Spacing.md,
-    paddingHorizontal: Spacing.base,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: Radius.full,
-    alignSelf: "center",
-    marginBottom: Spacing.md,
-  },
   navRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -266,5 +221,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  navLabel: { flex: 1, fontSize: FontSize.md ?? 15, fontWeight: "600" },
+  navLabel: { flex: 1, fontSize: FontSize.md ?? 15, fontFamily: Fonts.monoMedium, fontWeight: "600" },
 });

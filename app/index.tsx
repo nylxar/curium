@@ -132,6 +132,68 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
 const { width } = useWindowDimensions();
 const QR_SIZE = Math.floor(width) - 32;
 
+// ─── Animated Form Trigger ────────────────────────────────────────────────────
+function AnimatedFormTrigger({
+  tint,
+  colors,
+  activeType,
+  qrValue,
+  onPress,
+}: {
+  tint: string;
+  colors: any;
+  activeType: QRType;
+  qrValue: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.formTrigger,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+        },
+      ]}
+      onPress={onPress}
+      activeOpacity={0.6}
+    >
+      <View
+        style={[styles.formTriggerIcon, { backgroundColor: tint + "18" }]}
+      >
+        <Ionicons
+          name={QR_TYPES.find((t) => t.id === activeType)?.icon as any}
+          size={18}
+          color={tint}
+        />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text
+          style={[
+            styles.formTriggerLabel,
+            { color: colors.textMuted, fontFamily: Fonts.mono },
+          ]}
+        >
+          {QR_TYPES.find((t) => t.id === activeType)?.label}
+        </Text>
+        <Text
+          style={[
+            styles.formTriggerValue,
+            {
+              color: qrValue ? colors.text : colors.textFaint,
+              fontFamily: Fonts.mono,
+            },
+          ]}
+          numberOfLines={1}
+        >
+          {qrValue || "Tap to enter data..."}
+        </Text>
+      </View>
+      <Ionicons name="create-outline" size={16} color={tint} />
+    </TouchableOpacity>
+  );
+}
+
 // ─── Encoder — module level pure function ────────────────────────────────────
 function encodeQR(type: QRType, forms: FormState): string {
   switch (type) {
@@ -401,50 +463,13 @@ export default function CreateScreen() {
             behavior={Platform.OS === "ios" ? "padding" : undefined}
             style={styles.formWrap}
           ></KeyboardAvoidingView>
-          <TouchableOpacity
-            style={[
-              styles.formTrigger,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
+          <AnimatedFormTrigger
+            tint={tint}
+            colors={colors}
+            activeType={activeType}
+            qrValue={qrValue}
             onPress={() => setFormModalOpen(true)}
-            activeOpacity={0.7}
-          >
-            <View
-              style={[styles.formTriggerIcon, { backgroundColor: tint + "18" }]}
-            >
-              <Ionicons
-                name={QR_TYPES.find((t) => t.id === activeType)?.icon as any}
-                size={18}
-                color={tint}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={[
-                  styles.formTriggerLabel,
-                  { color: colors.textMuted, fontFamily: Fonts.mono },
-                ]}
-              >
-                {QR_TYPES.find((t) => t.id === activeType)?.label}
-              </Text>
-              <Text
-                style={[
-                  styles.formTriggerValue,
-                  {
-                    color: qrValue ? colors.text : colors.textFaint,
-                    fontFamily: Fonts.mono,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {qrValue || "Tap to enter data..."}
-              </Text>
-            </View>
-            <Ionicons name="create-outline" size={16} color={tint} />
-          </TouchableOpacity>
+          />
         </View>
         <ScrollView
           style={styles.scroll}
@@ -754,7 +779,7 @@ const styles = StyleSheet.create({
 
   options: { marginHorizontal: Spacing.base, gap: Spacing.sm },
   dot: { width: 16, height: 16, borderRadius: 8 },
-  eclPreview: { fontSize: FontSize.sm, fontWeight: "700" },
+  eclPreview: { fontSize: FontSize.sm, fontFamily: Fonts.monoBold, fontWeight: "700" },
   eclRow: { flexDirection: "row", gap: Spacing.sm },
   eclBtn: {
     flex: 1,
@@ -763,7 +788,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
   },
-  eclLabel: { fontSize: FontSize.sm },
+  eclLabel: { fontSize: FontSize.sm, fontFamily: Fonts.mono },
   staticTop: {
     // no flex — sizes to content
   },

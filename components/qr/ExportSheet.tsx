@@ -9,7 +9,7 @@ import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
 import { Ionicons } from "@expo/vector-icons";
 import { OptionSheet } from "./OptionSheet";
-import { Spacing, Radius, FontSize } from "@/constants/theme";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
 interface ExportAction {
   icon: keyof typeof Ionicons.glyphMap;
@@ -173,6 +173,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   text: { flex: 1 },
-  label: { fontSize: FontSize.base, fontWeight: "600" },
-  sub: { fontSize: FontSize.xs, marginTop: 2 },
+  label: { fontSize: FontSize.base, fontFamily: Fonts.monoMedium, fontWeight: "600" },
+  sub: { fontSize: FontSize.xs, fontFamily: Fonts.mono, marginTop: 2 },
 });

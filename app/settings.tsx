@@ -1,5 +1,5 @@
 // app/settings.tsx — FULL REPLACEMENT
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,12 @@ import {
   Switch,
   Alert,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,6 +33,77 @@ const THEME_OPTIONS: {
   { id: "system", label: "System", icon: "phone-portrait-outline" },
   { id: "dynamic", label: "Dynamic", icon: "color-palette-outline" },
 ];
+
+function Row({
+  icon,
+  label,
+  sub,
+  right,
+  onPress,
+  danger,
+  iconBg,
+  index = 0,
+  colors,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  sub?: string;
+  right?: React.ReactNode;
+  onPress?: () => void;
+  danger?: boolean;
+  iconBg?: string;
+  index?: number;
+  colors: any;
+}) {
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    opacity.value = withDelay(
+      index * 50,
+      withTiming(1, { duration: 300 }),
+    );
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View style={animStyle}>
+      <TouchableOpacity
+        style={styles.row}
+        activeOpacity={0.6}
+        onPress={onPress}
+      >
+        <View
+          style={[
+            styles.rowIcon,
+            {
+              backgroundColor:
+                iconBg ?? (danger ? colors.error + "18" : colors.primary + "18"),
+            },
+          ]}
+        >
+          <Ionicons
+            name={icon}
+            size={17}
+            color={danger ? colors.error : colors.primary}
+          />
+        </View>
+        <View style={styles.rowText}>
+          <Text style={[styles.rowLabel, danger && { color: colors.error }]}>
+            {label}
+          </Text>
+          {sub && <Text style={styles.rowSub}>{sub}</Text>}
+        </View>
+        {right ??
+          (onPress && (
+            <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
+          ))}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 export default function SettingsScreen() {
   const { colors, theme, setTheme } = useTheme();
@@ -130,56 +207,6 @@ export default function SettingsScreen() {
     dynamicNoteText: { flex: 1, fontSize: FontSize.xs, lineHeight: 16 },
   });
 
-  const Row = ({
-    icon,
-    label,
-    sub,
-    right,
-    onPress,
-    danger,
-    iconBg,
-  }: {
-    icon: keyof typeof Ionicons.glyphMap;
-    label: string;
-    sub?: string;
-    right?: React.ReactNode;
-    onPress?: () => void;
-    danger?: boolean;
-    iconBg?: string;
-  }) => (
-    <TouchableOpacity
-      style={S.row}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
-    >
-      <View
-        style={[
-          S.rowIcon,
-          {
-            backgroundColor:
-              iconBg ?? (danger ? colors.error + "18" : colors.primary + "18"),
-          },
-        ]}
-      >
-        <Ionicons
-          name={icon}
-          size={17}
-          color={danger ? colors.error : colors.primary}
-        />
-      </View>
-      <View style={S.rowText}>
-        <Text style={[S.rowLabel, danger && { color: colors.error }]}>
-          {label}
-        </Text>
-        {sub && <Text style={S.rowSub}>{sub}</Text>}
-      </View>
-      {right ??
-        (onPress && (
-          <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
-        ))}
-    </TouchableOpacity>
-  );
-
   return (
     <View style={S.screen}>
       <View style={S.header}>
@@ -267,6 +294,8 @@ export default function SettingsScreen() {
           icon="pulse-outline"
           label="Haptic Feedback"
           sub="Vibrate on taps and actions"
+          index={4}
+          colors={colors}
           right={
             <Switch
               value={haptics}
@@ -286,6 +315,8 @@ export default function SettingsScreen() {
           icon="shield-checkmark-outline"
           label="Offline Only"
           sub="No internet requests, ever"
+          index={5}
+          colors={colors}
           right={
             <Ionicons
               name="checkmark-circle"
@@ -298,6 +329,8 @@ export default function SettingsScreen() {
           icon="eye-off-outline"
           label="No Tracking"
           sub="Zero analytics, zero telemetry"
+          index={6}
+          colors={colors}
           right={
             <Ionicons
               name="checkmark-circle"
@@ -310,6 +343,8 @@ export default function SettingsScreen() {
           icon="lock-closed-outline"
           label="Local Storage Only"
           sub="All data stays on your device"
+          index={7}
+          colors={colors}
           right={
             <Ionicons
               name="checkmark-circle"
@@ -326,6 +361,8 @@ export default function SettingsScreen() {
           label="Clear History"
           sub="Delete all saved QR codes"
           danger
+          index={8}
+          colors={colors}
           onPress={() =>
             Alert.alert("Clear History", "Delete everything?", [
               { text: "Cancel", style: "cancel" },
@@ -350,3 +387,31 @@ export default function SettingsScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  rowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowText: { flex: 1 },
+  rowLabel: {
+    fontSize: FontSize.base,
+    fontFamily: Fonts.monoMedium,
+  },
+  rowSub: {
+    fontSize: FontSize.xs,
+    color: "#8b949e",
+    marginTop: 2,
+    fontFamily: Fonts.mono,
+  },
+});
