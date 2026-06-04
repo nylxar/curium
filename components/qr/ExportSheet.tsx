@@ -1,6 +1,5 @@
-import { useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import * as MediaLibrary from "expo-media-library";
+import { Asset, requestPermissionsAsync } from "expo-media-library";
 import { File } from "expo-file-system";
 import * as FileSystemLegacy from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -38,7 +37,7 @@ export function ExportSheet({
   const saveToGallery = async () => {
     if (!qrRef.current) return;
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      const { status } = await requestPermissionsAsync(true);
       if (status !== "granted") {
         Alert.alert(
           "Permission needed",
@@ -47,11 +46,12 @@ export function ExportSheet({
         return;
       }
       const uri = await captureRef(qrRef, { format: "png", quality: 1 });
-      await MediaLibrary.saveToLibraryAsync(uri);
+      await Asset.create(uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert("Saved!", "QR saved to your gallery.");
       onClose();
-    } catch {
+    } catch (e) {
+      console.error("Save error:", e);
       Alert.alert("Error", "Could not save to gallery.");
     }
   };

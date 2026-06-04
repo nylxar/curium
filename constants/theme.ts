@@ -89,8 +89,9 @@ export const FontSize = {
   xxl: 30,
 };
 
-// QR color presets
-export const QR_COLORS: {
+{
+  /*
+  export const QR_COLORS: {
   id: string;
   fg: string;
   bg: string;
@@ -107,9 +108,9 @@ export const QR_COLORS: {
   { id: "paper", fg: "#1c1917", bg: "#fafaf9", label: "Paper" },
   { id: "midnight", fg: "#e2e8f0", bg: "#0f172a", label: "Midnight" },
 ];
+*/
+}
 
-{
-  /*
 // ─── QR Color Presets ─────────────────────────────────────────────────────────
 export const QR_COLORS = [
   { id: "cosmic", fg: "#eeeef5", bg: "#080810", label: "Cosmic" }, // intentional dark
@@ -130,7 +131,7 @@ export const QR_COLORS = [
   { id: "paper", fg: "#1a1a2e", bg: "#f5f0e8", label: "Paper" }, // already correct
   { id: "ocean", fg: "#020b1a", bg: "#93c5fd", label: "Ocean" }, // SWAPPED
   { id: "lava", fg: "#2d0000", bg: "#fca5a5", label: "Lava" }, // SWAPPED
-  { id: 'slate',   fg: '#0f172a', bg: '#e2e8f0', label: 'Slate'   },
+  { id: "slate", fg: "#0f172a", bg: "#e2e8f0", label: "Slate" },
   { id: "peach", fg: "#3d0e00", bg: "#fed7aa", label: "Peach" },
   { id: "lavender", fg: "#1e0a40", bg: "#ddd6fe", label: "Lavender" },
   { id: "forest", fg: "#052010", bg: "#86efac", label: "Forest" },
@@ -141,5 +142,3 @@ export const QR_COLORS = [
   { id: "sage", fg: "#0a1f0a", bg: "#bbf7d0", label: "Sage" },
   { id: "dusk", fg: "#e2e8f0", bg: "#334155", label: "Dusk" }, // intentional dark
 ] as const;
-*/
-}

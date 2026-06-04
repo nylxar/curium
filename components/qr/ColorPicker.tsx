@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -134,7 +134,7 @@ const HUE_STOPS = [
 function SvgSVSquare({ hue, size }: { hue: number; size: number }) {
   const pureHue = hsvToHex(hue, 1, 1);
   return (
-    <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+    <Svg width={size} height={size} style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
         <SvgGrad id="s" x1="0" y1="0.5" x2="1" y2="0.5">
           <Stop offset="0" stopColor="#fff" stopOpacity="1" />
@@ -153,7 +153,7 @@ function SvgSVSquare({ hue, size }: { hue: number; size: number }) {
 
 function SvgHueBar({ w, h }: { w: number; h: number }) {
   return (
-    <Svg width={w} height={h}>
+    <Svg width={w} height={h} pointerEvents="none">
       <Defs>
         <SvgGrad id="hue" x1="0" y1="0.5" x2="1" y2="0.5">
           {HUE_STOPS.map((s) => (
@@ -166,7 +166,7 @@ function SvgHueBar({ w, h }: { w: number; h: number }) {
   );
 }
 
-// ─── SatVal picker — thumb driven purely by shared values, no spring fight ────
+// ─── SatVal picker — memoized gesture, ref-based callback ─────────────────────
 function SatValPicker({
   hue,
   initSat,
@@ -178,41 +178,29 @@ function SatValPicker({
   initVal: number;
   onSVChange: (s: number, v: number) => void;
 }) {
-  // Shared values own the thumb position — no useEffect sync loop
   const tx = useSharedValue(initSat * SV_SIZE);
   const ty = useSharedValue((1 - initVal) * SV_SIZE);
 
-  // Only snap to timing when preset/hex changes (not during drag)
-  const snapTo = useCallback((s: number, v: number) => {
-    tx.value = withTiming(s * SV_SIZE, { duration: 180, easing: Easing.out(Easing.cubic) });
-    ty.value = withTiming((1 - v) * SV_SIZE, { duration: 180, easing: Easing.out(Easing.cubic) });
-  }, []);
+  // Ref avoids stale closure without recreating gesture
+  const cbRef = useRef(onSVChange);
+  cbRef.current = onSVChange;
 
-  // Expose snap imperatively via ref pattern — parent calls this after preset tap
-  // We do it via a prop instead: parent passes key to remount when preset changes
-  useEffect(() => {
-    snapTo(initSat, initVal);
-  }, [initSat, initVal]);
-
-  const jsCallback = useCallback(
-    (s: number, v: number) => {
-      onSVChange(s, v);
-    },
-    [onSVChange],
+  const gesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .minDistance(0)
+        .onBegin((e) => {
+          tx.value = clamp(e.x, 0, SV_SIZE);
+          ty.value = clamp(e.y, 0, SV_SIZE);
+          runOnJS(cbRef.current)(tx.value / SV_SIZE, 1 - ty.value / SV_SIZE);
+        })
+        .onUpdate((e) => {
+          tx.value = clamp(e.x, 0, SV_SIZE);
+          ty.value = clamp(e.y, 0, SV_SIZE);
+          runOnJS(cbRef.current)(tx.value / SV_SIZE, 1 - ty.value / SV_SIZE);
+        }),
+    [],
   );
-
-  const gesture = Gesture.Pan()
-    .minDistance(0)
-    .onBegin((e) => {
-      tx.value = clamp(e.x, 0, SV_SIZE);
-      ty.value = clamp(e.y, 0, SV_SIZE);
-      runOnJS(jsCallback)(tx.value / SV_SIZE, 1 - ty.value / SV_SIZE);
-    })
-    .onUpdate((e) => {
-      tx.value = clamp(e.x, 0, SV_SIZE);
-      ty.value = clamp(e.y, 0, SV_SIZE);
-      runOnJS(jsCallback)(tx.value / SV_SIZE, 1 - ty.value / SV_SIZE);
-    });
 
   const thumbStyle = useAnimatedStyle(() => ({
     transform: [
@@ -239,7 +227,7 @@ function SatValPicker({
   );
 }
 
-// ─── Hue bar — same pattern ────────────────────────────────────────────────────
+// ─── Hue bar — memoized gesture, ref-based callback ──────────────────────────
 function HuePicker({
   hue,
   onHueChange,
@@ -249,25 +237,23 @@ function HuePicker({
 }) {
   const tx = useSharedValue((hue / 360) * BAR_W);
 
-  useEffect(() => {
-    tx.value = withTiming((hue / 360) * BAR_W, {
-      duration: 180,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [hue]);
+  const cbRef = useRef(onHueChange);
+  cbRef.current = onHueChange;
 
-  const jsCallback = useCallback((h: number) => onHueChange(h), [onHueChange]);
-
-  const gesture = Gesture.Pan()
-    .minDistance(0)
-    .onBegin((e) => {
-      tx.value = clamp(e.x, 0, BAR_W);
-      runOnJS(jsCallback)((clamp(e.x, 0, BAR_W) / BAR_W) * 360);
-    })
-    .onUpdate((e) => {
-      tx.value = clamp(e.x, 0, BAR_W);
-      runOnJS(jsCallback)((tx.value / BAR_W) * 360);
-    });
+  const gesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .minDistance(0)
+        .onBegin((e) => {
+          tx.value = clamp(e.x, 0, BAR_W);
+          runOnJS(cbRef.current)((clamp(e.x, 0, BAR_W) / BAR_W) * 360);
+        })
+        .onUpdate((e) => {
+          tx.value = clamp(e.x, 0, BAR_W);
+          runOnJS(cbRef.current)((tx.value / BAR_W) * 360);
+        }),
+    [],
+  );
 
   const thumbStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: tx.value - (BAR_H + 6) / 2 }],
@@ -311,7 +297,9 @@ export function ColorPicker({
   const [sat, setSat] = useState(1);
   const [val, setVal] = useState(1);
   const [hexInput, setHexInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [pickerKey, setPickerKey] = useState(0);
+  const wasVisible = useRef(false);
 
   const sheetY = useSharedValue(900);
   const bgOp = useSharedValue(0);
@@ -323,22 +311,32 @@ export function ColorPicker({
       setSat(s);
       setVal(v);
       setHexInput(initialColor.replace("#", "").toUpperCase());
-      sheetY.value = withTiming(0, { duration: 260, easing: Easing.out(Easing.cubic) });
-      bgOp.value = withTiming(0.5, { duration: 160 });
-    } else {
-      sheetY.value = withTiming(900, { duration: 200, easing: Easing.in(Easing.cubic) });
-      bgOp.value = withTiming(0, { duration: 120 });
+      setMounted(true);
+      setPickerKey((k) => k + 1);
+      wasVisible.current = true;
+      // Two RAFs to ensure first paint commits before animating
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          sheetY.value = withTiming(0, {
+            duration: 260,
+            easing: Easing.out(Easing.cubic),
+          });
+          bgOp.value = withTiming(0.5, { duration: 160 });
+        });
+      });
+    } else if (mounted && wasVisible.current) {
+      wasVisible.current = false;
+      sheetY.value = withTiming(900, {
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+      });
+      bgOp.value = withTiming(0, { duration: 100 }, (finished) => {
+        if (finished) runOnJS(setMounted)(false);
+      });
     }
   }, [visible, initialColor]);
 
   const hex = hsvToHex(hue, sat, val);
-
-  // Only sync hexInput from external hex when user is NOT typing
-  useEffect(() => {
-    if (!isTyping) {
-      setHexInput(hex.replace("#", "").toUpperCase());
-    }
-  }, [hue, sat, val, isTyping]);
 
   const handleHexChange = (raw: string) => {
     const clean = raw
@@ -351,13 +349,9 @@ export function ColorPicker({
       setHue(h);
       setSat(s);
       setVal(v);
+      // Remount pickers to snap to new position
+      setPickerKey((k) => k + 1);
     }
-  };
-
-  const handleHexFocus = () => setIsTyping(true);
-  const handleHexBlur = () => {
-    setIsTyping(false);
-    setHexInput(hex.replace("#", "").toUpperCase());
   };
 
   const handlePreset = (c: string) => {
@@ -378,13 +372,13 @@ export function ColorPicker({
     opacity: bgOp.value,
   }));
 
-  if (!visible) return null;
+  if (!mounted) return null;
 
   const applyTextColor = luminance(hex) > 0.45 ? "#000" : "#fff";
 
   return (
     <Modal
-      visible={visible}
+      visible={mounted}
       transparent
       statusBarTranslucent
       animationType="none"
@@ -408,6 +402,7 @@ export function ColorPicker({
         <Text style={s.title}>{title}</Text>
 
         <SatValPicker
+          key={`sv-${pickerKey}`}
           hue={hue}
           initSat={sat}
           initVal={val}
@@ -416,7 +411,7 @@ export function ColorPicker({
 
         <View style={s.hueRow}>
           <View style={[s.swatch, { backgroundColor: hex }]} />
-          <HuePicker hue={hue} onHueChange={handleHue} />
+          <HuePicker key={`hue-${pickerKey}`} hue={hue} onHueChange={handleHue} />
         </View>
 
         <View style={s.hexRow}>
@@ -425,8 +420,6 @@ export function ColorPicker({
             style={s.hexInput}
             value={hexInput}
             onChangeText={handleHexChange}
-            onFocus={handleHexFocus}
-            onBlur={handleHexBlur}
             maxLength={6}
             autoCapitalize="characters"
             autoCorrect={false}
@@ -451,7 +444,7 @@ export function ColorPicker({
                     backgroundColor: c,
                     borderWidth: active ? 2.5 : 1,
                     borderColor: active ? "#fff" : "rgba(255,255,255,0.12)",
-                    transform: [{ scale: active ? 1.16 : 1 }],
+                    transform: [{ scale: active ? 1.14 : 1 }],
                   },
                 ]}
                 activeOpacity={0.75}
@@ -491,11 +484,11 @@ const s = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: Colors.surface, // ← app design system
+    backgroundColor: "#f8f6f3", // warm off-white, premium feel
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
+    borderTopColor: "#e8e4df",
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
     gap: Spacing.md,
@@ -505,14 +498,14 @@ const s = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.border, // ← matches app
+    backgroundColor: "#d4cfc8",
     alignSelf: "center",
     marginBottom: Spacing.xs,
   },
   title: {
     fontSize: FontSize.xs,
     fontFamily: Fonts.monoMedium,
-    color: Colors.textMuted,
+    color: "#8a857c",
     textAlign: "center",
     letterSpacing: 1.2,
     textTransform: "uppercase",
@@ -525,10 +518,10 @@ const s = StyleSheet.create({
     borderWidth: 2.5,
     borderColor: "#fff",
     shadowColor: "#000",
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 8,
+    elevation: 6,
   },
   hueRow: {
     flexDirection: "row",
@@ -539,8 +532,8 @@ const s = StyleSheet.create({
     width: 50,
     height: BAR_H + 6,
     borderRadius: Radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
+    borderWidth: 1,
+    borderColor: "#e0dbd4",
   },
   hueThumb: {
     position: "absolute",
@@ -551,48 +544,53 @@ const s = StyleSheet.create({
     borderWidth: 3,
     borderColor: "#fff",
     shadowColor: "#000",
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 8,
+    elevation: 6,
   },
   hexRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.surfaceOffset,
+    backgroundColor: "#ffffff",
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#e0dbd4",
     paddingHorizontal: Spacing.md,
     height: 44,
     gap: 4,
   },
-  hexHash: { fontSize: FontSize.base, fontFamily: Fonts.mono, color: Colors.textMuted },
+  hexHash: { fontSize: FontSize.base, fontFamily: Fonts.mono, color: "#8a857c" },
   hexInput: {
     flex: 1,
     fontSize: FontSize.base,
     fontFamily: Fonts.monoBold,
-    color: Colors.text,
+    color: "#1a1a1a",
     letterSpacing: 3,
     padding: 0,
   },
   hexDot: { width: 18, height: 18, borderRadius: 9 },
-  presets: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  preset: { width: 32, height: 32, borderRadius: 16 },
+  presets: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    paddingVertical: 4,
+  },
+  preset: { width: 34, height: 34, borderRadius: 17 },
   actions: { flexDirection: "row", gap: Spacing.sm, paddingTop: Spacing.xs },
   btnCancel: {
     flex: 1,
     paddingVertical: 13,
     borderRadius: Radius.full,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: "#e0dbd4",
     alignItems: "center",
-    backgroundColor: Colors.surfaceOffset,
+    backgroundColor: "#ffffff",
   },
   cancelTxt: {
     fontSize: FontSize.sm,
     fontFamily: Fonts.monoMedium,
-    color: Colors.textMuted,
+    color: "#8a857c",
     fontWeight: "500",
   },
   btnApply: {

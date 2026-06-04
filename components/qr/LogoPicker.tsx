@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -9,14 +10,141 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  runOnJS,
+} from "react-native-reanimated";
 import { Colors, Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
 
 interface Props {
   logoUri?: string;
+  logoSize?: number; // 0.1 to 0.4 of QR size
   onChange: (uri: string | undefined) => void;
+  onSizeChange?: (size: number) => void;
 }
 
-export function LogoPicker({ logoUri, onChange }: Props) {
+const DEFAULT_SIZE = 0.2;
+const MIN_SIZE = 0.1;
+const MAX_SIZE = 0.4;
+
+function triggerHaptic() {
+  Haptics.selectionAsync();
+}
+
+function LogoSizeControl({
+  size,
+  onSizeChange,
+}: {
+  size: number;
+  onSizeChange: (s: number) => void;
+}) {
+  const trackWidthSV = useSharedValue(0);
+  const sv = useSharedValue(size);
+  const isActive = useSharedValue(0);
+  const lastSizeRef = useRef(size);
+  const [displaySize, setDisplaySize] = useState(Math.round(size * 100));
+
+  useEffect(() => {
+    if (Math.abs(size - lastSizeRef.current) > 0.001) {
+      sv.value = withTiming(size, {
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+      });
+      setDisplaySize(Math.round(size * 100));
+      lastSizeRef.current = size;
+    }
+  }, [size]);
+
+  const fillStyle = useAnimatedStyle(() => {
+    const w = trackWidthSV.value;
+    const pct = w > 0 ? ((sv.value - MIN_SIZE) / (MAX_SIZE - MIN_SIZE)) * w : 0;
+    return { width: pct };
+  });
+
+  const knobStyle = useAnimatedStyle(() => {
+    const w = trackWidthSV.value;
+    const pct = w > 0 ? ((sv.value - MIN_SIZE) / (MAX_SIZE - MIN_SIZE)) * w : 0;
+    return {
+      transform: [
+        { translateX: pct - 10 },
+        { scale: isActive.value === 1 ? 1.2 : 1 },
+      ],
+    };
+  });
+
+  const commitRef = useRef(onSizeChange);
+  commitRef.current = onSizeChange;
+
+  const commitSize = (s: number) => {
+    const clamped = Math.max(MIN_SIZE, Math.min(MAX_SIZE, s));
+    lastSizeRef.current = clamped;
+    setDisplaySize(Math.round(clamped * 100));
+    commitRef.current(clamped);
+  };
+
+  const pan = useMemo(
+    () =>
+      Gesture.Pan()
+        .onBegin(() => {
+          isActive.value = withTiming(1, { duration: 150 });
+          runOnJS(triggerHaptic)();
+        })
+        .onUpdate((e) => {
+          if (trackWidthSV.value <= 0) return;
+          const pct = Math.max(0, Math.min(1, e.x / trackWidthSV.value));
+          sv.value = MIN_SIZE + pct * (MAX_SIZE - MIN_SIZE);
+        })
+        .onEnd(() => {
+          isActive.value = withTiming(0, { duration: 200 });
+          runOnJS(commitSize)(sv.value);
+        }),
+    [],
+  );
+
+  const tap = useMemo(
+    () =>
+      Gesture.Tap().onEnd((e) => {
+        if (trackWidthSV.value <= 0) return;
+        const pct = Math.max(0, Math.min(1, e.x / trackWidthSV.value));
+        const newSize = MIN_SIZE + pct * (MAX_SIZE - MIN_SIZE);
+        sv.value = withTiming(newSize, {
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+        });
+        runOnJS(commitSize)(newSize);
+        runOnJS(triggerHaptic)();
+      }),
+    [],
+  );
+
+  const composed = useMemo(() => Gesture.Race(pan, tap), [pan, tap]);
+
+  return (
+    <View style={styles.sizeControl}>
+      <GestureDetector gesture={composed}>
+        <View
+          style={styles.sizeTrack}
+          onLayout={(e) => (trackWidthSV.value = e.nativeEvent.layout.width)}
+        >
+          <Animated.View style={[styles.sizeFill, fillStyle]} />
+          <Animated.View style={[styles.sizeKnob, knobStyle]} />
+        </View>
+      </GestureDetector>
+      <Text style={styles.sizeLabel}>{displaySize}%</Text>
+    </View>
+  );
+}
+
+export function LogoPicker({
+  logoUri,
+  logoSize = DEFAULT_SIZE,
+  onChange,
+  onSizeChange,
+}: Props) {
   const pick = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
@@ -26,7 +154,6 @@ export function LogoPicker({ logoUri, onChange }: Props) {
       );
       return;
     }
-    // SDK 55: mediaTypes is string array, not enum [web:82]
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
@@ -44,6 +171,10 @@ export function LogoPicker({ logoUri, onChange }: Props) {
     onChange(undefined);
   };
 
+  const handleSizeChange = (s: number) => {
+    onSizeChange?.(s);
+  };
+
   return (
     <View>
       <Text style={styles.sectionTitle}>Logo (optional)</Text>
@@ -55,6 +186,7 @@ export function LogoPicker({ logoUri, onChange }: Props) {
               style={styles.removeBtn}
               onPress={remove}
               activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="close-circle" size={20} color={Colors.error} />
             </TouchableOpacity>
@@ -74,8 +206,13 @@ export function LogoPicker({ logoUri, onChange }: Props) {
             {logoUri ? "Change" : "Pick Logo"}
           </Text>
         </TouchableOpacity>
-        {logoUri && <Text style={styles.hint}>Logo auto-centered in QR</Text>}
       </View>
+      {logoUri && onSizeChange && (
+        <View style={styles.sizeRow}>
+          <Ionicons name="resize-outline" size={14} color={Colors.textFaint} />
+          <LogoSizeControl size={logoSize} onSizeChange={handleSizeChange} />
+        </View>
+      )}
     </View>
   );
 }
@@ -99,13 +236,11 @@ const styles = StyleSheet.create({
   },
   logoPreview: { position: "relative" },
   logoImage: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    width: 44,
+    height: 44,
+    borderRadius: Radius.sm,
   },
-  removeBtn: { position: "absolute", top: -8, right: -8 },
+  removeBtn: { position: "absolute", top: -6, right: -6 },
   pickBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -123,5 +258,54 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: "600",
   },
-  hint: { fontSize: FontSize.xs, fontFamily: Fonts.mono, color: Colors.textFaint, flex: 1 },
+  sizeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.base,
+    marginTop: Spacing.sm,
+  },
+  sizeControl: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  sizeTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: Colors.surfaceOffset,
+    borderRadius: 3,
+    position: "relative",
+    justifyContent: "center",
+  },
+  sizeFill: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: Colors.primary,
+    borderRadius: 3,
+  },
+  sizeKnob: {
+    position: "absolute",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    borderWidth: 2.5,
+    borderColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 4,
+  },
+  sizeLabel: {
+    fontSize: FontSize.xs,
+    fontFamily: Fonts.monoMedium,
+    color: Colors.textMuted,
+    minWidth: 32,
+    textAlign: "right",
+  },
 });

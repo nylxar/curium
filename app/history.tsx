@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import Animated, {
   useAnimatedStyle,
   withDelay,
   withTiming,
+  Easing,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -52,19 +53,17 @@ function AnimatedHistoryCard({
     opacity: opacity.value,
   }));
 
-  // Staggered entrance — fast timing-based, no bounce
-  useFocusEffect(
-    useCallback(() => {
-      translateY.value = withDelay(
-        Math.min(index * 25, 200),
-        withTiming(0, { duration: 200 }),
-      );
-      opacity.value = withDelay(
-        Math.min(index * 25, 200),
-        withTiming(1, { duration: 180 }),
-      );
-    }, [index]),
-  );
+  // Staggered entrance — runs once on mount, not on every focus
+  useEffect(() => {
+    translateY.value = withDelay(
+      Math.min(index * 25, 200),
+      withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) }),
+    );
+    opacity.value = withDelay(
+      Math.min(index * 25, 200),
+      withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [index]);
 
   const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
     url: "link-outline",
@@ -149,7 +148,7 @@ export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  // useFocusEffect = loads every time screen comes into focus, no delay
+  // Load on focus — data load is already async, no need to defer
   useFocusEffect(
     useCallback(() => {
       let active = true;

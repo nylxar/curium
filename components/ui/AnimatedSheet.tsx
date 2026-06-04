@@ -16,7 +16,6 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Spacing } from "@/constants/theme";
 
 interface Props {
@@ -42,23 +41,37 @@ export function AnimatedSheet({
   disableBackdropPress = false,
   disableSwipeDown = false,
 }: Props) {
-  const insets = useSafeAreaInsets();
   const sheetY = useSharedValue(500);
   const backdropOp = useSharedValue(0);
   const keyboardH = useSharedValue(0);
+  const keyboardHeight = useSharedValue(0);
   const [mounted, setMounted] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const closing = useSharedValue(0);
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
       "keyboardDidShow",
       (e: KeyboardEvent) => {
-        setKeyboardHeight(e.endCoordinates.height);
+        const adjustedHeight = Math.max(0, e.endCoordinates.height);
+        keyboardHeight.value = withTiming(adjustedHeight, {
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+        });
+        keyboardH.value = withTiming(adjustedHeight, {
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+        });
       },
     );
     const hideSub = Keyboard.addListener("keyboardDidHide", () => {
-      setKeyboardHeight(0);
+      keyboardHeight.value = withTiming(0, {
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+      });
+      keyboardH.value = withTiming(0, {
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+      });
     });
     return () => {
       showSub.remove();
@@ -70,9 +83,12 @@ export function AnimatedSheet({
     if (visible) {
       closing.value = 0;
       setMounted(true);
+      // Use two RAFs to ensure the initial render is committed before animating
       requestAnimationFrame(() => {
-        sheetY.value = withSpring(0, SPRING);
-        backdropOp.value = withTiming(0.5, { duration: 180 });
+        requestAnimationFrame(() => {
+          sheetY.value = withSpring(0, SPRING);
+          backdropOp.value = withTiming(0.5, { duration: 180 });
+        });
       });
     } else if (mounted) {
       closing.value = 1;
@@ -85,14 +101,6 @@ export function AnimatedSheet({
       });
     }
   }, [visible]);
-
-  // Animate keyboard offset smoothly
-  useEffect(() => {
-    keyboardH.value = withTiming(keyboardHeight > 0 ? keyboardHeight + 20 : 0, {
-      duration: 200,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [keyboardHeight]);
 
   const dismiss = () => {
     "worklet";
@@ -118,7 +126,13 @@ export function AnimatedSheet({
     });
 
   const sheetStyle = useAnimatedStyle(() => ({
+    // When keyboard up: translateY stays at 0, sheet sits at bottom
+    // gapFill pushes the sheet up via its height
+    // When keyboard down: sheetY animates from 500 to 0
     transform: [{ translateY: sheetY.value - keyboardH.value }],
+  }));
+  const gapFillStyle = useAnimatedStyle(() => ({
+    height: keyboardHeight.value,
   }));
   const bgStyle = useAnimatedStyle(() => ({
     opacity: backdropOp.value,
@@ -145,14 +159,19 @@ export function AnimatedSheet({
         />
       </Animated.View>
 
+      {/* Fill gap between sheet bottom and keyboard */}
+      <Animated.View
+        style={[styles.gapFill, gapFillStyle, { backgroundColor: bgColor }]}
+        pointerEvents="none"
+      />
+
       {/* Sheet */}
       <GestureDetector gesture={disableSwipeDown ? Gesture.Pan() : pan}>
         <Animated.View
           style={[
             styles.sheet,
             {
-              paddingBottom:
-                insets.bottom > 0 ? insets.bottom + Spacing.md : Spacing.xl,
+              paddingBottom: Spacing.md,
               backgroundColor: bgColor,
               borderTopColor: borderColor,
             },
@@ -173,6 +192,12 @@ export function AnimatedSheet({
 const styles = StyleSheet.create({
   backdrop: {
     backgroundColor: "#000",
+  },
+  gapFill: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   sheet: {
     position: "absolute",
