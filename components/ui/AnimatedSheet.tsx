@@ -1,5 +1,11 @@
 import { ReactNode, useEffect, useState } from "react";
-import { Pressable, StyleSheet, ViewStyle } from "react-native";
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  ViewStyle,
+  Platform,
+} from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -93,7 +99,13 @@ export function AnimatedSheet({
   if (!mounted) return null;
 
   return (
-    <>
+    <Modal
+      visible={mounted}
+      transparent
+      statusBarTranslucent
+      animationType="none"
+      onRequestClose={dismiss}
+    >
       {/* Backdrop */}
       <Animated.View
         style={[StyleSheet.absoluteFill, styles.backdrop, bgStyle]}
@@ -111,8 +123,8 @@ export function AnimatedSheet({
           style={[
             styles.sheet,
             {
-              bottom: 0,
-              paddingBottom: insets.bottom + Spacing.md,
+              paddingBottom:
+                insets.bottom > 0 ? insets.bottom + Spacing.md : Spacing.xl,
               backgroundColor: bgColor,
               borderTopColor: borderColor,
             },
@@ -126,27 +138,24 @@ export function AnimatedSheet({
           {children}
         </Animated.View>
       </GestureDetector>
-    </>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   backdrop: {
     backgroundColor: "#000",
-    zIndex: 9999,
-    elevation: 9999,
   },
   sheet: {
     position: "absolute",
     left: 0,
     right: 0,
+    bottom: 0,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: Spacing.sm,
     paddingHorizontal: Spacing.lg,
-    zIndex: 10000,
-    elevation: 10000,
   },
   handle: {
     width: 36,

@@ -235,20 +235,15 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
           backgroundColor: qrStyle.bgColor,
           borderRadius: 20,
           overflow: "hidden",
-          alignItems: "center",
-          justifyContent: "center",
         },
         containerAnimStyle,
       ]}
     >
-      {/* Circular mask — centered, reveals QR via size animation */}
+      {/* Square mask — grows from center, no corner clipping */}
       <Animated.View
         style={[
           {
-            borderRadius: size,
             overflow: "hidden",
-            alignItems: "center",
-            justifyContent: "center",
           },
           maskStyle,
         ]}
