@@ -62,9 +62,9 @@ export interface QRStyle {
   ecl: ECL;
 }
 export const DEFAULT_QR_STYLE: QRStyle = {
-  colorId: "arctic",
-  fgColor: "#041520",
-  bgColor: "#67e8f9",
+  colorId: "paper",
+  fgColor: "#1c1917",
+  bgColor: "#fafaf9",
   eyeColor: "#041520",
   eyeShape: "round",
   pixelShape: "dots",

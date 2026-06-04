@@ -29,26 +29,45 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <StatusBar style="auto" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" options={{ animation: "none" }} />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: "fade",
+              animationDuration: 180,
+            }}
+          >
+            <Stack.Screen
+              name="index"
+              options={{ animation: "fade", animationDuration: 180 }}
+            />
             <Stack.Screen
               name="scan"
               options={{
                 animation: "slide_from_bottom",
+                animationDuration: 280,
                 presentation: "modal",
               }}
             />
             <Stack.Screen
               name="history"
-              options={{ animation: "slide_from_right" }}
+              options={{
+                animation: "simple_push",
+                animationDuration: 200,
+              }}
             />
             <Stack.Screen
               name="settings"
-              options={{ animation: "slide_from_right" }}
+              options={{
+                animation: "simple_push",
+                animationDuration: 200,
+              }}
             />
             <Stack.Screen
               name="qr-detail"
-              options={{ animation: "slide_from_bottom" }}
+              options={{
+                animation: "slide_from_bottom",
+                animationDuration: 280,
+              }}
             />
           </Stack>
         </ThemeProvider>

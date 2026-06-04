@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
@@ -102,7 +103,13 @@ export function OptionRow({
             />
           </TouchableOpacity>
         </View>
-        <View style={styles.content}>{children}</View>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
       </AnimatedSheet>
     </>
   );
@@ -133,5 +140,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.sm,
   },
   sheetTitle: { flex: 1, fontSize: FontSize.md },
-  content: { gap: Spacing.sm },
+  scroll: { maxHeight: 500 },
+  content: { gap: Spacing.sm, paddingBottom: Spacing.sm },
 });

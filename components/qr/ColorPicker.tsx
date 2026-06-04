@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -17,16 +17,17 @@ import Svg, {
 import {
   Gesture,
   GestureDetector,
-  GestureHandlerRootView,
 } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
+  withTiming,
+  Easing,
   runOnJS,
   clamp,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Modal } from "react-native";
 import { Colors, Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
 // ─── Color math (worklet-safe) ────────────────────────────────────────────────
@@ -181,18 +182,10 @@ function SatValPicker({
   const tx = useSharedValue(initSat * SV_SIZE);
   const ty = useSharedValue((1 - initVal) * SV_SIZE);
 
-  // Only snap to spring when preset/hex changes (not during drag)
+  // Only snap to timing when preset/hex changes (not during drag)
   const snapTo = useCallback((s: number, v: number) => {
-    tx.value = withSpring(s * SV_SIZE, {
-      damping: 20,
-      stiffness: 280,
-      mass: 0.4,
-    });
-    ty.value = withSpring((1 - v) * SV_SIZE, {
-      damping: 20,
-      stiffness: 280,
-      mass: 0.4,
-    });
+    tx.value = withTiming(s * SV_SIZE, { duration: 180, easing: Easing.out(Easing.cubic) });
+    ty.value = withTiming((1 - v) * SV_SIZE, { duration: 180, easing: Easing.out(Easing.cubic) });
   }, []);
 
   // Expose snap imperatively via ref pattern — parent calls this after preset tap
@@ -257,10 +250,9 @@ function HuePicker({
   const tx = useSharedValue((hue / 360) * BAR_W);
 
   useEffect(() => {
-    tx.value = withSpring((hue / 360) * BAR_W, {
-      damping: 20,
-      stiffness: 280,
-      mass: 0.4,
+    tx.value = withTiming((hue / 360) * BAR_W, {
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
     });
   }, [hue]);
 
@@ -319,8 +311,7 @@ export function ColorPicker({
   const [sat, setSat] = useState(1);
   const [val, setVal] = useState(1);
   const [hexInput, setHexInput] = useState("");
-  // Key forces SatValPicker remount when preset changes sat/val externally
-  const [svKey, setSvKey] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
 
   const sheetY = useSharedValue(900);
   const bgOp = useSharedValue(0);
@@ -332,19 +323,22 @@ export function ColorPicker({
       setSat(s);
       setVal(v);
       setHexInput(initialColor.replace("#", "").toUpperCase());
-      sheetY.value = withSpring(0, { damping: 24, stiffness: 260, mass: 0.85 });
-      bgOp.value = withSpring(1, { damping: 30, stiffness: 220 });
+      sheetY.value = withTiming(0, { duration: 260, easing: Easing.out(Easing.cubic) });
+      bgOp.value = withTiming(0.5, { duration: 160 });
     } else {
-      sheetY.value = withSpring(900, { damping: 24, stiffness: 260 });
-      bgOp.value = withSpring(0, { damping: 30, stiffness: 220 });
+      sheetY.value = withTiming(900, { duration: 200, easing: Easing.in(Easing.cubic) });
+      bgOp.value = withTiming(0, { duration: 120 });
     }
   }, [visible, initialColor]);
 
   const hex = hsvToHex(hue, sat, val);
 
+  // Only sync hexInput from external hex when user is NOT typing
   useEffect(() => {
-    setHexInput(hex.replace("#", "").toUpperCase());
-  }, [hue, sat, val]);
+    if (!isTyping) {
+      setHexInput(hex.replace("#", "").toUpperCase());
+    }
+  }, [hue, sat, val, isTyping]);
 
   const handleHexChange = (raw: string) => {
     const clean = raw
@@ -357,16 +351,18 @@ export function ColorPicker({
       setHue(h);
       setSat(s);
       setVal(v);
-      setSvKey((k) => k + 1);
     }
   };
 
+  const handleHexFocus = () => setIsTyping(true);
+  const handleHexBlur = () => {
+    setIsTyping(false);
+    setHexInput(hex.replace("#", "").toUpperCase());
+  };
+
   const handlePreset = (c: string) => {
-    const [h, s, v] = hexToHsv(c);
-    setHue(h);
-    setSat(s);
-    setVal(v);
-    setSvKey((k) => k + 1); // remount SatValPicker → thumb snaps cleanly
+    onConfirm(c);
+    onClose();
   };
 
   const handleSV = useCallback((s: number, v: number) => {
@@ -387,20 +383,20 @@ export function ColorPicker({
   const applyTextColor = luminance(hex) > 0.45 ? "#000" : "#fff";
 
   return (
-    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
-      {/* Backdrop — tinted dark over the app */}
+    <Modal
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      animationType="none"
+      onRequestClose={onClose}
+    >
       <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: "#000" },
-          bgStyle,
-        ]}
+        style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }, bgStyle]}
         pointerEvents="auto"
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
 
-      {/* Sheet — uses app surface color */}
       <Animated.View
         style={[
           s.sheet,
@@ -412,7 +408,6 @@ export function ColorPicker({
         <Text style={s.title}>{title}</Text>
 
         <SatValPicker
-          key={svKey}
           hue={hue}
           initSat={sat}
           initVal={val}
@@ -430,6 +425,8 @@ export function ColorPicker({
             style={s.hexInput}
             value={hexInput}
             onChangeText={handleHexChange}
+            onFocus={handleHexFocus}
+            onBlur={handleHexBlur}
             maxLength={6}
             autoCapitalize="characters"
             autoCorrect={false}
@@ -483,7 +480,7 @@ export function ColorPicker({
           </TouchableOpacity>
         </View>
       </Animated.View>
-    </GestureHandlerRootView>
+    </Modal>
   );
 }
 
@@ -574,8 +571,10 @@ const s = StyleSheet.create({
   hexInput: {
     flex: 1,
     fontSize: FontSize.base,
+    fontFamily: Fonts.monoBold,
     color: Colors.text,
-    letterSpacing: 2,
+    letterSpacing: 3,
+    padding: 0,
   },
   hexDot: { width: 18, height: 18, borderRadius: 9 },
   presets: { flexDirection: "row", flexWrap: "wrap", gap: 8 },

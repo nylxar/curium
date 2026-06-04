@@ -52,16 +52,16 @@ function AnimatedHistoryCard({
     opacity: opacity.value,
   }));
 
-  // Staggered entrance — timing-based, no bounce
+  // Staggered entrance — fast timing-based, no bounce
   useFocusEffect(
     useCallback(() => {
       translateY.value = withDelay(
-        index * 40,
-        withTiming(0, { duration: 300 }),
+        Math.min(index * 25, 200),
+        withTiming(0, { duration: 200 }),
       );
       opacity.value = withDelay(
-        index * 40,
-        withTiming(1, { duration: 250 }),
+        Math.min(index * 25, 200),
+        withTiming(1, { duration: 180 }),
       );
     }, [index]),
   );

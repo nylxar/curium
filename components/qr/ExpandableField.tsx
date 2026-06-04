@@ -5,8 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
@@ -89,9 +87,6 @@ export function ExpandableField({
         borderColor={colors.border}
         disableSwipeDown
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
           <View style={styles.sheetHeader}>
             <Text
               style={[
@@ -136,7 +131,6 @@ export function ExpandableField({
             autoCapitalize="none"
             autoCorrect={false}
           />
-        </KeyboardAvoidingView>
       </AnimatedSheet>
     </>
   );

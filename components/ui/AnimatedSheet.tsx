@@ -4,7 +4,8 @@ import {
   Pressable,
   StyleSheet,
   ViewStyle,
-  Platform,
+  Keyboard,
+  KeyboardEvent,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -12,6 +13,7 @@ import Animated, {
   withSpring,
   withTiming,
   runOnJS,
+  Easing,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,8 +45,26 @@ export function AnimatedSheet({
   const insets = useSafeAreaInsets();
   const sheetY = useSharedValue(500);
   const backdropOp = useSharedValue(0);
+  const keyboardH = useSharedValue(0);
   const [mounted, setMounted] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const closing = useSharedValue(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      "keyboardDidShow",
+      (e: KeyboardEvent) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      },
+    );
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -65,6 +85,14 @@ export function AnimatedSheet({
       });
     }
   }, [visible]);
+
+  // Animate keyboard offset smoothly
+  useEffect(() => {
+    keyboardH.value = withTiming(keyboardHeight > 0 ? keyboardHeight + 20 : 0, {
+      duration: 200,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [keyboardHeight]);
 
   const dismiss = () => {
     "worklet";
@@ -90,7 +118,7 @@ export function AnimatedSheet({
     });
 
   const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: sheetY.value }],
+    transform: [{ translateY: sheetY.value - keyboardH.value }],
   }));
   const bgStyle = useAnimatedStyle(() => ({
     opacity: backdropOp.value,

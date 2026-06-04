@@ -8,8 +8,9 @@ import {
 } from "react-native";
 import Animated, {
   useSharedValue,
-  withSpring,
+  withTiming,
   useAnimatedStyle,
+  Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { QR_COLORS } from "@/constants/theme";
@@ -33,9 +34,9 @@ function ColorSwatch({
   const scale = useSharedValue(1);
 
   useEffect(() => {
-    scale.value = withSpring(selected ? 1.08 : 1, {
-      damping: 14,
-      stiffness: 240,
+    scale.value = withTiming(selected ? 1.08 : 1, {
+      duration: 140,
+      easing: Easing.out(Easing.cubic),
     });
   }, [selected]);
 
@@ -116,33 +117,33 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     paddingBottom: Spacing.sm,
   },
-  swatchWrap: { alignItems: "center", gap: 5, width: 58 },
+  swatchWrap: { alignItems: "center", gap: 6, width: 64 },
   swatch: {
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: Radius.lg,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 0.5,
     borderColor: Colors.border,
   },
-  swatchInner: { width: 22, height: 22, borderRadius: 11 },
+  swatchInner: { width: 24, height: 24, borderRadius: 12 },
   check: {
     position: "absolute",
     bottom: 3,
     right: 3,
-    width: 17,
-    height: 17,
+    width: 18,
+    height: 18,
     borderRadius: 9,
     backgroundColor: "rgba(0,0,0,0.55)",
     alignItems: "center",
     justifyContent: "center",
   },
   swatchLabel: {
-    fontSize: 9,
+    fontSize: 10,
     fontFamily: Fonts.mono,
     color: Colors.textFaint,
     textAlign: "center",
-    width: 58,
+    width: 64,
   },
 });
