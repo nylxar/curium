@@ -57,7 +57,11 @@ function AnimatedActionBtn({
   useEffect(() => {
     opacity.value = withDelay(index * 80, withTiming(1, { duration: 250 }));
     translateY.value = withDelay(index * 80, withTiming(0, { duration: 300 }));
-  }, []);
+    return () => {
+      opacity.value = 0;
+      translateY.value = 10;
+    };
+  }, [index]);
 
   return (
     <Animated.View style={[styles.actionBtnWrap, animStyle]}>

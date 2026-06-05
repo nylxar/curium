@@ -17,6 +17,7 @@ import Svg, {
 import {
   Gesture,
   GestureDetector,
+  GestureHandlerRootView,
 } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -372,20 +373,21 @@ export function ColorPicker({
       animationType="none"
       onRequestClose={onClose}
     >
-      <Animated.View
-        style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }, bgStyle]}
-        pointerEvents="auto"
-      >
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      </Animated.View>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Animated.View
+          style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }, bgStyle]}
+          pointerEvents="auto"
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        </Animated.View>
 
-      <Animated.View
-        style={[
-          s.sheet,
-          { paddingBottom: insets.bottom + Spacing.md },
-          sheetStyle,
-        ]}
-      >
+        <Animated.View
+          style={[
+            s.sheet,
+            { paddingBottom: insets.bottom + Spacing.md },
+            sheetStyle,
+          ]}
+        >
         <View style={s.handle} />
         <Text style={s.title}>{title}</Text>
 
@@ -410,8 +412,10 @@ export function ColorPicker({
             onChangeText={handleHexChange}
             maxLength={6}
             keyboardType="default"
+            autoCapitalize="characters"
             autoCorrect={false}
             spellCheck={false}
+            textContentType="none"
             placeholder="FFFFFF"
             placeholderTextColor={Colors.textMuted}
             selectionColor={hex}
@@ -461,6 +465,7 @@ export function ColorPicker({
           </TouchableOpacity>
         </View>
       </Animated.View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
