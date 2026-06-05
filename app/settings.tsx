@@ -108,6 +108,9 @@ function Row({
 export default function SettingsScreen() {
   const { colors, theme, setTheme } = useTheme();
   const [haptics, setHaptics] = useState(true);
+  const [soundOnScan, setSoundOnScan] = useState(false);
+  const [autoCopy, setAutoCopy] = useState(false);
+  const [keepScreenOn, setKeepScreenOn] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const toast = useToast();
@@ -302,10 +305,67 @@ export default function SettingsScreen() {
               value={haptics}
               onValueChange={(v) => {
                 setHaptics(v);
-                Haptics.selectionAsync();
+                if (v) Haptics.selectionAsync();
               }}
               trackColor={{ true: colors.primary, false: colors.border }}
               thumbColor={haptics ? colors.primary : colors.textFaint}
+            />
+          }
+        />
+        <Row
+          icon="volume-high-outline"
+          label="Sound on Scan"
+          sub="Play a beep when a QR is detected"
+          index={5}
+          colors={colors}
+          right={
+            <Switch
+              value={soundOnScan}
+              onValueChange={(v) => {
+                setSoundOnScan(v);
+                Haptics.selectionAsync();
+              }}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              thumbColor={soundOnScan ? colors.primary : colors.textFaint}
+            />
+          }
+        />
+        <Row
+          icon="sunny-outline"
+          label="Keep Screen On"
+          sub="Prevent screen from sleeping"
+          index={6}
+          colors={colors}
+          right={
+            <Switch
+              value={keepScreenOn}
+              onValueChange={(v) => {
+                setKeepScreenOn(v);
+                Haptics.selectionAsync();
+              }}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              thumbColor={keepScreenOn ? colors.primary : colors.textFaint}
+            />
+          }
+        />
+
+        {/* Generator */}
+        <Text style={S.sectionTitle}>Generator</Text>
+        <Row
+          icon="clipboard-outline"
+          label="Auto-copy on Generate"
+          sub="Copy QR content when you create one"
+          index={7}
+          colors={colors}
+          right={
+            <Switch
+              value={autoCopy}
+              onValueChange={(v) => {
+                setAutoCopy(v);
+                Haptics.selectionAsync();
+              }}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              thumbColor={autoCopy ? colors.primary : colors.textFaint}
             />
           }
         />
@@ -316,7 +376,7 @@ export default function SettingsScreen() {
           icon="shield-checkmark-outline"
           label="Offline Only"
           sub="No internet requests, ever"
-          index={5}
+          index={8}
           colors={colors}
           right={
             <Ionicons
@@ -330,7 +390,7 @@ export default function SettingsScreen() {
           icon="eye-off-outline"
           label="No Tracking"
           sub="Zero analytics, zero telemetry"
-          index={6}
+          index={9}
           colors={colors}
           right={
             <Ionicons
@@ -344,7 +404,7 @@ export default function SettingsScreen() {
           icon="lock-closed-outline"
           label="Local Storage Only"
           sub="All data stays on your device"
-          index={7}
+          index={10}
           colors={colors}
           right={
             <Ionicons
@@ -362,7 +422,7 @@ export default function SettingsScreen() {
           label="Clear History"
           sub="Delete all saved QR codes"
           danger
-          index={8}
+          index={11}
           colors={colors}
           onPress={() =>
             toast.confirm(
@@ -373,6 +433,17 @@ export default function SettingsScreen() {
               true,
             )
           }
+        />
+
+        {/* App */}
+        <Text style={S.sectionTitle}>App</Text>
+        <Row
+          icon="information-circle-outline"
+          label="About Curium"
+          sub="Version, build, and more"
+          index={12}
+          colors={colors}
+          onPress={() => router.push("/about")}
         />
 
         {/* Version card */}

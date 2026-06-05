@@ -145,11 +145,13 @@ export function FormModal({
   const meta = TYPE_META[activeType];
 
   const handleDone = () => {
-    Keyboard.dismiss();
-    // Small delay so the keyboard dismissal animation doesn't fight the sheet close
-    setTimeout(() => {
+    // Wait for the keyboard to fully dismiss before closing the sheet,
+    // so the two animations don't fight each other and cause a shutter.
+    const sub = Keyboard.addListener("keyboardDidHide", () => {
+      sub.remove();
       onClose();
-    }, 50);
+    });
+    Keyboard.dismiss();
   };
 
   const renderFields = () => {
