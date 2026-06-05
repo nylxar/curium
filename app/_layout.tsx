@@ -73,6 +73,13 @@ export default function RootLayout() {
                     animationDuration: 280,
                   }}
                 />
+                <Stack.Screen
+                  name="about"
+                  options={{
+                    animation: "simple_push",
+                    animationDuration: 200,
+                  }}
+                />
               </Stack>
             </SafeAreaProvider>
             {/* OverlayHost is inside OverlayProvider + ToastProvider + ThemeProvider — always on top */}

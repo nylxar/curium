@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "start": "node scripts/write-build-info.js && expo start",
+    "android": "node scripts/write-build-info.js && expo start --android",
+    "ios": "node scripts/write-build-info.js && expo start --ios",
+    "web": "node scripts/write-build-info.js && expo start --web",
+    "build:info": "node scripts/write-build-info.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
