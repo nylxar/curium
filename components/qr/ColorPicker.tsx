@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -28,8 +28,8 @@ import Animated, {
   clamp,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Modal } from "react-native";
 import { Colors, Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { useOverlay } from "@/components/ui/Overlay";
 
 // ─── Color math (worklet-safe) ────────────────────────────────────────────────
 function hsvToHex(h: number, s: number, v: number): string {
@@ -230,33 +230,48 @@ function HuePicker({
   hue: number;
   onHueChange: (h: number) => void;
 }) {
-  const tx = useSharedValue((hue / 360) * BAR_W);
+  const [innerW, setInnerW] = useState(BAR_W - (BAR_H + 6));
+  const trackW = useSharedValue(innerW);
+  const tx = useSharedValue((hue / 360) * innerW);
 
   const gesture = Gesture.Pan()
     .minDistance(0)
     .onBegin((e) => {
       "worklet";
-      tx.value = clamp(e.x, 0, BAR_W);
-      runOnJS(onHueChange)((tx.value / BAR_W) * 360);
+      const max = trackW.value;
+      tx.value = clamp(e.x, 0, max);
+      runOnJS(onHueChange)((tx.value / max) * 360);
     })
     .onUpdate((e) => {
       "worklet";
-      tx.value = clamp(e.x, 0, BAR_W);
-      runOnJS(onHueChange)((tx.value / BAR_W) * 360);
+      const max = trackW.value;
+      tx.value = clamp(e.x, 0, max);
+      runOnJS(onHueChange)((tx.value / max) * 360);
     });
 
   const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: tx.value - (BAR_H + 6) / 2 }],
+    transform: [{ translateX: tx.value }],
   }));
 
   const dotColor = hsvToHex(hue, 1, 1);
+  const thumbSize = BAR_H + 6;
 
   return (
     <GestureDetector gesture={gesture}>
       <View
-        style={{ width: BAR_W, height: BAR_H + 6, justifyContent: "center" }}
+        style={{
+          width: BAR_W,
+          height: thumbSize,
+          justifyContent: "center",
+          paddingHorizontal: thumbSize / 2,
+        }}
+        onLayout={(e) => {
+          const w = e.nativeEvent.layout.width - thumbSize;
+          trackW.value = w;
+          setInnerW(w);
+        }}
       >
-        <SvgHueBar w={BAR_W} h={BAR_H} />
+        <SvgHueBar w={innerW} h={BAR_H} />
         <Animated.View
           style={[s.hueThumb, { backgroundColor: dotColor }, thumbStyle]}
           pointerEvents="none"
@@ -282,48 +297,78 @@ export function ColorPicker({
   onConfirm,
   onClose,
 }: ColorPickerProps) {
+  const overlay = useOverlay();
+  const [overlayId, setOverlayId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      const id = overlay.show(
+        <ColorPickerContent
+          initialColor={initialColor}
+          title={title}
+          onConfirm={(hex) => {
+            onConfirm(hex);
+            overlay.dismiss(id);
+          }}
+          onClose={() => {
+            overlay.dismiss(id);
+            onClose();
+          }}
+        />,
+      );
+      setOverlayId(id);
+      return () => {
+        overlay.dismiss(id);
+        setOverlayId(null);
+      };
+    } else if (overlayId !== null) {
+      overlay.dismiss(overlayId);
+      setOverlayId(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  return null;
+}
+
+interface ColorPickerContentProps {
+  initialColor: string;
+  title: string;
+  onConfirm: (hex: string) => void;
+  onClose: () => void;
+}
+
+function ColorPickerContent({
+  initialColor,
+  title,
+  onConfirm,
+  onClose,
+}: ColorPickerContentProps) {
   const insets = useSafeAreaInsets();
   const [hue, setHue] = useState(0);
   const [sat, setSat] = useState(1);
   const [val, setVal] = useState(1);
   const [hexInput, setHexInput] = useState("");
-  const [mounted, setMounted] = useState(false);
   const [pickerKey, setPickerKey] = useState(0);
   const wasVisible = useRef(false);
 
-  const sheetY = useSharedValue(900);
+  const sheetY = useSharedValue(1200);
   const bgOp = useSharedValue(0);
 
-  useEffect(() => {
-    if (visible) {
-      const [h, s, v] = hexToHsv(initialColor);
-      setHue(h);
-      setSat(s);
-      setVal(v);
-      setHexInput(initialColor.replace("#", "").toUpperCase());
-      setMounted(true);
-      setPickerKey((k) => k + 1);
-      wasVisible.current = true;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          sheetY.value = withTiming(0, {
-            duration: 260,
-            easing: Easing.out(Easing.cubic),
-          });
-          bgOp.value = withTiming(0.5, { duration: 160 });
-        });
-      });
-    } else if (mounted && wasVisible.current) {
-      wasVisible.current = false;
-      sheetY.value = withTiming(900, {
-        duration: 200,
-        easing: Easing.in(Easing.cubic),
-      });
-      bgOp.value = withTiming(0, { duration: 160 }, (finished) => {
-        if (finished) runOnJS(setMounted)(false);
-      });
-    }
-  }, [visible, initialColor]);
+  useLayoutEffect(() => {
+    const [h, sv, v] = hexToHsv(initialColor);
+    setHue(h);
+    setSat(sv);
+    setVal(v);
+    setHexInput(initialColor.replace("#", "").toUpperCase());
+    setPickerKey((k) => k + 1);
+    wasVisible.current = true;
+    sheetY.value = withTiming(0, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    });
+    bgOp.value = withTiming(0.5, { duration: 120 });
+  }, []);
 
   const hex = hsvToHex(hue, sat, val);
 
@@ -334,25 +379,33 @@ export function ColorPicker({
       .toUpperCase();
     setHexInput(clean);
     if (clean.length === 6) {
-      const [h, s, v] = hexToHsv(`#${clean}`);
+      const [h, sv, v] = hexToHsv(`#${clean}`);
       setHue(h);
-      setSat(s);
+      setSat(sv);
       setVal(v);
-      // Remount pickers to snap to new position
       setPickerKey((k) => k + 1);
     }
   };
 
   const handlePreset = (c: string) => {
     onConfirm(c);
-    onClose();
   };
 
-  const handleSV = useCallback((s: number, v: number) => {
-    setSat(s);
+  const handleSV = useCallback((sv: number, v: number) => {
+    setSat(sv);
     setVal(v);
   }, []);
   const handleHue = useCallback((h: number) => setHue(h), []);
+
+  const dismiss = () => {
+    sheetY.value = withTiming(1200, {
+      duration: 180,
+      easing: Easing.in(Easing.cubic),
+    });
+    bgOp.value = withTiming(0, { duration: 140 }, (finished) => {
+      if (finished) runOnJS(onClose)();
+    });
+  };
 
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: sheetY.value }],
@@ -361,24 +414,16 @@ export function ColorPicker({
     opacity: bgOp.value,
   }));
 
-  if (!mounted) return null;
-
   const applyTextColor = luminance(hex) > 0.45 ? "#000" : "#fff";
 
   return (
-    <Modal
-      visible={mounted}
-      transparent
-      statusBarTranslucent
-      animationType="none"
-      onRequestClose={onClose}
-    >
-      <GestureHandlerRootView style={{ flex: 1 }}>
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <GestureHandlerRootView style={{ flex: 1 }} pointerEvents="box-none">
         <Animated.View
           style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }, bgStyle]}
           pointerEvents="auto"
         >
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
         </Animated.View>
 
         <Animated.View
@@ -388,85 +433,84 @@ export function ColorPicker({
             sheetStyle,
           ]}
         >
-        <View style={s.handle} />
-        <Text style={s.title}>{title}</Text>
+          <View style={s.handle} />
+          <Text style={s.title}>{title}</Text>
 
-        <SatValPicker
-          key={`sv-${pickerKey}`}
-          hue={hue}
-          initSat={sat}
-          initVal={val}
-          onSVChange={handleSV}
-        />
-
-        <View style={s.hueRow}>
-          <View style={[s.swatch, { backgroundColor: hex }]} />
-          <HuePicker key={`hue-${pickerKey}`} hue={hue} onHueChange={handleHue} />
-        </View>
-
-        <View style={s.hexRow}>
-          <Text style={s.hexHash}>#</Text>
-          <TextInput
-            style={s.hexInput}
-            value={hexInput}
-            onChangeText={handleHexChange}
-            maxLength={6}
-            keyboardType="default"
-            autoCapitalize="characters"
-            autoCorrect={false}
-            spellCheck={false}
-            textContentType="none"
-            placeholder="FFFFFF"
-            placeholderTextColor={Colors.textMuted}
-            selectionColor={hex}
+          <SatValPicker
+            key={`sv-${pickerKey}`}
+            hue={hue}
+            initSat={sat}
+            initVal={val}
+            onSVChange={handleSV}
           />
-          <View style={[s.hexDot, { backgroundColor: hex }]} />
-        </View>
 
-        <View style={s.presets}>
-          {PRESETS.map((c) => {
-            const active = hex.toLowerCase() === c.toLowerCase();
-            return (
-              <TouchableOpacity
-                key={c}
-                onPress={() => handlePreset(c)}
-                style={[
-                  s.preset,
-                  {
-                    backgroundColor: c,
-                    borderWidth: active ? 2.5 : 1,
-                    borderColor: active ? "#fff" : "rgba(255,255,255,0.12)",
-                    transform: [{ scale: active ? 1.14 : 1 }],
-                  },
-                ]}
-                activeOpacity={0.75}
-              />
-            );
-          })}
-        </View>
+          <View style={s.hueRow}>
+            <View style={[s.swatch, { backgroundColor: hex }]} />
+            <HuePicker key={`hue-${pickerKey}`} hue={hue} onHueChange={handleHue} />
+          </View>
 
-        <View style={s.actions}>
-          <TouchableOpacity
-            style={s.btnCancel}
-            onPress={onClose}
-            activeOpacity={0.7}
-          >
-            <Text style={s.cancelTxt}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[s.btnApply, { backgroundColor: hex }]}
-            onPress={() => {
-              onConfirm(hex);
-              onClose();
-            }}
-            activeOpacity={0.85}
-          >
-            <Text style={[s.applyTxt, { color: applyTextColor }]}>Apply</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
+          <View style={s.hexRow}>
+            <Text style={s.hexHash}>#</Text>
+            <TextInput
+              style={s.hexInput}
+              value={hexInput}
+              onChangeText={handleHexChange}
+              maxLength={6}
+              keyboardType="default"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              spellCheck={false}
+              textContentType="none"
+              placeholder="FFFFFF"
+              placeholderTextColor={Colors.textMuted}
+              selectionColor={hex}
+            />
+            <View style={[s.hexDot, { backgroundColor: hex }]} />
+          </View>
+
+          <View style={s.presets}>
+            {PRESETS.map((c) => {
+              const active = hex.toLowerCase() === c.toLowerCase();
+              return (
+                <TouchableOpacity
+                  key={c}
+                  onPress={() => handlePreset(c)}
+                  style={[
+                    s.preset,
+                    {
+                      backgroundColor: c,
+                      borderWidth: active ? 2.5 : 1,
+                      borderColor: active ? "#fff" : "rgba(255,255,255,0.12)",
+                      transform: [{ scale: active ? 1.14 : 1 }],
+                    },
+                  ]}
+                  activeOpacity={0.75}
+                />
+              );
+            })}
+          </View>
+
+          <View style={s.actions}>
+            <TouchableOpacity
+              style={s.btnCancel}
+              onPress={dismiss}
+              activeOpacity={0.7}
+            >
+              <Text style={s.cancelTxt}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.btnApply, { backgroundColor: hex }]}
+              onPress={() => {
+                onConfirm(hex);
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={[s.applyTxt, { color: applyTextColor }]}>Apply</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       </GestureHandlerRootView>
-    </Modal>
+    </View>
   );
 }
 
@@ -477,7 +521,7 @@ const s = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#f8f6f3", // warm off-white, premium feel
+    backgroundColor: "#f8f6f3",
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -485,7 +529,6 @@ const s = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
     gap: Spacing.md,
-    zIndex: 100,
   },
   handle: {
     width: 36,
@@ -530,7 +573,8 @@ const s = StyleSheet.create({
   },
   hueThumb: {
     position: "absolute",
-    top: -3,
+    top: 0,
+    left: 0,
     width: BAR_H + 6,
     height: BAR_H + 6,
     borderRadius: (BAR_H + 6) / 2,

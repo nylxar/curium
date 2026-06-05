@@ -5,7 +5,6 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
@@ -19,6 +18,7 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { Colors, Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
+import { useToast } from "@/components/ui/Toast";
 
 interface Props {
   logoUri?: string;
@@ -130,10 +130,11 @@ export function LogoPicker({
   onChange,
   onSizeChange,
 }: Props) {
+  const toast = useToast();
   const pick = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(
+      toast.warning(
         "Permission needed",
         "Allow photo library access to embed a logo.",
       );

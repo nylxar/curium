@@ -1,8 +1,8 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useLayoutEffect, useState } from "react";
 import {
-  Modal,
   Pressable,
   StyleSheet,
+  View,
   ViewStyle,
   Keyboard,
   KeyboardEvent,
@@ -17,6 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Spacing } from "@/constants/theme";
+import { useOverlay } from "./Overlay";
 
 interface Props {
   visible: boolean;
@@ -29,7 +30,9 @@ interface Props {
   disableSwipeDown?: boolean;
 }
 
-const SPRING = { damping: 28, stiffness: 380, mass: 0.7 };
+const SPRING = { damping: 30, stiffness: 420, mass: 0.6 };
+const SHEET_OFFSCREEN = 1200;
+const CLOSE_DURATION = 160;
 
 export function AnimatedSheet({
   visible,
@@ -41,12 +44,90 @@ export function AnimatedSheet({
   disableBackdropPress = false,
   disableSwipeDown = false,
 }: Props) {
-  const sheetY = useSharedValue(500);
+  const overlay = useOverlay();
+  const [overlayId, setOverlayId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      // Push a placeholder first, then update with the real content
+      const id = overlay.show(
+        <SheetContent
+          bgColor={bgColor}
+          borderColor={borderColor}
+          style={style}
+          disableBackdropPress={disableBackdropPress}
+          disableSwipeDown={disableSwipeDown}
+          onClose={() => {
+            overlay.dismiss(id);
+            onClose();
+          }}
+        >
+          {children}
+        </SheetContent>,
+      );
+      setOverlayId(id);
+      return () => {
+        overlay.dismiss(id);
+        setOverlayId(null);
+      };
+    } else if (overlayId !== null) {
+      // The SheetContent handles its own close animation
+      // We just need to remove it from the overlay
+      overlay.dismiss(overlayId);
+      setOverlayId(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  // Keep overlay content in sync with children changes
+  useEffect(() => {
+    if (overlayId !== null) {
+      overlay.update(
+        overlayId,
+        <SheetContent
+          bgColor={bgColor}
+          borderColor={borderColor}
+          style={style}
+          disableBackdropPress={disableBackdropPress}
+          disableSwipeDown={disableSwipeDown}
+          onClose={() => {
+            overlay.dismiss(overlayId);
+            onClose();
+          }}
+        >
+          {children}
+        </SheetContent>,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [children, bgColor, borderColor]);
+
+  return null;
+}
+
+interface SheetContentProps {
+  bgColor?: string;
+  borderColor?: string;
+  style?: ViewStyle;
+  disableBackdropPress: boolean;
+  disableSwipeDown: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}
+
+function SheetContent({
+  bgColor,
+  borderColor,
+  style,
+  disableBackdropPress,
+  disableSwipeDown,
+  onClose,
+  children,
+}: SheetContentProps) {
+  const sheetY = useSharedValue(SHEET_OFFSCREEN);
   const backdropOp = useSharedValue(0);
   const keyboardH = useSharedValue(0);
   const keyboardHeight = useSharedValue(0);
-  const [mounted, setMounted] = useState(false);
-  const closing = useSharedValue(0);
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -79,37 +160,20 @@ export function AnimatedSheet({
     };
   }, []);
 
-  useEffect(() => {
-    if (visible) {
-      closing.value = 0;
-      setMounted(true);
-      // Use two RAFs to ensure the initial render is committed before animating
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          sheetY.value = withSpring(0, SPRING);
-          backdropOp.value = withTiming(0.5, { duration: 180 });
-        });
-      });
-    } else if (mounted) {
-      closing.value = 1;
-      sheetY.value = withSpring(500, SPRING);
-      backdropOp.value = withTiming(0, { duration: 120 }, (f) => {
-        if (f) {
-          runOnJS(setMounted)(false);
-          runOnJS(onClose)();
-        }
-      });
-    }
-  }, [visible]);
+  // Animate in on mount
+  useLayoutEffect(() => {
+    sheetY.value = withSpring(0, SPRING);
+    backdropOp.value = withTiming(0.5, { duration: 140 });
+  }, []);
 
   const dismiss = () => {
     "worklet";
-    if (closing.value === 1) return;
-    closing.value = 1;
-    sheetY.value = withSpring(500, SPRING);
-    backdropOp.value = withTiming(0, { duration: 120 }, (f) => {
+    sheetY.value = withTiming(SHEET_OFFSCREEN, {
+      duration: CLOSE_DURATION,
+      easing: Easing.in(Easing.cubic),
+    });
+    backdropOp.value = withTiming(0, { duration: CLOSE_DURATION }, (f) => {
       if (f) {
-        runOnJS(setMounted)(false);
         runOnJS(onClose)();
       }
     });
@@ -121,14 +185,14 @@ export function AnimatedSheet({
       if (e.translationY > 0) sheetY.value = e.translationY;
     })
     .onEnd((e) => {
-      if (e.translationY > 100 || e.velocityY > 600) dismiss();
-      else sheetY.value = withSpring(0, SPRING);
+      if (e.translationY > 100 || e.velocityY > 600) {
+        dismiss();
+      } else {
+        sheetY.value = withSpring(0, SPRING);
+      }
     });
 
   const sheetStyle = useAnimatedStyle(() => ({
-    // When keyboard up: translateY stays at 0, sheet sits at bottom
-    // gapFill pushes the sheet up via its height
-    // When keyboard down: sheetY animates from 500 to 0
     transform: [{ translateY: sheetY.value - keyboardH.value }],
   }));
   const gapFillStyle = useAnimatedStyle(() => ({
@@ -138,16 +202,8 @@ export function AnimatedSheet({
     opacity: backdropOp.value,
   }));
 
-  if (!mounted) return null;
-
   return (
-    <Modal
-      visible={mounted}
-      transparent
-      statusBarTranslucent
-      animationType="none"
-      onRequestClose={dismiss}
-    >
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {/* Backdrop */}
       <Animated.View
         style={[StyleSheet.absoluteFill, styles.backdrop, bgStyle]}
@@ -185,7 +241,7 @@ export function AnimatedSheet({
           {children}
         </Animated.View>
       </GestureDetector>
-    </Modal>
+    </View>
   );
 }
 

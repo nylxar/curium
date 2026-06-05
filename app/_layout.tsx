@@ -6,6 +6,8 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { ToastProvider } from "@/components/ui/Toast";
+import { OverlayProvider, OverlayHost } from "@/components/ui/Overlay";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,52 +28,58 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+      <OverlayProvider>
         <ThemeProvider>
-          <StatusBar style="auto" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: "fade",
-              animationDuration: 180,
-            }}
-          >
-            <Stack.Screen
-              name="index"
-              options={{ animation: "fade", animationDuration: 180 }}
-            />
-            <Stack.Screen
-              name="scan"
-              options={{
-                animation: "slide_from_bottom",
-                animationDuration: 280,
-                presentation: "modal",
-              }}
-            />
-            <Stack.Screen
-              name="history"
-              options={{
-                animation: "simple_push",
-                animationDuration: 200,
-              }}
-            />
-            <Stack.Screen
-              name="settings"
-              options={{
-                animation: "simple_push",
-                animationDuration: 200,
-              }}
-            />
-            <Stack.Screen
-              name="qr-detail"
-              options={{
-                animation: "slide_from_bottom",
-                animationDuration: 280,
-              }}
-            />
-          </Stack>
+          <ToastProvider>
+            <SafeAreaProvider>
+              <StatusBar style="auto" />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: "fade",
+                  animationDuration: 180,
+                }}
+              >
+                <Stack.Screen
+                  name="index"
+                  options={{ animation: "fade", animationDuration: 180 }}
+                />
+                <Stack.Screen
+                  name="scan"
+                  options={{
+                    animation: "slide_from_bottom",
+                    animationDuration: 280,
+                    presentation: "modal",
+                  }}
+                />
+                <Stack.Screen
+                  name="history"
+                  options={{
+                    animation: "simple_push",
+                    animationDuration: 200,
+                  }}
+                />
+                <Stack.Screen
+                  name="settings"
+                  options={{
+                    animation: "simple_push",
+                    animationDuration: 200,
+                  }}
+                />
+                <Stack.Screen
+                  name="qr-detail"
+                  options={{
+                    animation: "slide_from_bottom",
+                    animationDuration: 280,
+                  }}
+                />
+              </Stack>
+            </SafeAreaProvider>
+            {/* OverlayHost is inside OverlayProvider + ToastProvider + ThemeProvider — always on top */}
+            <OverlayHost />
+          </ToastProvider>
         </ThemeProvider>
-      </SafeAreaProvider>
+      </OverlayProvider>
     </GestureHandlerRootView>
   );
 }

@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   Linking,
   Platform,
 } from "react-native";
@@ -23,6 +22,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
+import { useToast } from "@/components/ui/Toast";
 
 // Add this helper at module level in scan.tsx:
 function detectQRType(data: string): {
@@ -88,6 +88,7 @@ export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const toast = useToast();
 
   // Laser animation
   const laserY = useSharedValue(0);
@@ -116,7 +117,7 @@ export default function ScanScreen() {
     if (!result) return;
     if (action === "copy") {
       await Clipboard.setStringAsync(result);
-      Alert.alert("Copied!", "Content copied to clipboard.");
+      toast.success("Copied!", "Content copied to clipboard.");
     } else {
       const isURL = result.startsWith("http") || result.startsWith("www");
       if (isURL) {
@@ -124,7 +125,7 @@ export default function ScanScreen() {
           result.startsWith("www") ? `https://${result}` : result,
         );
       } else {
-        Alert.alert("Scanned Content", result);
+        toast.info("Scanned Content", result);
       }
     }
   };

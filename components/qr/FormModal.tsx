@@ -4,8 +4,7 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
@@ -144,6 +143,14 @@ export function FormModal({
 }: Props) {
   const { colors } = useTheme();
   const meta = TYPE_META[activeType];
+
+  const handleDone = () => {
+    Keyboard.dismiss();
+    // Small delay so the keyboard dismissal animation doesn't fight the sheet close
+    setTimeout(() => {
+      onClose();
+    }, 50);
+  };
 
   const renderFields = () => {
     switch (activeType) {
@@ -400,44 +407,39 @@ export function FormModal({
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      pointerEvents={visible ? "auto" : "none"}
+    <AnimatedSheet
+      visible={visible}
+      onClose={onClose}
+      bgColor={colors.surface}
+      borderColor={colors.border}
+      disableSwipeDown
     >
-      <AnimatedSheet
-        visible={visible}
-        onClose={onClose}
-        bgColor={colors.surface}
-        borderColor={colors.border}
-        disableSwipeDown
-      >
-        <View style={mStyles.header}>
-          <View style={[mStyles.iconBox, { backgroundColor: tintColor + "18" }]}>
-            <Ionicons name={meta.icon} size={18} color={tintColor} />
-          </View>
-          <Text
-            style={[
-              mStyles.title,
-              { color: colors.text, fontFamily: Fonts.monoBold },
-            ]}
-          >
-            {meta.label}
-          </Text>
-          <TouchableOpacity
-            onPress={onClose}
-            style={[mStyles.doneBtn, { backgroundColor: tintColor }]}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[mStyles.doneBtnText, { fontFamily: Fonts.monoBold }]}
-            >
-              Done
-            </Text>
-          </TouchableOpacity>
+      <View style={mStyles.header}>
+        <View style={[mStyles.iconBox, { backgroundColor: tintColor + "18" }]}>
+          <Ionicons name={meta.icon} size={18} color={tintColor} />
         </View>
-        <View style={{ gap: Spacing.sm }}>{renderFields()}</View>
-      </AnimatedSheet>
-    </KeyboardAvoidingView>
+        <Text
+          style={[
+            mStyles.title,
+            { color: colors.text, fontFamily: Fonts.monoBold },
+          ]}
+        >
+          {meta.label}
+        </Text>
+        <TouchableOpacity
+          onPress={handleDone}
+          style={[mStyles.doneBtn, { backgroundColor: tintColor }]}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[mStyles.doneBtnText, { fontFamily: Fonts.monoBold }]}
+          >
+            Done
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <View style={{ gap: Spacing.sm }}>{renderFields()}</View>
+    </AnimatedSheet>
   );
 }
 

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Asset, requestPermissionsAsync } from "expo-media-library";
 import { File } from "expo-file-system";
 import * as FileSystemLegacy from "expo-file-system/legacy";
@@ -9,6 +9,7 @@ import { captureRef } from "react-native-view-shot";
 import { Ionicons } from "@expo/vector-icons";
 import { OptionSheet } from "./OptionSheet";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { useToast } from "@/components/ui/Toast";
 
 interface ExportAction {
   icon: keyof typeof Ionicons.glyphMap;
@@ -34,12 +35,13 @@ export function ExportSheet({
   tintColor,
   bgColor,
 }: Props) {
+  const toast = useToast();
   const saveToGallery = async () => {
     if (!qrRef.current) return;
     try {
       const { status } = await requestPermissionsAsync(true);
       if (status !== "granted") {
-        Alert.alert(
+        toast.warning(
           "Permission needed",
           "Allow media access to save QR to gallery.",
         );
@@ -48,11 +50,11 @@ export function ExportSheet({
       const uri = await captureRef(qrRef, { format: "png", quality: 1 });
       await Asset.create(uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Saved!", "QR saved to your gallery.");
+      toast.success("Saved!", "QR saved to your gallery.");
       onClose();
     } catch (e) {
       console.error("Save error:", e);
-      Alert.alert("Error", "Could not save to gallery.");
+      toast.error("Error", "Could not save to gallery.");
     }
   };
 
@@ -71,7 +73,7 @@ export function ExportSheet({
       onClose();
     } catch (e) {
       console.error("Export error:", e); // now you'll see the real error
-      Alert.alert("Error", "Could not export file.");
+      toast.error("Error", "Could not export file.");
     }
   };
 
@@ -84,14 +86,14 @@ export function ExportSheet({
       }
       onClose();
     } catch {
-      Alert.alert("Error", "Could not share.");
+      toast.error("Error", "Could not share.");
     }
   };
 
   const copyText = async () => {
     await Clipboard.setStringAsync(qrValue);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Copied!", "QR content copied to clipboard.");
+    toast.success("Copied!", "QR content copied to clipboard.");
     onClose();
   };
 

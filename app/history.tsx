@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
   TextInput,
   useWindowDimensions,
 } from "react-native";
@@ -28,6 +27,7 @@ import {
 } from "@/services/history";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { useTheme } from "@/context/ThemeContext";
+import { useToast } from "@/components/ui/Toast";
 import { DEFAULT_QR_STYLE } from "@/types/qr";
 
 const THUMB = 80;
@@ -147,6 +147,7 @@ export default function HistoryScreen() {
   const [query, setQuery] = useState("");
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const toast = useToast();
 
   // Load on focus — data load is already async, no need to defer
   useFocusEffect(
@@ -176,18 +177,17 @@ export default function HistoryScreen() {
   }, []);
 
   const handleClear = useCallback(() => {
-    Alert.alert("Clear History", "Delete all QR codes?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Clear All",
-        style: "destructive",
-        onPress: async () => {
-          await clearHistory();
-          setItems([]);
-        },
+    toast.confirm(
+      "Clear History",
+      "Delete all QR codes?",
+      async () => {
+        await clearHistory();
+        setItems([]);
       },
-    ]);
-  }, []);
+      "Clear All",
+      true,
+    );
+  }, [toast]);
 
   const openDetail = (index: number) => {
     // Pass index + serialized items via params

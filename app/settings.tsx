@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  Alert,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -22,6 +21,7 @@ import * as Haptics from "expo-haptics";
 import { clearHistory } from "@/services/history";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts, AppTheme } from "@/constants/theme";
+import { useToast } from "@/components/ui/Toast";
 
 const THEME_OPTIONS: {
   id: AppTheme;
@@ -110,6 +110,7 @@ export default function SettingsScreen() {
   const [haptics, setHaptics] = useState(true);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const toast = useToast();
 
   const S = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.bg },
@@ -364,14 +365,13 @@ export default function SettingsScreen() {
           index={8}
           colors={colors}
           onPress={() =>
-            Alert.alert("Clear History", "Delete everything?", [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Clear",
-                style: "destructive",
-                onPress: () => clearHistory(),
-              },
-            ])
+            toast.confirm(
+              "Clear History",
+              "Delete everything?",
+              () => clearHistory(),
+              "Clear",
+              true,
+            )
           }
         />
 
