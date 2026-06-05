@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import * as MediaLibrary from "expo-media-library";
+import { Asset, requestPermissionsAsync } from "expo-media-library";
 import { captureRef } from "react-native-view-shot";
 import {
   loadHistory,
@@ -134,10 +134,10 @@ export default function QRDetailScreen() {
     if (!current) return;
     const ref = qrRefs.current[current.id];
     if (!ref) return;
-    const { status } = await MediaLibrary.requestPermissionsAsync();
+    const { status } = await requestPermissionsAsync(true);
     if (status !== "granted") return;
     const uri = await captureRef(ref, { format: "png", quality: 1 });
-    await MediaLibrary.saveToLibraryAsync(uri);
+    await Asset.create(uri);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 

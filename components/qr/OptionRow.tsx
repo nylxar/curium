@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import {
   View,
   Text,
@@ -35,17 +35,6 @@ export function OptionRow({
   children,
 }: OptionRowProps) {
   const { colors } = useTheme();
-  const [internalOpen, setInternalOpen] = useState(false);
-  const isOpen = externalOpen ?? internalOpen;
-
-  const doOpen = () => {
-    setInternalOpen(true);
-    onOpen?.();
-  };
-  const doClose = () => {
-    setInternalOpen(false);
-    onClose?.();
-  };
 
   return (
     <>
@@ -57,7 +46,7 @@ export function OptionRow({
             borderColor: colors.border,
           },
         ]}
-        onPress={doOpen}
+        onPress={onOpen}
         activeOpacity={0.6}
       >
         <View style={[styles.iconBox, { backgroundColor: tintColor + "18" }]}>
@@ -78,8 +67,8 @@ export function OptionRow({
       </TouchableOpacity>
 
       <AnimatedSheet
-        visible={isOpen}
-        onClose={doClose}
+        visible={!!externalOpen}
+        onClose={onClose ?? (() => {})}
         bgColor={colors.surface}
         borderColor={colors.border}
       >
@@ -95,7 +84,7 @@ export function OptionRow({
           >
             {label}
           </Text>
-          <TouchableOpacity onPress={doClose} hitSlop={12}>
+          <TouchableOpacity onPress={onClose} hitSlop={12}>
             <Ionicons
               name="close-circle"
               size={24}

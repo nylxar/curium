@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -166,7 +166,7 @@ function SvgHueBar({ w, h }: { w: number; h: number }) {
   );
 }
 
-// ─── SatVal picker — memoized gesture, ref-based callback ─────────────────────
+// ─── SatVal picker ───────────────────────────────────────────────────────────
 function SatValPicker({
   hue,
   initSat,
@@ -181,26 +181,20 @@ function SatValPicker({
   const tx = useSharedValue(initSat * SV_SIZE);
   const ty = useSharedValue((1 - initVal) * SV_SIZE);
 
-  // Ref avoids stale closure without recreating gesture
-  const cbRef = useRef(onSVChange);
-  cbRef.current = onSVChange;
-
-  const gesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .minDistance(0)
-        .onBegin((e) => {
-          tx.value = clamp(e.x, 0, SV_SIZE);
-          ty.value = clamp(e.y, 0, SV_SIZE);
-          runOnJS(cbRef.current)(tx.value / SV_SIZE, 1 - ty.value / SV_SIZE);
-        })
-        .onUpdate((e) => {
-          tx.value = clamp(e.x, 0, SV_SIZE);
-          ty.value = clamp(e.y, 0, SV_SIZE);
-          runOnJS(cbRef.current)(tx.value / SV_SIZE, 1 - ty.value / SV_SIZE);
-        }),
-    [],
-  );
+  const gesture = Gesture.Pan()
+    .minDistance(0)
+    .onBegin((e) => {
+      "worklet";
+      tx.value = clamp(e.x, 0, SV_SIZE);
+      ty.value = clamp(e.y, 0, SV_SIZE);
+      runOnJS(onSVChange)(tx.value / SV_SIZE, 1 - ty.value / SV_SIZE);
+    })
+    .onUpdate((e) => {
+      "worklet";
+      tx.value = clamp(e.x, 0, SV_SIZE);
+      ty.value = clamp(e.y, 0, SV_SIZE);
+      runOnJS(onSVChange)(tx.value / SV_SIZE, 1 - ty.value / SV_SIZE);
+    });
 
   const thumbStyle = useAnimatedStyle(() => ({
     transform: [
@@ -227,7 +221,7 @@ function SatValPicker({
   );
 }
 
-// ─── Hue bar — memoized gesture, ref-based callback ──────────────────────────
+// ─── Hue bar ────────────────────────────────────────────────────────────────
 function HuePicker({
   hue,
   onHueChange,
@@ -237,23 +231,18 @@ function HuePicker({
 }) {
   const tx = useSharedValue((hue / 360) * BAR_W);
 
-  const cbRef = useRef(onHueChange);
-  cbRef.current = onHueChange;
-
-  const gesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .minDistance(0)
-        .onBegin((e) => {
-          tx.value = clamp(e.x, 0, BAR_W);
-          runOnJS(cbRef.current)((clamp(e.x, 0, BAR_W) / BAR_W) * 360);
-        })
-        .onUpdate((e) => {
-          tx.value = clamp(e.x, 0, BAR_W);
-          runOnJS(cbRef.current)((tx.value / BAR_W) * 360);
-        }),
-    [],
-  );
+  const gesture = Gesture.Pan()
+    .minDistance(0)
+    .onBegin((e) => {
+      "worklet";
+      tx.value = clamp(e.x, 0, BAR_W);
+      runOnJS(onHueChange)((tx.value / BAR_W) * 360);
+    })
+    .onUpdate((e) => {
+      "worklet";
+      tx.value = clamp(e.x, 0, BAR_W);
+      runOnJS(onHueChange)((tx.value / BAR_W) * 360);
+    });
 
   const thumbStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: tx.value - (BAR_H + 6) / 2 }],
@@ -314,7 +303,6 @@ export function ColorPicker({
       setMounted(true);
       setPickerKey((k) => k + 1);
       wasVisible.current = true;
-      // Two RAFs to ensure first paint commits before animating
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           sheetY.value = withTiming(0, {
@@ -327,10 +315,10 @@ export function ColorPicker({
     } else if (mounted && wasVisible.current) {
       wasVisible.current = false;
       sheetY.value = withTiming(900, {
-        duration: 180,
+        duration: 200,
         easing: Easing.in(Easing.cubic),
       });
-      bgOp.value = withTiming(0, { duration: 100 }, (finished) => {
+      bgOp.value = withTiming(0, { duration: 160 }, (finished) => {
         if (finished) runOnJS(setMounted)(false);
       });
     }
@@ -421,7 +409,7 @@ export function ColorPicker({
             value={hexInput}
             onChangeText={handleHexChange}
             maxLength={6}
-            autoCapitalize="characters"
+            keyboardType="default"
             autoCorrect={false}
             spellCheck={false}
             placeholder="FFFFFF"

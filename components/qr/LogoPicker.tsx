@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -45,18 +45,14 @@ function LogoSizeControl({
   const trackWidthSV = useSharedValue(0);
   const sv = useSharedValue(size);
   const isActive = useSharedValue(0);
-  const lastSizeRef = useRef(size);
   const [displaySize, setDisplaySize] = useState(Math.round(size * 100));
 
   useEffect(() => {
-    if (Math.abs(size - lastSizeRef.current) > 0.001) {
-      sv.value = withTiming(size, {
-        duration: 200,
-        easing: Easing.out(Easing.cubic),
-      });
-      setDisplaySize(Math.round(size * 100));
-      lastSizeRef.current = size;
-    }
+    sv.value = withTiming(size, {
+      duration: 200,
+      easing: Easing.out(Easing.cubic),
+    });
+    setDisplaySize(Math.round(size * 100));
   }, [size]);
 
   const fillStyle = useAnimatedStyle(() => {
@@ -76,56 +72,45 @@ function LogoSizeControl({
     };
   });
 
-  const commitRef = useRef(onSizeChange);
-  commitRef.current = onSizeChange;
+  const pan = Gesture.Pan()
+    .onBegin(() => {
+      "worklet";
+      isActive.value = withTiming(1, { duration: 150 });
+      runOnJS(triggerHaptic)();
+    })
+    .onUpdate((e) => {
+      "worklet";
+      if (trackWidthSV.value <= 0) return;
+      const pct = Math.max(0, Math.min(1, e.x / trackWidthSV.value));
+      sv.value = MIN_SIZE + pct * (MAX_SIZE - MIN_SIZE);
+    })
+    .onEnd(() => {
+      "worklet";
+      isActive.value = withTiming(0, { duration: 200 });
+      const pct =
+        trackWidthSV.value > 0
+          ? Math.max(0, Math.min(1, sv.value / trackWidthSV.value))
+          : 0;
+      const finalSize = MIN_SIZE + pct * (MAX_SIZE - MIN_SIZE);
+      runOnJS(onSizeChange)(Math.round(finalSize * 100) / 100);
+    });
 
-  const commitSize = (s: number) => {
-    const clamped = Math.max(MIN_SIZE, Math.min(MAX_SIZE, s));
-    lastSizeRef.current = clamped;
-    setDisplaySize(Math.round(clamped * 100));
-    commitRef.current(clamped);
-  };
-
-  const pan = useMemo(
-    () =>
-      Gesture.Pan()
-        .onBegin(() => {
-          isActive.value = withTiming(1, { duration: 150 });
-          runOnJS(triggerHaptic)();
-        })
-        .onUpdate((e) => {
-          if (trackWidthSV.value <= 0) return;
-          const pct = Math.max(0, Math.min(1, e.x / trackWidthSV.value));
-          sv.value = MIN_SIZE + pct * (MAX_SIZE - MIN_SIZE);
-        })
-        .onEnd(() => {
-          isActive.value = withTiming(0, { duration: 200 });
-          runOnJS(commitSize)(sv.value);
-        }),
-    [],
-  );
-
-  const tap = useMemo(
-    () =>
-      Gesture.Tap().onEnd((e) => {
-        if (trackWidthSV.value <= 0) return;
-        const pct = Math.max(0, Math.min(1, e.x / trackWidthSV.value));
-        const newSize = MIN_SIZE + pct * (MAX_SIZE - MIN_SIZE);
-        sv.value = withTiming(newSize, {
-          duration: 200,
-          easing: Easing.out(Easing.cubic),
-        });
-        runOnJS(commitSize)(newSize);
-        runOnJS(triggerHaptic)();
-      }),
-    [],
-  );
-
-  const composed = useMemo(() => Gesture.Race(pan, tap), [pan, tap]);
+  const tap = Gesture.Tap().onEnd((e) => {
+    "worklet";
+    if (trackWidthSV.value <= 0) return;
+    const pct = Math.max(0, Math.min(1, e.x / trackWidthSV.value));
+    const newSize = MIN_SIZE + pct * (MAX_SIZE - MIN_SIZE);
+    sv.value = withTiming(newSize, {
+      duration: 200,
+      easing: Easing.out(Easing.cubic),
+    });
+    runOnJS(onSizeChange)(Math.round(newSize * 100) / 100);
+    runOnJS(triggerHaptic)();
+  });
 
   return (
     <View style={styles.sizeControl}>
-      <GestureDetector gesture={composed}>
+      <GestureDetector gesture={Gesture.Race(pan, tap)}>
         <View
           style={styles.sizeTrack}
           onLayout={(e) => (trackWidthSV.value = e.nativeEvent.layout.width)}
