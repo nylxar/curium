@@ -1,137 +1,315 @@
-import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  ReactNode,
+} from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
+  runOnJS,
+  Easing,
 } from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
 
-export type ToastType = "success" | "error" | "info";
+export type ToastVariant = "success" | "error" | "info" | "warning";
 
-const META: Record<
-  ToastType,
-  { icon: keyof typeof Ionicons.glyphMap; color: string }
-> = {
-  success: { icon: "checkmark-circle", color: "#22c55e" },
-  error: { icon: "close-circle", color: "#ef4444" },
-  info: { icon: "information-circle", color: "#60a5fa" },
-};
-
-interface ToastProps {
-  visible: boolean;
-  message: string;
-  type?: ToastType;
-  duration?: number;
-  onHide: () => void;
+export interface ToastAction {
+  label: string;
+  onPress: () => void;
 }
 
-export function Toast({
-  visible,
-  message,
-  type = "info",
-  duration = 2800,
-  onHide,
-}: ToastProps) {
-  const insets = useSafeAreaInsets();
-  const ty = useSharedValue(-80);
-  const op = useSharedValue(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+export interface ToastOptions {
+  title: string;
+  message?: string;
+  variant?: ToastVariant;
+  duration?: number;
+  action?: ToastAction;
+}
 
-  const dismiss = () => {
-    ty.value = withTiming(-80, { duration: 250 });
-    op.value = withTiming(0, { duration: 250 }, () => {
-      scheduleOnRN(onHide);
+interface ToastEntry extends Required<Omit<ToastOptions, "message" | "action">> {
+  id: number;
+  message?: string;
+  action?: ToastAction;
+}
+
+interface ToastContextValue {
+  show: (opts: ToastOptions) => void;
+  success: (title: string, message?: string) => void;
+  error: (title: string, message?: string) => void;
+  info: (title: string, message?: string) => void;
+  warning: (title: string, message?: string) => void;
+  confirm: (
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    confirmLabel?: string,
+    danger?: boolean,
+  ) => void;
+  dismiss: () => void;
+}
+
+const ToastContext = createContext<ToastContextValue | null>(null);
+
+export function useToast() {
+  const ctx = useContext(ToastContext);
+  if (!ctx) {
+    throw new Error("useToast must be used within ToastProvider");
+  }
+  return ctx;
+}
+
+const VARIANT_META: Record<
+  ToastVariant,
+  { icon: keyof typeof Ionicons.glyphMap }
+> = {
+  success: { icon: "checkmark-circle" },
+  error: { icon: "close-circle" },
+  info: { icon: "information-circle" },
+  warning: { icon: "warning" },
+};
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toast, setToast] = useState<ToastEntry | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const counterRef = useRef(0);
+
+  const dismiss = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setToast(null);
+  }, []);
+
+  const show = useCallback((opts: ToastOptions) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    counterRef.current += 1;
+    const entry: ToastEntry = {
+      id: counterRef.current,
+      title: opts.title,
+      message: opts.message,
+      variant: opts.variant ?? "info",
+      duration: opts.duration ?? 2400,
+      action: opts.action,
+    };
+    setToast(entry);
+
+    if (!entry.action) {
+      timeoutRef.current = setTimeout(() => {
+        setToast(null);
+        timeoutRef.current = null;
+      }, entry.duration);
+    }
+  }, []);
+
+  const success = useCallback(
+    (title: string, message?: string) => show({ title, message, variant: "success" }),
+    [show],
+  );
+  const error = useCallback(
+    (title: string, message?: string) => show({ title, message, variant: "error" }),
+    [show],
+  );
+  const info = useCallback(
+    (title: string, message?: string) => show({ title, message, variant: "info" }),
+    [show],
+  );
+  const warning = useCallback(
+    (title: string, message?: string) => show({ title, message, variant: "warning" }),
+    [show],
+  );
+
+  const confirm = useCallback(
+    (
+      title: string,
+      message: string,
+      onConfirm: () => void,
+      confirmLabel = "Confirm",
+      danger = false,
+    ) => {
+      show({
+        title,
+        message,
+        variant: danger ? "warning" : "info",
+        duration: 6000,
+        action: {
+          label: confirmLabel,
+          onPress: () => {
+            onConfirm();
+          },
+        },
+      });
+    },
+    [show],
+  );
+
+  return (
+    <ToastContext.Provider
+      value={{ show, success, error, info, warning, confirm, dismiss }}
+    >
+      {children}
+      {toast && <ToastView toast={toast} onDismiss={dismiss} />}
+    </ToastContext.Provider>
+  );
+}
+
+function ToastView({
+  toast,
+  onDismiss,
+}: {
+  toast: ToastEntry;
+  onDismiss: () => void;
+}) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const meta = VARIANT_META[toast.variant];
+
+  // Simple slide-down + fade — iOS style
+  const enterY = useSharedValue(-100);
+  const enterOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    enterY.value = withSpring(0, {
+      damping: 26,
+      stiffness: 320,
+      mass: 0.8,
+    });
+    enterOpacity.value = withTiming(1, { duration: 180 });
+  }, [toast.id]);
+
+  const handleDismiss = () => {
+    enterY.value = withTiming(-100, { duration: 200, easing: Easing.in(Easing.cubic) });
+    enterOpacity.value = withTiming(0, { duration: 160 }, (f) => {
+      if (f) runOnJS(onDismiss)();
     });
   };
 
-  useEffect(() => {
-    if (visible) {
-      op.value = withTiming(1, { duration: 200 });
-      ty.value = withSpring(0, { damping: 20, stiffness: 280, mass: 0.6 });
-      clearTimeout(timer.current);
-      timer.current = setTimeout(dismiss, duration);
-    }
-    return () => clearTimeout(timer.current);
-  }, [visible, message]);
-
-  const animStyle = useAnimatedStyle(() => ({
-    opacity: op.value,
-    transform: [{ translateY: ty.value }],
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: enterOpacity.value,
+    transform: [{ translateY: enterY.value }],
   }));
 
-  if (!visible) return null;
-  const meta = META[type];
+  // iOS uses a neutral white/grey color for icons in dark toasts
+  const iconColor = "#ffffff";
 
   return (
     <Animated.View
-      style={[styles.wrap, { top: insets.top + Spacing.sm }, animStyle]}
+      pointerEvents="box-none"
+      style={[
+        styles.wrapper,
+        { top: insets.top + Spacing.xs },
+        containerStyle,
+      ]}
     >
-      <Ionicons name={meta.icon} size={18} color={meta.color} />
-      <Text style={styles.msg} numberOfLines={2}>
-        {message}
-      </Text>
-      <Pressable onPress={dismiss} hitSlop={14}>
-        <Ionicons name="close" size={15} color="#666" />
-      </Pressable>
+      <View style={styles.card}>
+        {/* Icon */}
+        <Ionicons name={meta.icon} size={20} color={iconColor} />
+
+        {/* Text block */}
+        <View style={styles.text}>
+          <Text style={styles.title} numberOfLines={1}>
+            {toast.title}
+          </Text>
+          {toast.message ? (
+            <Text style={styles.message} numberOfLines={2}>
+              {toast.message}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* Optional action or close button */}
+        {toast.action ? (
+          <Pressable
+            onPress={() => {
+              toast.action?.onPress();
+              handleDismiss();
+            }}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.actionBtn,
+              { opacity: pressed ? 0.5 : 1 },
+            ]}
+          >
+            <Text style={styles.actionLabel}>{toast.action.label}</Text>
+          </Pressable>
+        ) : (
+          <Pressable onPress={handleDismiss} hitSlop={8} style={styles.dismissBtn}>
+            <Ionicons name="close" size={16} color="rgba(255,255,255,0.5)" />
+          </Pressable>
+        )}
+      </View>
     </Animated.View>
   );
 }
 
-export function useToast() {
-  const [state, setState] = React.useState<{
-    visible: boolean;
-    message: string;
-    type: ToastType;
-  }>({ visible: false, message: "", type: "info" });
-
-  const show = React.useCallback(
-    (message: string, type: ToastType = "info") => {
-      setState({ visible: true, message, type });
-    },
-    [],
-  );
-
-  const hide = React.useCallback(() => {
-    setState((p) => ({ ...p, visible: false }));
-  }, []);
-
-  const node = (
-    <Toast
-      visible={state.visible}
-      message={state.message}
-      type={state.type}
-      onHide={hide}
-    />
-  );
-
-  return { show, node };
-}
-
 const styles = StyleSheet.create({
-  wrap: {
+  wrapper: {
     position: "absolute",
-    left: 16,
-    right: 16,
+    left: Spacing.base,
+    right: Spacing.base,
+    zIndex: 9999,
+    elevation: 12,
+  },
+  card: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: Spacing.sm + 2,
     paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: Radius.lg,
-    backgroundColor: "#1c1b19",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#333",
-    zIndex: 9999,
+    paddingHorizontal: Spacing.md,
+    borderRadius: 14,
+    backgroundColor: "rgba(28, 28, 30, 0.96)",
+    // iOS-style shadow
     shadowColor: "#000",
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.18,
     shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 14,
+    shadowOffset: { width: 0, height: 4 },
   },
-  msg: { flex: 1, fontSize: FontSize.sm, fontFamily: Fonts.mono, color: "#ddd" },
+  text: {
+    flex: 1,
+    gap: 1,
+  },
+  title: {
+    fontSize: FontSize.sm,
+    color: "#ffffff",
+    fontFamily: Fonts.monoBold,
+    letterSpacing: 0.1,
+  },
+  message: {
+    fontSize: 12,
+    color: "rgba(235, 235, 245, 0.62)",
+    fontFamily: Fonts.mono,
+    lineHeight: 16,
+  },
+  actionBtn: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  actionLabel: {
+    fontSize: FontSize.sm,
+    color: "#0a84ff",
+    fontFamily: Fonts.monoBold,
+  },
+  dismissBtn: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
