@@ -32,6 +32,66 @@ import { DEFAULT_QR_STYLE } from "@/types/qr";
 
 const THUMB = 80;
 
+// Pulsing skeleton placeholder — same dimensions as AnimatedHistoryCard.
+function SkeletonCard({ colors }: { colors: any }) {
+  const pulse = useSharedValue(0.4);
+
+  useEffect(() => {
+    pulse.value = withTiming(0.85, {
+      duration: 900,
+      easing: Easing.inOut(Easing.cubic),
+    });
+    const id = setInterval(() => {
+      pulse.value = withTiming(
+        pulse.value > 0.6 ? 0.4 : 0.85,
+        { duration: 900, easing: Easing.inOut(Easing.cubic) },
+      );
+    }, 950);
+    return () => clearInterval(id);
+  }, []);
+
+  const skel = useAnimatedStyle(() => ({ opacity: pulse.value }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+        skel,
+      ]}
+    >
+      <View
+        style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}
+      />
+      <View style={styles.info}>
+        <View style={styles.row}>
+          <View
+            style={[styles.badge, { backgroundColor: colors.surfaceOffset }]}
+          />
+          <View
+            style={[
+              styles.skelLine,
+              { backgroundColor: colors.surfaceOffset, width: 52 },
+            ]}
+          />
+        </View>
+        <View
+          style={[
+            styles.skelLine,
+            { backgroundColor: colors.surfaceOffset, width: "85%" },
+          ]}
+        />
+        <View
+          style={[
+            styles.skelLine,
+            { backgroundColor: colors.surfaceOffset, width: "60%" },
+          ]}
+        />
+      </View>
+    </Animated.View>
+  );
+}
+
 function AnimatedHistoryCard({
   item,
   index,
@@ -144,17 +204,23 @@ function AnimatedHistoryCard({
 export default function HistoryScreen() {
   const { colors } = useTheme();
   const [items, setItems] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const toast = useToast();
 
-  // Load on focus — data load is already async, no need to defer
+  // Load on focus — show skeleton until data resolves. Skeletons never
+  // animate into real items; the list re-renders once data arrives.
   useFocusEffect(
     useCallback(() => {
       let active = true;
+      setLoading(true);
       loadHistory().then((data) => {
-        if (active) setItems(data);
+        if (active) {
+          setItems(data);
+          setLoading(false);
+        }
       });
       return () => {
         active = false;
@@ -274,7 +340,19 @@ export default function HistoryScreen() {
         </View>
       )}
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <View
+          style={{
+            padding: Spacing.base,
+            gap: Spacing.sm,
+            paddingBottom: insets.bottom + Spacing.xl,
+          }}
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} colors={colors} />
+          ))}
+        </View>
+      ) : filtered.length === 0 ? (
         <View style={styles.empty}>
           <Ionicons name="albums-outline" size={52} color={colors.textFaint} />
           <Text
@@ -372,6 +450,7 @@ const styles = StyleSheet.create({
   date: { fontSize: FontSize.xs },
   value: { fontSize: FontSize.sm, lineHeight: 18 },
   del: { padding: Spacing.xs },
+  skelLine: { height: 10, borderRadius: 4 },
   empty: {
     flex: 1,
     alignItems: "center",

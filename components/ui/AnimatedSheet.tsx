@@ -52,6 +52,7 @@ export function AnimatedSheet({
       // Push a placeholder first, then update with the real content
       const id = overlay.show(
         <SheetContent
+          visible={visible}
           bgColor={bgColor}
           borderColor={borderColor}
           style={style}
@@ -71,10 +72,25 @@ export function AnimatedSheet({
         setOverlayId(null);
       };
     } else if (overlayId !== null) {
-      // The SheetContent handles its own close animation
-      // We just need to remove it from the overlay
-      overlay.dismiss(overlayId);
-      setOverlayId(null);
+      // Tell the SheetContent to animate out, then dismiss
+      overlay.update(
+        overlayId,
+        <SheetContent
+          visible={false}
+          bgColor={bgColor}
+          borderColor={borderColor}
+          style={style}
+          disableBackdropPress={disableBackdropPress}
+          disableSwipeDown={disableSwipeDown}
+          onClose={() => {
+            overlay.dismiss(overlayId);
+            setOverlayId(null);
+            onClose();
+          }}
+        >
+          {children}
+        </SheetContent>,
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -85,6 +101,7 @@ export function AnimatedSheet({
       overlay.update(
         overlayId,
         <SheetContent
+          visible={visible}
           bgColor={bgColor}
           borderColor={borderColor}
           style={style}
@@ -92,6 +109,7 @@ export function AnimatedSheet({
           disableSwipeDown={disableSwipeDown}
           onClose={() => {
             overlay.dismiss(overlayId);
+            setOverlayId(null);
             onClose();
           }}
         >
@@ -100,12 +118,13 @@ export function AnimatedSheet({
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [children, bgColor, borderColor]);
+  }, [children, bgColor, borderColor, visible]);
 
   return null;
 }
 
 interface SheetContentProps {
+  visible: boolean;
   bgColor?: string;
   borderColor?: string;
   style?: ViewStyle;
@@ -116,6 +135,7 @@ interface SheetContentProps {
 }
 
 function SheetContent({
+  visible,
   bgColor,
   borderColor,
   style,
@@ -160,11 +180,24 @@ function SheetContent({
     };
   }, []);
 
-  // Animate in on mount
+  // Animate in on mount, or animate out if visible becomes false
   useLayoutEffect(() => {
-    sheetY.value = withSpring(0, SPRING);
-    backdropOp.value = withTiming(0.5, { duration: 140 });
-  }, []);
+    if (visible) {
+      sheetY.value = withSpring(0, SPRING);
+      backdropOp.value = withTiming(0.5, { duration: 140 });
+    } else {
+      sheetY.value = withTiming(SHEET_OFFSCREEN, {
+        duration: CLOSE_DURATION,
+        easing: Easing.in(Easing.cubic),
+      });
+      backdropOp.value = withTiming(0, { duration: CLOSE_DURATION }, (f) => {
+        if (f) {
+          runOnJS(onClose)();
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   const dismiss = () => {
     "worklet";

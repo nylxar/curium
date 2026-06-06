@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useLayoutEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  Easing,
+  interpolateColor,
 } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -98,6 +100,55 @@ export function FabBar({
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  // Animate the bar's bg + border colors in lock-step with the rest of the
+  // screen (QR, rows, GlowPulse).  Without this, the bar snaps instantly to
+  // the new color while everything else is mid-transition — visible desync.
+  const bgFrom = useSharedValue(bgColor);
+  const bgTo = useSharedValue(bgColor);
+  const bgProgress = useSharedValue(1);
+  const borderColor = tintColor + "20";
+  const borderFrom = useSharedValue(borderColor);
+  const borderTo = useSharedValue(borderColor);
+  const borderProgress = useSharedValue(1);
+
+  useLayoutEffect(() => {
+    if (bgColor !== bgTo.value) {
+      bgFrom.value = bgTo.value;
+      bgTo.value = bgColor;
+      bgProgress.value = 0;
+      bgProgress.value = withTiming(1, {
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
+  }, [bgColor]);
+
+  useLayoutEffect(() => {
+    const next = tintColor + "20";
+    if (next !== borderTo.value) {
+      borderFrom.value = borderTo.value;
+      borderTo.value = next;
+      borderProgress.value = 0;
+      borderProgress.value = withTiming(1, {
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
+  }, [tintColor]);
+
+  const animBarStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      bgProgress.value,
+      [0, 1],
+      [bgFrom.value, bgTo.value],
+    ),
+    borderTopColor: interpolateColor(
+      borderProgress.value,
+      [0, 1],
+      [borderFrom.value, borderTo.value],
+    ),
+  }));
+
   const go = (route: string) => {
     setMenuOpen(false);
     setTimeout(() => router.push(route as any), 80);
@@ -105,14 +156,13 @@ export function FabBar({
 
   return (
     <>
-      <View
+      <Animated.View
         style={[
           styles.bar,
           {
-            backgroundColor: bgColor,
             paddingBottom: insets.bottom + Spacing.sm,
-            borderTopColor: tintColor + "20",
           },
+          animBarStyle,
         ]}
       >
         <View style={styles.row}>
@@ -149,7 +199,7 @@ export function FabBar({
             onPress={() => setMenuOpen(true)}
           />
         </View>
-      </View>
+      </Animated.View>
 
       <AnimatedSheet
         visible={menuOpen}

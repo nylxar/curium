@@ -2,20 +2,24 @@ import { ReactNode } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { tierVariant } from "@/constants/colorUtils";
+import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
+import { useEffect, useLayoutEffect } from "react";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
+  withTiming,
+  withSequence,
+  Easing,
+  interpolateColor,
 } from "react-native-reanimated";
-import { useTheme } from "@/context/ThemeContext";
-import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
-import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
 
 interface OptionRowProps {
   label: string;
@@ -43,32 +47,77 @@ export function OptionRow({
   children,
 }: OptionRowProps) {
   const { colors } = useTheme();
-  const scale = useSharedValue(1);
+  // 3-tier hierarchy:
+  //   • bgColor (QR canvas)            = original
+  //   • row color (this row)           = mid tier
+  //   • screen bg (in index.tsx)       = lightest tier
+  // We still accept a custom bgColor prop; if absent, we derive the mid tier
+  // from the active palette so the depth is consistent.
+  const rowColor = bgColor ?? tierVariant(colors.surface, 0.05);
+
+  // Animate the row bg color so it cross-fades in lock-step with the QR and
+  // screen bg transitions.  Otherwise the rows snap to the new color while
+  // the screen bg is still mid-transition, producing a "mixed color" glitch.
+  const bgFrom = useSharedValue(rowColor);
+  const bgTo = useSharedValue(rowColor);
+  const bgProgress = useSharedValue(1);
+  const pressOpacity = useSharedValue(0);
+
+  useLayoutEffect(() => {
+    if (rowColor !== bgTo.value) {
+      bgFrom.value = bgTo.value;
+      bgTo.value = rowColor;
+      bgProgress.value = 0;
+      bgProgress.value = withTiming(1, {
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
+  }, [rowColor]);
+
+  const animBgStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      bgProgress.value,
+      [0, 1],
+      [bgFrom.value, bgTo.value],
+    ),
+  }));
   const pressStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    opacity: pressOpacity.value,
   }));
 
   return (
     <>
-      <Animated.View style={[pressStyle]}>
-        <Pressable
-          style={({ pressed }) => [
+      <Pressable
+        onPress={() => {
+          // One-shot press flash (in 80ms → out 200ms).  We intentionally
+          // avoid onPressIn/onPressOut so the press state can't get stuck
+          // "on" if a modal opens and captures the touch release event.
+          pressOpacity.value = withSequence(
+            withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) }),
+            withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) }),
+          );
+          onOpen?.();
+        }}
+      >
+        <Animated.View
+          style={[
             styles.row,
-            {
-              backgroundColor: pressed
-                ? colors.surfaceOffset
-                : bgColor ?? colors.surface,
-              borderColor: colors.border,
-            },
+            animBgStyle,
+            { borderColor: colors.border, overflow: "hidden" },
           ]}
-          onPressIn={() => {
-            scale.value = withSpring(0.98, { damping: 18, stiffness: 300 });
-          }}
-          onPressOut={() => {
-            scale.value = withSpring(1, { damping: 18, stiffness: 300 });
-          }}
-          onPress={onOpen}
         >
+          {/* Press overlay — sits on top of the cross-faded bg, fades in
+              briefly while the user is pressing.  The overlay color is a
+              darker tier of the row color so the press feels physical. */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: colors.surfaceOffset },
+              pressStyle,
+            ]}
+          />
           <View
             style={[styles.iconBox, { backgroundColor: tintColor + "18" }]}
           >
@@ -98,8 +147,8 @@ export function OptionRow({
               />
             </View>
           </View>
-        </Pressable>
-      </Animated.View>
+        </Animated.View>
+      </Pressable>
 
       <AnimatedSheet
         visible={!!externalOpen}
