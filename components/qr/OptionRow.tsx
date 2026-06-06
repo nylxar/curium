@@ -32,6 +32,8 @@ interface OptionRowProps {
   sheetOpen?: boolean;
   sheetSubtitle?: string;
   children?: ReactNode;
+  /** When true, the one-shot press flash is suppressed entirely. */
+  noPressFlash?: boolean;
 }
 
 export function OptionRow({
@@ -45,6 +47,7 @@ export function OptionRow({
   sheetOpen: externalOpen,
   sheetSubtitle,
   children,
+  noPressFlash,
 }: OptionRowProps) {
   const { colors } = useTheme();
   // 3-tier hierarchy:
@@ -90,15 +93,22 @@ export function OptionRow({
     <>
       <Pressable
         onPress={() => {
-          // One-shot press flash (in 80ms → out 200ms).  We intentionally
-          // avoid onPressIn/onPressOut so the press state can't get stuck
-          // "on" if a modal opens and captures the touch release event.
-          pressOpacity.value = withSequence(
-            withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) }),
-            withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) }),
-          );
+          if (!noPressFlash) {
+            // One-shot press flash (in 80ms → out 200ms).  We intentionally
+            // avoid onPressIn/onPressOut so the press state can't get stuck
+            // "on" if a modal opens and captures the touch release event.
+            pressOpacity.value = withSequence(
+              withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) }),
+              withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) }),
+            );
+          }
           onOpen?.();
         }}
+        // Explicitly opt out of any default hover style (gray wash on web).
+        // The inner Animated.View is what users see; we never want a
+        // platform-default hover bg to bleed through.  Returning an empty
+        // object here suppresses the default style entirely.
+        style={() => [{}]}
       >
         <Animated.View
           style={[
@@ -108,16 +118,20 @@ export function OptionRow({
           ]}
         >
           {/* Press overlay — sits on top of the cross-faded bg, fades in
-              briefly while the user is pressing.  The overlay color is a
-              darker tier of the row color so the press feels physical. */}
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: colors.surfaceOffset },
-              pressStyle,
-            ]}
-          />
+              briefly while the user is pressing.  Tinted with the QR
+              foreground color (not the gray `surfaceOffset`) so the flash
+              stays on-palette and never reads as a generic gray wash
+              against colored rows. */}
+          {!noPressFlash && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: tintColor + "22" },
+                pressStyle,
+              ]}
+            />
+          )}
           <View
             style={[styles.iconBox, { backgroundColor: tintColor + "18" }]}
           >
@@ -214,7 +228,11 @@ export function OptionRow({
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {children}
+          {/* Wrapper view ensures every option modal's children get a
+              consistent horizontal gutter and stack vertically with the
+              same gap.  Without this wrapper, child grids end up flush
+              against the left edge of the sheet and look misaligned. */}
+          <View style={styles.sheetBody}>{children}</View>
         </ScrollView>
       </AnimatedSheet>
     </>
@@ -299,5 +317,12 @@ const styles = StyleSheet.create({
     width: 36,
   },
   scroll: { maxHeight: 500 },
-  content: { gap: Spacing.sm, paddingBottom: Spacing.sm },
+  content: { paddingBottom: Spacing.sm },
+  sheetBody: {
+    gap: Spacing.md,
+    // Subtle horizontal padding keeps child grids inside the sheet's
+    // rounded corners and aligned with the header's icon circle.  Too
+    // much padding crowds the grids; too little hugs the rounded edges.
+    paddingHorizontal: Spacing.xs,
+  },
 });

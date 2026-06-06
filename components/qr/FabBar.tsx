@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect, useRef } from "react";
+import { useState, useLayoutEffect, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withDelay,
   Easing,
   interpolateColor,
 } from "react-native-reanimated";
@@ -25,6 +26,89 @@ const NAV_ITEMS = [
   { route: "/history", label: "History", icon: "albums-outline" },
   { route: "/settings", label: "Settings", icon: "settings-outline" },
 ] as const;
+
+interface NavRowProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  tintColor: string;
+  isLast: boolean;
+  index: number;
+  /** Bumped each time the sheet opens — used to retrigger the entrance
+   *  animation.  We use this rather than remounting the row on every
+   *  open so the underlying Pressable keeps its onPress closure stable. */
+  openTick: number;
+}
+
+// A single row in the menu sheet.  Animates in with a small fade + lift
+// (140ms) staggered by `index * 35ms` so the menu feels intentional
+// rather than just appearing.  Triggered by `openTick` changing — when
+// the sheet reopens, every row plays its entrance again.
+function NavRow({
+  icon,
+  label,
+  onPress,
+  tintColor,
+  isLast,
+  index,
+  openTick,
+}: NavRowProps) {
+  const opacity = useSharedValue(0);
+  const lift = useSharedValue(8);
+
+  useEffect(() => {
+    // Reset and animate on every open.
+    opacity.value = 0;
+    lift.value = 8;
+    opacity.value = withDelay(
+      60 + index * 35,
+      withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) }),
+    );
+    lift.value = withDelay(
+      60 + index * 35,
+      withTiming(0, { duration: 220, easing: Easing.out(Easing.cubic) }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openTick]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: lift.value }],
+  }));
+
+  return (
+    <Animated.View style={animStyle}>
+      <TouchableOpacity
+        style={[
+          styles.navRow,
+          !isLast && {
+            borderBottomWidth: StyleSheet.hairlineWidth,
+            borderBottomColor: tintColor + "20",
+          },
+        ]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          onPress();
+        }}
+        activeOpacity={0.6}
+      >
+        <View
+          style={[styles.navIcon, { backgroundColor: tintColor + "18" }]}
+        >
+          <Ionicons name={icon} size={20} color={tintColor} />
+        </View>
+        <Text style={[styles.navLabel, { color: tintColor }]}>
+          {label}
+        </Text>
+        <Ionicons
+          name="chevron-forward"
+          size={16}
+          color={tintColor + "40"}
+        />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 interface BtnProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -97,6 +181,17 @@ export function FabBar({
   onShare,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  // Bumped on every "open" transition.  Each NavRow watches this and
+  // re-plays its staggered fade+lift when it changes — so re-opening
+  // the menu always animates, instead of just popping back in.
+  const [openTick, setOpenTick] = useState(0);
+  const prevOpenRef = useRef(false);
+  useEffect(() => {
+    if (menuOpen && !prevOpenRef.current) {
+      setOpenTick((t) => t + 1);
+    }
+    prevOpenRef.current = menuOpen;
+  }, [menuOpen]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -208,29 +303,16 @@ export function FabBar({
         borderColor={tintColor + "25"}
       >
         {NAV_ITEMS.map((item, i) => (
-          <TouchableOpacity
+          <NavRow
             key={item.route}
-            style={[
-              styles.navRow,
-              i < NAV_ITEMS.length - 1 && {
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: tintColor + "20",
-              },
-            ]}
-            onPress={() => {
-              Haptics.selectionAsync();
-              go(item.route);
-            }}
-            activeOpacity={0.6}
-          >
-            <View style={[styles.navIcon, { backgroundColor: tintColor + "18" }]}>
-              <Ionicons name={item.icon as any} size={20} color={tintColor} />
-            </View>
-            <Text style={[styles.navLabel, { color: tintColor }]}>
-              {item.label}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={tintColor + "40"} />
-          </TouchableOpacity>
+            icon={item.icon as any}
+            label={item.label}
+            tintColor={tintColor}
+            isLast={i === NAV_ITEMS.length - 1}
+            index={i}
+            openTick={openTick}
+            onPress={() => go(item.route)}
+          />
         ))}
       </AnimatedSheet>
     </>
