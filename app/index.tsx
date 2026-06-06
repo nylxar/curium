@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo, useLayoutEffect } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,14 @@ import {
   KeyboardAvoidingView,
   useWindowDimensions,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
+  Easing,
+  interpolateColor,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { saveToHistory } from "@/services/history";
 import * as Clipboard from "expo-clipboard";
@@ -19,6 +27,7 @@ import { useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
 import { Ionicons } from "@expo/vector-icons";
+import { Pressable } from "react-native";
 
 import { QRCanvas } from "@/components/qr/QRCanvas";
 import { TypePill } from "@/components/qr/TypePill";
@@ -49,6 +58,8 @@ import {
 } from "@/components/qr/InputForms";
 
 import { Fonts, Spacing, Radius, FontSize, QR_COLORS } from "@/constants/theme";
+import { tierVariant } from "@/constants/colorUtils";
+import { GlowPulse } from "@/components/qr/ColorTransitionCurtain";
 import {
   QRType,
   QRStyle,
@@ -132,67 +143,130 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
 const { width } = useWindowDimensions();
 const QR_SIZE = Math.floor(width) - 32;
 
-// ─── Animated Form Trigger ────────────────────────────────────────────────────
-function AnimatedFormTrigger({
-  tint,
-  colors,
-  activeType,
-  qrValue,
-  onPress,
-}: {
-  tint: string;
-  colors: any;
-  activeType: QRType;
-  qrValue: string;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      style={[
-        styles.formTrigger,
-        {
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-        },
-      ]}
-      onPress={onPress}
-      activeOpacity={0.6}
-    >
-      <View
-        style={[styles.formTriggerIcon, { backgroundColor: tint + "18" }]}
+  // ─── Animated Form Trigger ────────────────────────────────────────────────────
+  // Matches OptionRow's visual treatment (tinted bg, same border, same icon
+  // box) but stacks a label + value inside a single column to read as an
+  // "input field" rather than a settings row.  Cross-fades the bg color in
+  // lock-step with the option rows.
+  function AnimatedFormTrigger({
+    tint,
+    colors,
+    activeType,
+    qrValue,
+    bgColor,
+    onPress,
+  }: {
+    tint: string;
+    colors: any;
+    activeType: QRType;
+    qrValue: string;
+    bgColor: string;
+    onPress: () => void;
+  }) {
+    const rowBg = tierVariant(bgColor, 0.08);
+    const bgFrom = useSharedValue(rowBg);
+    const bgTo = useSharedValue(rowBg);
+    const bgProgress = useSharedValue(1);
+    const pressOpacity = useSharedValue(0);
+
+    useLayoutEffect(() => {
+      if (rowBg !== bgTo.value) {
+        bgFrom.value = bgTo.value;
+        bgTo.value = rowBg;
+        bgProgress.value = 0;
+        bgProgress.value = withTiming(1, {
+          duration: 420,
+          easing: Easing.out(Easing.cubic),
+        });
+      }
+    }, [rowBg]);
+
+    const animBgStyle = useAnimatedStyle(() => ({
+      backgroundColor: interpolateColor(
+        bgProgress.value,
+        [0, 1],
+        [bgFrom.value, bgTo.value],
+      ),
+    }));
+    const pressStyle = useAnimatedStyle(() => ({
+      opacity: pressOpacity.value,
+    }));
+
+    const currentType = QR_TYPES.find((t) => t.id === activeType);
+
+    return (
+      <Pressable
+        onPress={() => {
+          pressOpacity.value = withSequence(
+            withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) }),
+            withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) }),
+          );
+          onPress();
+        }}
       >
-        <Ionicons
-          name={QR_TYPES.find((t) => t.id === activeType)?.icon as any}
-          size={18}
-          color={tint}
-        />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text
+        <Animated.View
           style={[
-            styles.formTriggerLabel,
-            { color: colors.textMuted, fontFamily: Fonts.mono },
+            styles.formTrigger,
+            animBgStyle,
+            { borderColor: colors.border, overflow: "hidden" },
           ]}
         >
-          {QR_TYPES.find((t) => t.id === activeType)?.label}
-        </Text>
-        <Text
-          style={[
-            styles.formTriggerValue,
-            {
-              color: qrValue ? colors.text : colors.textFaint,
-              fontFamily: Fonts.mono,
-            },
-          ]}
-          numberOfLines={1}
-        >
-          {qrValue || "Tap to enter data..."}
-        </Text>
-      </View>
-      <Ionicons name="create-outline" size={16} color={tint} />
-    </TouchableOpacity>
-  );
-}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: colors.surfaceOffset },
+              pressStyle,
+            ]}
+          />
+          <View
+            style={[styles.formTriggerIcon, { backgroundColor: tint + "18" }]}
+          >
+            <Ionicons
+              name={(currentType?.icon as any) ?? "create-outline"}
+              size={18}
+              color={tint}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={[
+                styles.formTriggerLabel,
+                { color: colors.textMuted, fontFamily: Fonts.mono },
+              ]}
+              numberOfLines={1}
+            >
+              {currentType?.label}
+            </Text>
+            <Text
+              style={[
+                styles.formTriggerValue,
+                {
+                  color: qrValue ? colors.text : colors.textFaint,
+                  fontFamily: Fonts.mono,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {qrValue || "Tap to enter data..."}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.formTriggerChevron,
+              { backgroundColor: colors.surfaceOffset },
+            ]}
+          >
+            <Ionicons
+              name="chevron-forward"
+              size={14}
+              color={colors.textMuted}
+            />
+          </View>
+        </Animated.View>
+      </Pressable>
+    );
+  }
 
 // ─── Encoder — module level pure function ────────────────────────────────────
 function encodeQR(type: QRType, forms: FormState): string {
@@ -433,8 +507,38 @@ export default function CreateScreen() {
     }
   }, []);
 
+  // 3-tier color hierarchy matching the reference image:
+  //   • QR canvas  = original color (most saturated)
+  //   • Option row = tierVariant(bg, 0.08)  (medium)
+  //   • Screen bg  = tierVariant(bg, 0.18)  (lightest)
+  // The reference image shows the rows clearly lighter than the QR, and the
+  // screen bg clearly lighter than the rows — so the differences need to be
+  // visible, not subtle.
+  //
+  // We use the same "reset to old, then withTiming to new" pattern as
+  // QRCanvas and OptionRow, and a useLayoutEffect so all three transitions
+  // kick off in the SAME commit — the screen bg changes color at exactly
+  // the same instant as the QR and the rows.
+  const screenBg = useSharedValue(tierVariant(qrStyle.bgColor, 0.18));
+  const prevScreenBg = useRef(tierVariant(qrStyle.bgColor, 0.18));
+  useLayoutEffect(() => {
+    const target = tierVariant(qrStyle.bgColor, 0.18);
+    if (target !== prevScreenBg.current) {
+      const old = prevScreenBg.current;
+      prevScreenBg.current = target;
+      screenBg.value = old;
+      screenBg.value = withTiming(target, {
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
+  }, [qrStyle.bgColor]);
+  const screenBgStyle = useAnimatedStyle(() => ({
+    backgroundColor: screenBg.value,
+  }));
+
   return (
-    <View style={[styles.screen, { backgroundColor: qrStyle.bgColor }]}>
+    <Animated.View style={[styles.screen, screenBgStyle]}>
       <SafeAreaView style={styles.safe} edges={["top"]}>
         {/* ── STATIC TOP SECTION ── */}
         <View style={styles.staticTop}>
@@ -468,6 +572,7 @@ export default function CreateScreen() {
             colors={colors}
             activeType={activeType}
             qrValue={qrValue}
+            bgColor={qrStyle.bgColor}
             onPress={() => setFormModalOpen(true)}
           />
         </View>
@@ -483,6 +588,7 @@ export default function CreateScreen() {
           <TypeSelector
             selected={activeType}
             tintColor={tint}
+            bgColor={qrStyle.bgColor}
             onChange={(t) => {
               setActiveType(t);
               lastSaved.current = "";
@@ -494,7 +600,7 @@ export default function CreateScreen() {
             label="Color"
             iconName="color-palette-outline"
             tintColor={tint}
-            bgColor={qrStyle.bgColor}
+            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
             sheetOpen={activeSheet === "color"}
             onOpen={() => openSheet("color")}
             onClose={closeSheet}
@@ -580,7 +686,7 @@ export default function CreateScreen() {
             label="Eye Style"
             iconName="eye-outline"
             tintColor={tint}
-            bgColor={qrStyle.bgColor}
+            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
             sheetOpen={activeSheet === "eye"}
             onOpen={() => openSheet("eye")}
             onClose={closeSheet}
@@ -593,7 +699,6 @@ export default function CreateScreen() {
               fgColor={tint}
               onChange={(s) => {
                 setQrStyle((p) => ({ ...p, eyeShape: s }));
-                closeSheet();
               }}
             />
           </OptionRow>
@@ -602,7 +707,7 @@ export default function CreateScreen() {
             label="Pixel Style"
             iconName="grid-outline"
             tintColor={tint}
-            bgColor={qrStyle.bgColor}
+            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
             sheetOpen={activeSheet === "pixel"}
             onOpen={() => openSheet("pixel")}
             onClose={closeSheet}
@@ -615,7 +720,6 @@ export default function CreateScreen() {
               fgColor={tint}
               onChange={(s) => {
                 setQrStyle((p) => ({ ...p, pixelShape: s }));
-                closeSheet();
               }}
             />
           </OptionRow>
@@ -624,7 +728,7 @@ export default function CreateScreen() {
             label="Logo"
             iconName="image-outline"
             tintColor={tint}
-            bgColor={qrStyle.bgColor}
+            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
             sheetOpen={activeSheet === "logo"}
             onOpen={() => openSheet("logo")}
             onClose={closeSheet}
@@ -653,7 +757,7 @@ export default function CreateScreen() {
             label="Error Correction"
             iconName="shield-checkmark-outline"
             tintColor={tint}
-            bgColor={qrStyle.bgColor}
+            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
             sheetOpen={activeSheet === "ecl"}
             onOpen={() => openSheet("ecl")}
             onClose={closeSheet}
@@ -670,7 +774,6 @@ export default function CreateScreen() {
                   onPress={() => {
                     Haptics.selectionAsync();
                     setQrStyle((p) => ({ ...p, ecl: e }));
-                    closeSheet();
                   }}
                   style={[
                     styles.eclBtn,
@@ -753,7 +856,12 @@ export default function CreateScreen() {
         }
         onClose={closeSheet}
       />
-    </View>
+      <GlowPulse
+        fgColor={qrStyle.fgColor}
+        bgColor={qrStyle.bgColor}
+        eyeColor={qrStyle.eyeColor}
+      />
+    </Animated.View>
   );
 }
 
@@ -857,6 +965,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  formTriggerLabel: { fontSize: FontSize.xs },
-  formTriggerValue: { fontSize: FontSize.sm },
+  formTriggerChevron: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  formTriggerLabel: {
+    fontSize: FontSize.xs,
+    marginBottom: 1,
+  },
+  formTriggerValue: {
+    fontSize: FontSize.base,
+    fontFamily: Fonts.monoMedium,
+  },
 });
