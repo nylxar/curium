@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   Switch,
 } from "react-native";
 import Animated, {
@@ -13,6 +14,8 @@ import Animated, {
   useAnimatedStyle,
   withDelay,
   withTiming,
+  Easing,
+  interpolate,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -33,6 +36,118 @@ const THEME_OPTIONS: {
   { id: "system", label: "System", icon: "phone-portrait-outline" },
   { id: "dynamic", label: "Dynamic", icon: "color-palette-outline" },
 ];
+
+// ── Animated section title — slides in from left, then a tiny underline
+//    "ink-fill" sweeps from left to right under the word.
+function AnimatedSection({
+  index,
+  colors,
+  children,
+}: {
+  index: number;
+  colors: any;
+  children: React.ReactNode;
+}) {
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withDelay(
+      index * 28,
+      withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) }),
+    );
+  }, []);
+  const titleStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      { translateX: (1 - progress.value) * -16 },
+    ],
+  }));
+  const underlineStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: progress.value }],
+    opacity: progress.value,
+  }));
+  return (
+    <View style={styles.sectionWrap}>
+      <Animated.Text
+        style={[
+          styles.sectionTitle,
+          { color: colors.textMuted, fontFamily: Fonts.monoBold },
+          titleStyle,
+        ]}
+      >
+        {children}
+      </Animated.Text>
+      <Animated.View
+        style={[
+          styles.sectionUnderline,
+          { backgroundColor: colors.textMuted + "55" },
+          underlineStyle,
+        ]}
+      />
+    </View>
+  );
+}
+
+// ── Animated theme button — micro stagger so the 4 buttons cascade in.
+function AnimatedThemeBtn({
+  index,
+  active,
+  colors,
+  onPress,
+  icon,
+  label,
+}: {
+  index: number;
+  active: boolean;
+  colors: any;
+  onPress: () => void;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+}) {
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withDelay(
+      60 + index * 24,
+      withTiming(1, { duration: 220, easing: Easing.out(Easing.cubic) }),
+    );
+  }, []);
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      { translateY: (1 - progress.value) * 10 },
+      { scale: 0.96 + 0.04 * progress.value },
+    ],
+  }));
+  return (
+    <Animated.View style={[animStyle, { flex: 1 }]}>
+      <TouchableOpacity
+        style={[
+          styles.themeBtn,
+          {
+            backgroundColor: active
+              ? colors.primary + "22"
+              : colors.surface,
+            borderColor: active ? colors.primary : colors.border,
+          },
+        ]}
+        onPress={onPress}
+      >
+        <Ionicons
+          name={icon}
+          size={20}
+          color={active ? colors.primary : colors.textMuted}
+        />
+        <Text
+          style={[
+            styles.themeBtnLabel,
+            { color: active ? colors.primary : colors.textMuted },
+          ]}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 function Row({
   icon,
@@ -55,33 +170,64 @@ function Row({
   index?: number;
   colors: any;
 }) {
-  const opacity = useSharedValue(0);
+  // ── "Cascade" reveal:  each row slides up from below + fades in,
+  //    with a subtle scale-from-0.97.  Rows are staggered by 28ms so
+  //    the whole section lands in ~580ms total.  Inside the row, the
+  //    icon circle pops in slightly later, the text fades in mid-way,
+  //    and the right side slides in last.
+  const progress = useSharedValue(0);
 
   useEffect(() => {
-    opacity.value = withDelay(
-      index * 50,
-      withTiming(1, { duration: 300 }),
+    progress.value = withDelay(
+      index * 28,
+      withTiming(1, { duration: 240, easing: Easing.out(Easing.cubic) }),
     );
   }, []);
 
-  const animStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
+  const rowStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      { translateY: (1 - progress.value) * 14 },
+      { scale: 0.97 + 0.03 * progress.value },
+    ],
   }));
+  const iconStyle = useAnimatedStyle(() => {
+    // Icon pops in slightly later than the row body, with a damped spin
+    const local = interpolate(progress.value, [0.55, 1], [0, 1], "clamp");
+    return {
+      opacity: local,
+      transform: [{ scale: 0.5 + 0.5 * local }],
+    };
+  });
+  const textStyle = useAnimatedStyle(() => {
+    const local = interpolate(progress.value, [0.35, 1], [0, 1], "clamp");
+    return { opacity: local };
+  });
+  const rightStyle = useAnimatedStyle(() => {
+    const local = interpolate(progress.value, [0.45, 1], [0, 1], "clamp");
+    return {
+      opacity: local,
+      transform: [{ translateX: (1 - local) * 8 }],
+    };
+  });
 
   return (
-    <Animated.View style={animStyle}>
-      <TouchableOpacity
-        style={styles.row}
-        activeOpacity={0.6}
+    <Animated.View style={rowStyle}>
+      <Pressable
+        style={({ pressed }) => [
+          styles.row,
+          pressed && { backgroundColor: colors.surfaceOffset },
+        ]}
         onPress={onPress}
       >
-        <View
+        <Animated.View
           style={[
             styles.rowIcon,
             {
               backgroundColor:
                 iconBg ?? (danger ? colors.error + "18" : colors.primary + "18"),
             },
+            iconStyle,
           ]}
         >
           <Ionicons
@@ -89,18 +235,24 @@ function Row({
             size={17}
             color={danger ? colors.error : colors.primary}
           />
-        </View>
-        <View style={styles.rowText}>
+        </Animated.View>
+        <Animated.View style={[styles.rowText, textStyle]}>
           <Text style={[styles.rowLabel, danger && { color: colors.error }]}>
             {label}
           </Text>
           {sub && <Text style={styles.rowSub}>{sub}</Text>}
-        </View>
-        {right ??
-          (onPress && (
-            <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
-          ))}
-      </TouchableOpacity>
+        </Animated.View>
+        <Animated.View style={rightStyle}>
+          {right ??
+            (onPress && (
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={colors.textFaint}
+              />
+            ))}
+        </Animated.View>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -134,13 +286,8 @@ export default function SettingsScreen() {
     },
     sectionTitle: {
       fontSize: FontSize.xs,
-      color: colors.textMuted,
-      fontFamily: Fonts.monoBold,
       textTransform: "uppercase",
       letterSpacing: 1.2,
-      marginTop: Spacing.xl,
-      marginBottom: Spacing.sm,
-      marginLeft: 2,
     },
     row: {
       flexDirection: "row",
@@ -170,15 +317,6 @@ export default function SettingsScreen() {
       fontFamily: Fonts.mono,
     },
     themeRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
-    themeBtn: {
-      flex: 1,
-      alignItems: "center",
-      gap: Spacing.xs,
-      paddingVertical: Spacing.md,
-      borderRadius: Radius.lg,
-      borderWidth: 1.5,
-    },
-    themeBtnLabel: { fontSize: FontSize.xs, fontFamily: Fonts.mono },
     versionBox: {
       marginTop: Spacing.xl,
       padding: Spacing.lg,
@@ -228,41 +366,25 @@ export default function SettingsScreen() {
         }}
       >
         {/* Theme */}
-        <Text style={S.sectionTitle}>Appearance</Text>
+        <AnimatedSection index={0} colors={colors}>
+          Appearance
+        </AnimatedSection>
         <View style={S.themeRow}>
-          {THEME_OPTIONS.map((t) => {
+          {THEME_OPTIONS.map((t, i) => {
             const active = theme === t.id;
             return (
-              <TouchableOpacity
+              <AnimatedThemeBtn
                 key={t.id}
-                style={[
-                  S.themeBtn,
-                  {
-                    backgroundColor: active
-                      ? colors.primary + "22"
-                      : colors.surface,
-                    borderColor: active ? colors.primary : colors.border,
-                  },
-                ]}
+                index={i}
+                active={active}
+                colors={colors}
                 onPress={() => {
                   Haptics.selectionAsync();
                   setTheme(t.id);
                 }}
-              >
-                <Ionicons
-                  name={t.icon}
-                  size={20}
-                  color={active ? colors.primary : colors.textMuted}
-                />
-                <Text
-                  style={[
-                    S.themeBtnLabel,
-                    { color: active ? colors.primary : colors.textMuted },
-                  ]}
-                >
-                  {t.label}
-                </Text>
-              </TouchableOpacity>
+                icon={t.icon}
+                label={t.label}
+              />
             );
           })}
         </View>
@@ -293,12 +415,14 @@ export default function SettingsScreen() {
         )}
 
         {/* Interaction */}
-        <Text style={S.sectionTitle}>Interaction</Text>
+        <AnimatedSection index={1} colors={colors}>
+          Interaction
+        </AnimatedSection>
         <Row
           icon="pulse-outline"
           label="Haptic Feedback"
           sub="Vibrate on taps and actions"
-          index={4}
+          index={5}
           colors={colors}
           right={
             <Switch
@@ -316,7 +440,7 @@ export default function SettingsScreen() {
           icon="volume-high-outline"
           label="Sound on Scan"
           sub="Play a beep when a QR is detected"
-          index={5}
+          index={6}
           colors={colors}
           right={
             <Switch
@@ -334,7 +458,7 @@ export default function SettingsScreen() {
           icon="sunny-outline"
           label="Keep Screen On"
           sub="Prevent screen from sleeping"
-          index={6}
+          index={7}
           colors={colors}
           right={
             <Switch
@@ -350,12 +474,14 @@ export default function SettingsScreen() {
         />
 
         {/* Generator */}
-        <Text style={S.sectionTitle}>Generator</Text>
+        <AnimatedSection index={2} colors={colors}>
+          Generator
+        </AnimatedSection>
         <Row
           icon="clipboard-outline"
           label="Auto-copy on Generate"
           sub="Copy QR content when you create one"
-          index={7}
+          index={8}
           colors={colors}
           right={
             <Switch
@@ -371,12 +497,14 @@ export default function SettingsScreen() {
         />
 
         {/* Privacy */}
-        <Text style={S.sectionTitle}>Privacy</Text>
+        <AnimatedSection index={3} colors={colors}>
+          Privacy
+        </AnimatedSection>
         <Row
           icon="shield-checkmark-outline"
           label="Offline Only"
           sub="No internet requests, ever"
-          index={8}
+          index={10}
           colors={colors}
           right={
             <Ionicons
@@ -390,7 +518,7 @@ export default function SettingsScreen() {
           icon="eye-off-outline"
           label="No Tracking"
           sub="Zero analytics, zero telemetry"
-          index={9}
+          index={11}
           colors={colors}
           right={
             <Ionicons
@@ -404,7 +532,7 @@ export default function SettingsScreen() {
           icon="lock-closed-outline"
           label="Local Storage Only"
           sub="All data stays on your device"
-          index={10}
+          index={12}
           colors={colors}
           right={
             <Ionicons
@@ -416,13 +544,15 @@ export default function SettingsScreen() {
         />
 
         {/* Data */}
-        <Text style={S.sectionTitle}>Data</Text>
+        <AnimatedSection index={4} colors={colors}>
+          Data
+        </AnimatedSection>
         <Row
           icon="trash-outline"
           label="Clear History"
           sub="Delete all saved QR codes"
           danger
-          index={11}
+          index={13}
           colors={colors}
           onPress={() =>
             toast.confirm(
@@ -436,12 +566,14 @@ export default function SettingsScreen() {
         />
 
         {/* App */}
-        <Text style={S.sectionTitle}>App</Text>
+        <AnimatedSection index={5} colors={colors}>
+          App
+        </AnimatedSection>
         <Row
           icon="information-circle-outline"
           label="About Curium"
           sub="Version, build, and more"
-          index={12}
+          index={15}
           colors={colors}
           onPress={() => router.push("/about")}
         />
@@ -485,4 +617,30 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontFamily: Fonts.mono,
   },
+  sectionWrap: {
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.sm,
+    marginLeft: 2,
+    gap: 4,
+  },
+  sectionTitle: {
+    fontSize: FontSize.xs,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+  },
+  sectionUnderline: {
+    height: 1.5,
+    width: 28,
+    borderRadius: 1,
+    transformOrigin: "left center",
+  },
+  themeBtn: {
+    flex: 1,
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+  },
+  themeBtnLabel: { fontSize: FontSize.xs, fontFamily: Fonts.mono },
 });

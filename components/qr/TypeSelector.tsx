@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useLayoutEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,7 +11,23 @@ import * as Haptics from "expo-haptics";
 import { QRType } from "@/types/qr";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { tierVariant } from "@/constants/colorUtils";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
+  Easing,
+  interpolateColor,
+} from "react-native-reanimated";
+
+interface Props {
+  selected: QRType;
+  tintColor: string;
+  bgColor: string;
+  onChange: (t: QRType) => void;
+}
 
 const TYPES: {
   id: QRType;
@@ -30,50 +47,111 @@ const TYPES: {
 interface Props {
   selected: QRType;
   tintColor: string;
+  bgColor: string;
   onChange: (t: QRType) => void;
 }
 
-export function TypeSelector({ selected, tintColor, onChange }: Props) {
+export function TypeSelector({ selected, tintColor, bgColor, onChange }: Props) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const current = TYPES.find((t) => t.id === selected)!;
 
+  // Same cross-fade bg pattern as OptionRow — row animates in lock-step
+  // with the rest of the screen so the color transition looks coordinated.
+  const rowBg = tierVariant(bgColor, 0.08);
+  const bgFrom = useSharedValue(rowBg);
+  const bgTo = useSharedValue(rowBg);
+  const bgProgress = useSharedValue(1);
+  const pressOpacity = useSharedValue(0);
+
+  useLayoutEffect(() => {
+    if (rowBg !== bgTo.value) {
+      bgFrom.value = bgTo.value;
+      bgTo.value = rowBg;
+      bgProgress.value = 0;
+      bgProgress.value = withTiming(1, {
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
+  }, [rowBg]);
+
+  const animBgStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      bgProgress.value,
+      [0, 1],
+      [bgFrom.value, bgTo.value],
+    ),
+  }));
+  const pressStyle = useAnimatedStyle(() => ({
+    opacity: pressOpacity.value,
+  }));
+
   return (
     <>
-      <TouchableOpacity
-        style={[
-          styles.row,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-        ]}
+      <Pressable
         onPress={() => {
           Haptics.selectionAsync();
+          pressOpacity.value = withSequence(
+            withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) }),
+            withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) }),
+          );
           setOpen(true);
         }}
-        activeOpacity={0.6}
       >
-        <View style={[styles.rowIcon, { backgroundColor: tintColor + "18" }]}>
-          <Ionicons name={current.icon} size={18} color={tintColor} />
-        </View>
-        <View style={styles.rowText}>
-          <Text
+        <Animated.View
+          style={[
+            styles.row,
+            animBgStyle,
+            { borderColor: colors.border, overflow: "hidden" },
+          ]}
+        >
+          <Animated.View
+            pointerEvents="none"
             style={[
-              styles.rowLabel,
-              { color: colors.text, fontFamily: Fonts.monoMedium },
+              StyleSheet.absoluteFill,
+              { backgroundColor: colors.surfaceOffset },
+              pressStyle,
+            ]}
+          />
+          <View style={[styles.rowIcon, { backgroundColor: tintColor + "18" }]}>
+            <Ionicons name={current.icon} size={18} color={tintColor} />
+          </View>
+          <View style={styles.rowText}>
+            <Text
+              style={[
+                styles.rowLabel,
+                { color: colors.textMuted, fontFamily: Fonts.mono },
+              ]}
+            >
+              QR Type
+            </Text>
+            <Text
+              style={[
+                styles.rowSub,
+                {
+                  color: colors.text,
+                  fontFamily: Fonts.monoMedium,
+                },
+              ]}
+            >
+              {current.label}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.rowChevron,
+              { backgroundColor: colors.surfaceOffset },
             ]}
           >
-            QR Type
-          </Text>
-          <Text
-            style={[
-              styles.rowSub,
-              { color: colors.textMuted, fontFamily: Fonts.mono },
-            ]}
-          >
-            {current.label}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
-      </TouchableOpacity>
+            <Ionicons
+              name="chevron-forward"
+              size={14}
+              color={colors.textMuted}
+            />
+          </View>
+        </Animated.View>
+      </Pressable>
 
       <AnimatedSheet
         visible={open}
@@ -151,9 +229,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  rowChevron: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   rowText: { flex: 1 },
-  rowLabel: { fontSize: FontSize.base },
-  rowSub: { fontSize: FontSize.xs, marginTop: 1 },
+  rowLabel: { fontSize: FontSize.xs, marginBottom: 1 },
+  rowSub: { fontSize: FontSize.base },
 
   sheetTitle: { fontSize: FontSize.md, textAlign: "center", marginBottom: Spacing.md },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },

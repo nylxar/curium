@@ -14,7 +14,6 @@ import Animated, {
   withSpring,
   withTiming,
   Easing,
-  runOnJS,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -214,14 +213,19 @@ export default function QRDetailScreen() {
     const now = new Date();
     const diff = now.getTime() - d.getTime();
     const days = Math.floor(diff / 86400000);
-    if (days === 0) return "Today";
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `${days} days ago`;
-    return d.toLocaleDateString("en-IN", {
+    const time = d.toLocaleTimeString("en-IN", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    if (days === 0) return `Today · ${time}`;
+    if (days === 1) return `Yesterday · ${time}`;
+    if (days < 7) return `${days} days ago · ${time}`;
+    return `${d.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
       year: "numeric",
-    });
+    })} · ${time}`;
   };
 
   const renderItem = ({ item }: { item: HistoryItem }) => (
@@ -264,14 +268,11 @@ export default function QRDetailScreen() {
       </View>
 
       {/* Value block */}
-      <Pressable
-        onPress={() => copyValue(item.value)}
-        style={({ pressed }) => [
+      <View
+        style={[
           styles.valueCard,
           {
-            backgroundColor: pressed
-              ? colors.surfaceOffset
-              : colors.surface,
+            backgroundColor: colors.surface,
             borderColor: colors.border,
           },
         ]}
@@ -285,16 +286,22 @@ export default function QRDetailScreen() {
           >
             CONTENT
           </Text>
-          <View
-            style={[
+          <Pressable
+            onPress={() => copyValue(item.value)}
+            hitSlop={6}
+            style={({ pressed }) => [
               styles.copyBadge,
               {
-                backgroundColor: copied
-                  ? colors.success + "22"
-                  : colors.surfaceOffset,
-                borderColor: copied
-                  ? colors.success + "50"
-                  : colors.border,
+                backgroundColor: pressed
+                  ? colors.primary + "22"
+                  : copied
+                    ? colors.success + "22"
+                    : colors.surfaceOffset,
+                borderColor: pressed
+                  ? colors.primary + "60"
+                  : copied
+                    ? colors.success + "50"
+                    : colors.border,
               },
             ]}
           >
@@ -314,7 +321,7 @@ export default function QRDetailScreen() {
             >
               {copied ? "COPIED" : "TAP TO COPY"}
             </Text>
-          </View>
+          </Pressable>
         </View>
         <Text
           style={[
@@ -342,7 +349,7 @@ export default function QRDetailScreen() {
             {formatDate(item.createdAt)}
           </Text>
         </View>
-      </Pressable>
+      </View>
     </View>
   );
 
@@ -405,6 +412,12 @@ export default function QRDetailScreen() {
           index: i,
         })}
         initialScrollIndex={Number(indexStr ?? 0)}
+        initialNumToRender={1}
+        maxToRenderPerBatch={1}
+        windowSize={3}
+        removeClippedSubviews
+        updateCellsBatchingPeriod={50}
+        scrollEventThrottle={16}
       />
 
       {/* Bottom action bar */}

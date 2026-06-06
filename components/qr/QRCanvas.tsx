@@ -1,11 +1,13 @@
-import { useMemo, useEffect } from "react";
+import { useMemo, useState, useLayoutEffect } from "react";
 import { View } from "react-native";
 import Svg, { Rect, Path } from "react-native-svg";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedProps,
   withTiming,
   Easing,
+  interpolateColor,
 } from "react-native-reanimated";
 import { QRStyle } from "@/types/qr";
 
@@ -15,6 +17,12 @@ interface Props {
   value: string;
   qrStyle: QRStyle;
   size: number;
+}
+
+interface ColorSet {
+  fg: string;
+  bg: string;
+  eye: string;
 }
 
 // ─── Matrix ───────────────────────────────────────────────────────────────────
@@ -37,37 +45,28 @@ function inEye(r: number, c: number, n: number): boolean {
 }
 
 // ─── SVG path helpers ─────────────────────────────────────────────────────────
-// Clockwise rounded rect (positive winding — filled)
 function rrCW(x: number, y: number, w: number, h: number, r: number): string {
-  "worklet";
   const cr = Math.min(r, w / 2, h / 2);
   if (cr < 0.5) return `M${x},${y}h${w}v${h}h-${w}Z`;
   return `M${x + cr},${y}H${x + w - cr}Q${x + w},${y} ${x + w},${y + cr}V${y + h - cr}Q${x + w},${y + h} ${x + w - cr},${y + h}H${x + cr}Q${x},${y + h} ${x},${y + h - cr}V${y + cr}Q${x},${y} ${x + cr},${y}Z`;
 }
-// Counter-clockwise rounded rect (negative winding — punch hole via evenodd)
 function rrCCW(x: number, y: number, w: number, h: number, r: number): string {
   const cr = Math.min(r, w / 2, h / 2);
   if (cr < 0.5) return `M${x},${y}v${h}h${w}v-${h}Z`;
   return `M${x + cr},${y}Q${x},${y} ${x},${y + cr}V${y + h - cr}Q${x},${y + h} ${x + cr},${y + h}H${x + w - cr}Q${x + w},${y + h} ${x + w},${y + h - cr}V${y + cr}Q${x + w},${y} ${x + w - cr},${y}Z`;
 }
-// Circle
 function circlePath(cx: number, cy: number, r: number): string {
   return `M${cx - r},${cy}a${r},${r} 0 1,0 ${r * 2},0a${r},${r} 0 1,0 -${r * 2},0`;
 }
-// Diamond (45° rotated square)
 function diamondPath(cx: number, cy: number, hs: number): string {
   return `M${cx},${cy - hs}L${cx + hs},${cy}L${cx},${cy + hs}L${cx - hs},${cy}Z`;
 }
-// Cross / plus shape
 function crossPath(cx: number, cy: number, s: number): string {
-  const t = s * 0.32; // arm thickness
+  const t = s * 0.32;
   return `M${cx - t},${cy - s}H${cx + t}V${cy - t}H${cx + s}V${cy + t}H${cx + t}V${cy + s}H${cx - t}V${cy + t}H${cx - s}V${cy - t}H${cx - t}Z`;
 }
 
 // ─── Pixel shape config ───────────────────────────────────────────────────────
-// r: corner radius as fraction of piece draw size (0 = sharp, 0.5 = circle)
-// inset: gap around each piece as fraction of pieceW (0 = no gap)
-// type: drawing method
 type ShapeType = "rect" | "circle" | "diamond" | "cross";
 const PIXEL_CFG: Record<string, { r: number; inset: number; type: ShapeType }> =
   {
@@ -83,8 +82,6 @@ const PIXEL_CFG: Record<string, { r: number; inset: number; type: ShapeType }> =
   };
 
 // ─── Eye config ───────────────────────────────────────────────────────────────
-// outerR: outer square radius as fraction of eye size (7×pieceW)
-// innerR: inner dot radius as fraction of inner dot size (3×pieceW)
 const EYE_CFG: Record<string, { outerR: number; innerR: number }> = {
   sharp: { outerR: 0, innerR: 0 },
   soft: { outerR: 0.1, innerR: 0.12 },
@@ -96,14 +93,14 @@ const EYE_CFG: Record<string, { outerR: number; innerR: number }> = {
   dot: { outerR: 0.5, innerR: 0.5 },
 };
 
-// ─── Draw one finder eye as SVG path string ───────────────────────────────────
+// ─── Draw one finder eye — returns ring path and dot path separately ──────────
 function drawEye(
   eyeRow: number,
   eyeCol: number,
   pw: number,
   pad: number,
   shape: string,
-): string {
+): { ring: string; dot: string } {
   const cfg = EYE_CFG[shape] ?? EYE_CFG.round;
   const ox = pad + eyeCol * pw;
   const oy = pad + eyeRow * pw;
@@ -112,15 +109,17 @@ function drawEye(
   const outerR = cfg.outerR * outerSz;
   const innerR = cfg.innerR * innerSz;
 
-  // Outer ring = CW outer - CCW hole (evenodd cuts ring)
-  const outer =
+  const ring =
     rrCW(ox, oy, outerSz, outerSz, outerR) +
     " " +
     rrCCW(ox + pw, oy + pw, 5 * pw, 5 * pw, Math.max(0, outerR - pw * 0.7));
-  // Inner dot
-  const inner = rrCW(ox + 2 * pw, oy + 2 * pw, innerSz, innerSz, innerR);
-  return outer + " " + inner;
+  const dot = rrCW(ox + 2 * pw, oy + 2 * pw, innerSz, innerSz, innerR);
+  return { ring, dot };
 }
+
+// ─── Animated SVG primitives ─────────────────────────────────────────────────
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 // ─── QRCanvas ─────────────────────────────────────────────────────────────────
 export function QRCanvas({ value, qrStyle, size }: Props) {
@@ -131,31 +130,98 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
     [value, qrStyle.ecl, isEmpty],
   );
 
-  // Circular reveal — View mask with animated size
-  const maskSize = useSharedValue(0);
-  const containerOpacity = useSharedValue(0);
+  // ── Color transition: direct color morph (NOT opacity blend) ──
+  // We use useState so the worklet closure captures the latest old/new
+  // color strings on every render.  useAnimatedProps + interpolateColor
+  // runs entirely on the UI thread — each SVG fill is directly morphed
+  // from old → new, pixel by pixel.  No double-exposure, no blur.
+  const [oldColors, setOldColors] = useState<ColorSet>({
+    fg: qrStyle.fgColor,
+    bg: qrStyle.bgColor,
+    eye: qrStyle.eyeColor,
+  });
+  const [newColors, setNewColors] = useState<ColorSet>({
+    fg: qrStyle.fgColor,
+    bg: qrStyle.bgColor,
+    eye: qrStyle.eyeColor,
+  });
 
-  const maskStyle = useAnimatedStyle(() => ({
-    width: maskSize.value,
-    height: maskSize.value,
+  const crossProgress = useSharedValue(1); // 1 = fully new colors
+
+  useLayoutEffect(() => {
+    if (
+      qrStyle.fgColor !== newColors.fg ||
+      qrStyle.bgColor !== newColors.bg ||
+      qrStyle.eyeColor !== newColors.eye
+    ) {
+      setOldColors(newColors);
+      setNewColors({
+        fg: qrStyle.fgColor,
+        bg: qrStyle.bgColor,
+        eye: qrStyle.eyeColor,
+      });
+      crossProgress.value = 0;
+      crossProgress.value = withTiming(1, {
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
+  }, [qrStyle.fgColor, qrStyle.bgColor, qrStyle.eyeColor]);
+
+  // Direct color morph on each SVG fill (UI thread via Reanimated)
+  const bgRectProps = useAnimatedProps(() => ({
+    fill: interpolateColor(
+      crossProgress.value,
+      [0, 1],
+      [oldColors.bg, newColors.bg],
+    ),
+  }));
+  const piecesProps = useAnimatedProps(() => ({
+    fill: interpolateColor(
+      crossProgress.value,
+      [0, 1],
+      [oldColors.fg, newColors.fg],
+    ),
+  }));
+  const eyeRingProps = useAnimatedProps(() => ({
+    fill: interpolateColor(
+      crossProgress.value,
+      [0, 1],
+      [oldColors.eye, newColors.eye],
+    ),
+  }));
+  const eyeDotProps = useAnimatedProps(() => ({
+    fill: interpolateColor(
+      crossProgress.value,
+      [0, 1],
+      [oldColors.fg, newColors.fg],
+    ),
   }));
 
-  const containerAnimStyle = useAnimatedStyle(() => ({
-    opacity: containerOpacity.value,
+  // ── Generation animation: subtle scale-up + opacity entrance ──
+  // Triggers on every matrix change, but kept very short (200ms) and gentle
+  // so it doesn't feel heavy when the user is typing.  The QR "settles in"
+  // rather than getting wiped.  No mask, no layout changes — just a tiny
+  // scale + fade on the inner Svg.
+  const genProgress = useSharedValue(0);
+  const genStyle = useAnimatedStyle(() => ({
+    opacity: 0.25 + genProgress.value * 0.75,
+    transform: [
+      { scale: 0.965 + genProgress.value * 0.035 },
+    ],
   }));
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isEmpty && matrix) {
-      containerOpacity.value = withTiming(1, { duration: 200 });
-      maskSize.value = withTiming(size, {
-        duration: 450,
+      genProgress.value = 0;
+      genProgress.value = withTiming(1, {
+        duration: 200,
         easing: Easing.out(Easing.cubic),
       });
     } else {
-      containerOpacity.value = 0;
-      maskSize.value = 0;
+      genProgress.value = 0;
     }
-  }, [!isEmpty]);
+  }, [isEmpty, matrix]);
 
   if (isEmpty || !matrix) {
     return (
@@ -167,6 +233,8 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
           borderRadius: 20,
           alignItems: "center",
           justifyContent: "center",
+          borderWidth: 1,
+          borderColor: qrStyle.fgColor + "15",
         }}
       >
         <View
@@ -222,39 +290,42 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
     { r: 0, c: n - 7 },
     { r: n - 7, c: 0 },
   ];
-  const eyePath = eyePos
-    .map((e) => drawEye(e.r, e.c, pw, PAD, qrStyle.eyeShape))
-    .join(" ");
+  const eyes = eyePos.map((e) => drawEye(e.r, e.c, pw, PAD, qrStyle.eyeShape));
+  const eyeRingPath = eyes.map((e) => e.ring).join(" ");
+  const eyeDotPath = eyes.map((e) => e.dot).join(" ");
 
   return (
-    <Animated.View
-      style={[
-        {
-          width: size,
-          height: size,
-          backgroundColor: qrStyle.bgColor,
-          borderRadius: 20,
-          overflow: "hidden",
-        },
-        containerAnimStyle,
-      ]}
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 20,
+        overflow: "hidden",
+        borderWidth: 1,
+        borderColor: "rgba(0,0,0,0.06)",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
+      }}
     >
-      {/* Square mask — grows from center, no corner clipping */}
-      <Animated.View
-        style={[
-          {
-            overflow: "hidden",
-          },
-          maskStyle,
-        ]}
-      >
+      <Animated.View style={[{ width: size, height: size }, genStyle]}>
         <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          <Rect width={size} height={size} fill={qrStyle.bgColor} />
-          <Path d={pieces.join(" ")} fill={qrStyle.fgColor} />
-          <Path d={eyePath} fill={qrStyle.eyeColor} fillRule="evenodd" />
-          <Path d={eyePath} fill={qrStyle.fgColor} fillRule="evenodd" />
+          <AnimatedRect
+            width={size}
+            height={size}
+            animatedProps={bgRectProps}
+          />
+          <AnimatedPath d={pieces.join(" ")} animatedProps={piecesProps} />
+          <AnimatedPath
+            d={eyeRingPath}
+            fillRule="evenodd"
+            animatedProps={eyeRingProps}
+          />
+          <AnimatedPath d={eyeDotPath} animatedProps={eyeDotProps} />
         </Svg>
       </Animated.View>
-    </Animated.View>
+    </View>
   );
 }
