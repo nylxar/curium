@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -22,6 +23,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import buildInfo from "@/constants/build-info.json";
 import { useToast } from "@/components/ui/Toast";
+import AppIcon from "@/assets/icon.png";
 
 interface InfoRowProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -205,7 +207,11 @@ export default function AboutScreen() {
               { backgroundColor: colors.primary + "18", borderColor: colors.primary + "40" },
             ]}
           >
-            <Ionicons name="qr-code" size={32} color={colors.primary} />
+            <Image
+              source={AppIcon}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <Text
             style={[styles.appName, { color: colors.text, fontFamily: Fonts.monoBold }]}
@@ -510,6 +516,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,
+    overflow: "hidden",
+  },
+  logoImage: {
+    width: 64,
+    height: 64,
   },
   appName: {
     fontSize: FontSize.xl,

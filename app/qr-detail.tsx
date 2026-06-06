@@ -490,8 +490,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   qrBare: {
-    // No border, no shadow, no card — just the QR
+    // No border, no shadow, no card — just the QR.  Same border-radius as
+    // the index.tsx canvas so the wrapper's bg color frames the rounded
+    // QR cleanly.
     overflow: "hidden",
+    borderRadius: 20,
   },
   typePill: {
     flexDirection: "row",

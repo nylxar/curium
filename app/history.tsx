@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import {
@@ -210,23 +210,18 @@ export default function HistoryScreen() {
   const router = useRouter();
   const toast = useToast();
 
-  // Load on focus — show skeleton until data resolves. Skeletons never
-  // animate into real items; the list re-renders once data arrives.
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      setLoading(true);
-      loadHistory().then((data) => {
-        if (active) {
-          setItems(data);
-          setLoading(false);
-        }
-      });
-      return () => {
-        active = false;
-      };
-    }, []),
-  );
+  // Load on initial mount only.  Returning to history from qr-detail
+  // (or any other screen) just reuses the in-memory list — the skeleton
+  // only appears on the very first load, not on every focus event.
+  const hasLoaded = useRef(false);
+  useEffect(() => {
+    if (hasLoaded.current) return;
+    hasLoaded.current = true;
+    loadHistory().then((data) => {
+      setItems(data);
+      setLoading(false);
+    });
+  }, []);
 
   const filtered = query.trim()
     ? items.filter(
