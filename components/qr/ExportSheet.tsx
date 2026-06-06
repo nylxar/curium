@@ -129,6 +129,8 @@ export function ExportSheet({
       visible={visible}
       onClose={onClose}
       title="Export QR"
+      subtitle="Save or share your QR"
+      iconName="share-outline"
       tintColor={tintColor}
       bgColor={bgColor}
     >

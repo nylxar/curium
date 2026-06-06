@@ -63,7 +63,7 @@ export default function RootLayout() {
                   name="settings"
                   options={{
                     animation: "simple_push",
-                    animationDuration: 200,
+                    animationDuration: 160,
                   }}
                 />
                 <Stack.Screen

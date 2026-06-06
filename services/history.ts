@@ -16,19 +16,35 @@ export async function loadHistory(): Promise<HistoryItem[]> {
     const raw = await AsyncStorage.getItem(KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    // Migrate old items that have fgColor/bgColor instead of qrStyle
+    // Migrate old items that have fgColor/bgColor instead of qrStyle,
+    // and items whose saved qrStyle is missing newer fields (pupil,
+    // frame, gradient, logoStyle).
     return parsed.map((item: any) => {
+      let qrStyle: QRStyle;
       if (!item.qrStyle) {
-        return {
-          ...item,
-          qrStyle: {
-            ...DEFAULT_QR_STYLE,
-            fgColor: item.fgColor ?? DEFAULT_QR_STYLE.fgColor,
-            bgColor: item.bgColor ?? DEFAULT_QR_STYLE.bgColor,
+        qrStyle = {
+          ...DEFAULT_QR_STYLE,
+          fgColor: item.fgColor ?? DEFAULT_QR_STYLE.fgColor,
+          bgColor: item.bgColor ?? DEFAULT_QR_STYLE.bgColor,
+        };
+      } else {
+        // Backfill any missing field with the current default so older
+        // saved items render correctly after a schema change.
+        qrStyle = {
+          ...DEFAULT_QR_STYLE,
+          ...item.qrStyle,
+          qrCorners: item.qrStyle.qrCorners ?? DEFAULT_QR_STYLE.qrCorners,
+          gradient: {
+            ...DEFAULT_QR_STYLE.gradient,
+            ...(item.qrStyle.gradient ?? {}),
+          },
+          logoStyle: {
+            ...DEFAULT_QR_STYLE.logoStyle,
+            ...(item.qrStyle.logoStyle ?? {}),
           },
         };
       }
-      return item;
+      return { ...item, qrStyle };
     });
   } catch {
     return [];

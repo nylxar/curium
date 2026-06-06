@@ -10,6 +10,7 @@ import {
 import { useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DarkColors, LightColors, AppTheme } from "@/constants/theme";
+import { defaultQRStyle, QRStyle } from "@/types/qr";
 
 interface ThemeCtx {
   theme: AppTheme;
@@ -19,23 +20,30 @@ interface ThemeCtx {
   qrFg: string;
   qrBg: string;
   setQRColors: (fg: string, bg: string) => void;
+  /** The QR style that matches the current theme (light → paper default,
+   *  dark → paper-dark default).  Use this as the initial value of any
+   *  `useState<QRStyle>(...)` that should respect the user's theme. */
+  defaultQRStyleForTheme: QRStyle;
 }
 
 const ThemeContext = createContext<ThemeCtx>({
-  theme: "dark",
-  colors: DarkColors,
-  isDark: true,
+  theme: "light",
+  colors: LightColors,
+  isDark: false,
   setTheme: () => {},
-  qrFg: "#0f172a",
-  qrBg: "#e2e8f0",
+  qrFg: "#1c1917",
+  qrBg: "#fafaf9",
   setQRColors: () => {},
+  defaultQRStyleForTheme: defaultQRStyle(false),
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
-  const [theme, setThemeState] = useState<AppTheme>("system");
-  const [qrFg, setQrFg] = useState("#0f172a");
-  const [qrBg, setQrBg] = useState("#e2e8f0");
+  // Default to "light" (paper + ink) since the brand is paper-themed.
+  // Users can switch to dark, system, or dynamic from Settings.
+  const [theme, setThemeState] = useState<AppTheme>("light");
+  const [qrFg, setQrFg] = useState("#1c1917");
+  const [qrBg, setQrBg] = useState("#fafaf9");
 
   useEffect(() => {
     AsyncStorage.multiGet([
@@ -95,9 +103,23 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       ? isColorDark(qrBg)
       : theme === "dark" || (theme === "system" && system === "dark");
 
+  const defaultQRStyleForTheme = useMemo(
+    () => defaultQRStyle(isDark),
+    [isDark],
+  );
+
   return (
     <ThemeContext.Provider
-      value={{ theme, colors, isDark, setTheme, qrFg, qrBg, setQRColors }}
+      value={{
+        theme,
+        colors,
+        isDark,
+        setTheme,
+        qrFg,
+        qrBg,
+        setQRColors,
+        defaultQRStyleForTheme,
+      }}
     >
       {children}
     </ThemeContext.Provider>

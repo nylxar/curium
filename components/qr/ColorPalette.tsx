@@ -21,10 +21,10 @@ interface Props {
   onSelect: (id: string, fg: string, bg: string) => void;
 }
 
-const COLUMNS = 6;
-const SWATCH_GAP = 10;
+const COLUMNS = 7;
+const SWATCH_GAP = 8;
 const CONTAINER_PADDING = Spacing.base;
-const SWATCH_SIZE = 38;
+const SWATCH_SIZE = 36;
 
 function ColorSwatch({
   item,
