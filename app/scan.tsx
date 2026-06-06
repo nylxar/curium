@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Linking,
-  Platform,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -18,13 +17,13 @@ import Animated, {
   useSharedValue,
   withRepeat,
   withTiming,
+  withDelay,
   useAnimatedStyle,
   Easing,
 } from "react-native-reanimated";
 import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
 import { useToast } from "@/components/ui/Toast";
 
-// Add this helper at module level in scan.tsx:
 function detectQRType(data: string): {
   type: string;
   parsed: Record<string, string>;
@@ -47,7 +46,10 @@ function detectQRType(data: string): {
   if (/^sms:/i.test(data)) {
     const [phone, qs] = data.replace(/^sms:/i, "").split("?");
     const params = Object.fromEntries(new URLSearchParams(qs ?? ""));
-    return { type: "sms", parsed: { phone, message: params.body ?? "" } };
+    return {
+      type: "sms",
+      parsed: { phone, message: params.body ?? "" },
+    };
   }
 
   if (/^WIFI:/i.test(data)) {
@@ -62,7 +64,10 @@ function detectQRType(data: string): {
     const phone = data.match(/TEL:([^\n]*)/)?.[1] ?? "";
     const email = data.match(/EMAIL:([^\n]*)/)?.[1] ?? "";
     const org = data.match(/ORG:([^\n]*)/)?.[1] ?? "";
-    return { type: "contact", parsed: { name, phone, email, org } };
+    return {
+      type: "contact",
+      parsed: { name, phone, email, org },
+    };
   }
 
   if (/^geo:/i.test(data)) {
@@ -90,7 +95,7 @@ export default function ScanScreen() {
   const { colors, isDark } = useTheme();
   const toast = useToast();
 
-  // Laser animation
+  // Laser sweep
   const laserY = useSharedValue(0);
   useEffect(() => {
     laserY.value = withRepeat(
@@ -102,6 +107,41 @@ export default function ScanScreen() {
   const laserStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: laserY.value * 220 }],
   }));
+
+  // Result panel slide-in
+  const panelProgress = useSharedValue(0);
+  useEffect(() => {
+    if (scanned) {
+      panelProgress.value = 0;
+      panelProgress.value = withDelay(
+        60,
+        withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) }),
+      );
+    } else {
+      panelProgress.value = 0;
+    }
+  }, [scanned]);
+  const panelStyle = useAnimatedStyle(() => ({
+    opacity: panelProgress.value,
+    transform: [{ translateY: (1 - panelProgress.value) * 40 }],
+  }));
+
+  // Success flash when a QR is detected
+  const flash = useSharedValue(0);
+  useEffect(() => {
+    if (scanned) {
+      flash.value = 0;
+      flash.value = withTiming(1, {
+        duration: 120,
+        easing: Easing.out(Easing.quad),
+      });
+      flash.value = withDelay(
+        200,
+        withTiming(0, { duration: 240, easing: Easing.in(Easing.cubic) }),
+      );
+    }
+  }, [scanned]);
+  const flashStyle = useAnimatedStyle(() => ({ opacity: flash.value }));
 
   const onBarcodeScanned = useCallback(
     ({ data }: { data: string }) => {
@@ -134,22 +174,51 @@ export default function ScanScreen() {
 
   if (!permission.granted) {
     return (
-      <View
-        style={[styles.screen, styles.center, { backgroundColor: "colors.bg" }]}
-      >
-        <Ionicons name="camera-outline" size={56} color="#fff" />
-        <Text style={styles.permTitle}>Camera Access Needed</Text>
-        <Text style={styles.permSub}>
+      <View style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}>
+        <View
+          style={[
+            styles.permIconWrap,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <Ionicons name="camera-outline" size={36} color={colors.primary} />
+        </View>
+        <Text
+          style={[
+            styles.permTitle,
+            { color: colors.text, fontFamily: Fonts.monoBold },
+          ]}
+        >
+          Camera Access Needed
+        </Text>
+        <Text
+          style={[
+            styles.permSub,
+            { color: colors.textMuted, fontFamily: Fonts.mono },
+          ]}
+        >
           Allow camera to scan QR codes and barcodes
         </Text>
-        <TouchableOpacity style={styles.permBtn} onPress={requestPermission}>
-          <Text style={styles.permBtnLabel}>Allow Camera</Text>
-        </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => router.back()}
-          style={{ marginTop: Spacing.md }}
+          style={[styles.permBtn, { backgroundColor: colors.primary }]}
+          onPress={requestPermission}
         >
-          <Text style={{ color: "#ffffff80", fontSize: FontSize.sm, fontFamily: Fonts.mono }}>
+          <Text
+            style={[
+              styles.permBtnLabel,
+              { color: colors.bg, fontFamily: Fonts.monoBold },
+            ]}
+          >
+            Allow Camera
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()} style={styles.permBack}>
+          <Text
+            style={[
+              styles.permBackLabel,
+              { color: colors.textMuted, fontFamily: Fonts.mono },
+            ]}
+          >
             Go Back
           </Text>
         </TouchableOpacity>
@@ -178,30 +247,56 @@ export default function ScanScreen() {
         }}
       />
 
-      {/* Dark overlay with cutout */}
+      {/* Dim overlay so the camera feed is not blindingly bright */}
+      <View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.25)" }]}
+      />
+
       <View style={styles.overlay}>
         {/* Top bar */}
-        <View style={[styles.topBar, { paddingTop: insets.top + Spacing.sm }]}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-            <Ionicons name="close" size={28} color="#fff" />
+        <View
+          style={[
+            styles.topBar,
+            {
+              paddingTop: insets.top + Spacing.sm,
+              backgroundColor: "rgba(0,0,0,0.5)",
+            },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => router.back()}
+            hitSlop={12}
+            style={styles.topBtn}
+          >
+            <Ionicons name="close" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.topTitle}>Scan QR / Barcode</Text>
-          <TouchableOpacity onPress={() => setTorch((t) => !t)} hitSlop={12}>
+          <Text
+            style={[
+              styles.topTitle,
+              { color: "#fff", fontFamily: Fonts.monoMedium },
+            ]}
+          >
+            Scan QR / Barcode
+          </Text>
+          <TouchableOpacity
+            onPress={() => setTorch((t) => !t)}
+            hitSlop={12}
+            style={styles.topBtn}
+          >
             <Ionicons
               name={torch ? "flash" : "flash-outline"}
-              size={24}
-              color={torch ? "colors.warning" : "#fff"}
+              size={22}
+              color={torch ? "#facc15" : "#fff"}
             />
           </TouchableOpacity>
         </View>
 
-        {/* Spacer */}
         <View style={{ flex: 1 }} />
 
         {/* Scan frame */}
         <View style={styles.frameWrap}>
           <View style={styles.frame}>
-            {/* Corner accents */}
             {[
               { top: -2, left: -2, borderTopWidth: 3, borderLeftWidth: 3 },
               { top: -2, right: -2, borderTopWidth: 3, borderRightWidth: 3 },
@@ -220,97 +315,223 @@ export default function ScanScreen() {
             ].map((c, i) => (
               <View
                 key={i}
-                style={[styles.corner, c, { borderColor: "#fff" }]}
+                style={[
+                  styles.corner,
+                  c,
+                  { borderColor: scanned ? "#22c55e" : "#fff" },
+                ]}
               />
             ))}
-            {/* Laser sweep */}
             {!scanned && <Animated.View style={[styles.laser, laserStyle]} />}
+            {/* Success flash — momentary green wash when scanned */}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.frameFlash,
+                { backgroundColor: "#22c55e" },
+                flashStyle,
+              ]}
+            />
           </View>
-          <Text style={styles.hint}>
-            {scanned ? "✓ Scanned!" : "Point at any QR code or barcode"}
-          </Text>
+          {/* Hint pill — always shows the instruction; the "Scanned"
+              indicator lives in the result panel below.  We don't duplicate
+              the text here, only the corner accents + frame flash indicate
+              capture visually. */}
+          <View style={[styles.hintPill, { backgroundColor: "rgba(0,0,0,0.55)" }]}>
+            <Ionicons name="scan-outline" size={14} color="#fff" />
+            <Text
+              style={[
+                styles.hintText,
+                { color: "#fff", fontFamily: Fonts.monoMedium },
+              ]}
+            >
+              Point at any QR code or barcode
+            </Text>
+          </View>
         </View>
 
-        {/* Spacer */}
         <View style={{ flex: 1 }} />
 
         {/* Result panel */}
         {scanned && result && (
-          <View
+          <Animated.View
             style={[
               styles.resultPanel,
-              { paddingBottom: insets.bottom + Spacing.lg },
+              {
+                paddingBottom: insets.bottom + Spacing.lg,
+                backgroundColor: colors.surface,
+                borderTopColor: colors.border,
+              },
+              panelStyle,
             ]}
           >
-            <Text style={styles.resultLabel}>Scanned Content</Text>
-            <Text style={styles.resultText} numberOfLines={3}>
-              {result}
-            </Text>
+            <View style={styles.dragHandleWrap}>
+              <View
+                style={[styles.dragHandle, { backgroundColor: colors.border }]}
+              />
+            </View>
+            <View style={styles.resultHeader}>
+              <View
+                style={[
+                  styles.resultBadge,
+                  { backgroundColor: "#22c55e" + "20" },
+                ]}
+              >
+                <Ionicons
+                  name="checkmark-circle"
+                  size={14}
+                  color="#22c55e"
+                />
+                <Text
+                  style={[
+                    styles.resultBadgeText,
+                    { color: "#22c55e", fontFamily: Fonts.monoBold },
+                  ]}
+                >
+                  SCANNED
+                </Text>
+              </View>
+            </View>
+            <View
+              style={[
+                styles.resultTextBox,
+                { backgroundColor: colors.bg, borderColor: colors.border },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.resultText,
+                  { color: colors.text, fontFamily: Fonts.mono },
+                ]}
+                numberOfLines={3}
+              >
+                {result}
+              </Text>
+            </View>
             <View style={styles.resultActions}>
               <TouchableOpacity
-                style={[styles.resultBtn, { backgroundColor: "#ffffff20" }]}
+                style={[
+                  styles.resultBtn,
+                  {
+                    backgroundColor: colors.bg,
+                    borderColor: colors.border,
+                  },
+                ]}
                 onPress={() => handleAction("copy")}
               >
-                <Ionicons name="copy-outline" size={18} color="#fff" />
-                <Text style={styles.resultBtnLabel}>Copy</Text>
+                <Ionicons
+                  name="copy-outline"
+                  size={16}
+                  color={colors.text}
+                />
+                <Text
+                  style={[
+                    styles.resultBtnLabel,
+                    { color: colors.text, fontFamily: Fonts.monoMedium },
+                  ]}
+                >
+                  Copy
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.resultBtn, { backgroundColor: "#fff" }]}
+                style={[
+                  styles.resultBtn,
+                  {
+                    backgroundColor: colors.bg,
+                    borderColor: colors.border,
+                  },
+                ]}
                 onPress={() => handleAction("open")}
               >
-                <Ionicons name="open-outline" size={18} color="#000" />
-                <Text style={[styles.resultBtnLabel, { color: "#000" }]}>
+                <Ionicons
+                  name="open-outline"
+                  size={16}
+                  color={colors.text}
+                />
+                <Text
+                  style={[
+                    styles.resultBtnLabel,
+                    { color: colors.text, fontFamily: Fonts.monoMedium },
+                  ]}
+                >
                   Open
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.resultBtn, { backgroundColor: "#ffffff20" }]}
+                style={[
+                  styles.resultBtn,
+                  {
+                    backgroundColor: colors.bg,
+                    borderColor: colors.border,
+                  },
+                ]}
                 onPress={() => {
                   setScanned(false);
                   setResult(null);
                 }}
               >
-                <Ionicons name="scan-outline" size={18} color="#fff" />
-                <Text style={styles.resultBtnLabel}>Rescan</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.resultBtn,
-                  { backgroundColor: colors.primary, flex: 1.5 },
-                ]}
-                onPress={() => {
-                  if (!result) return;
-                  const { type, parsed } = detectQRType(result);
-                  router.push({
-                    pathname: "/",
-                    params: {
-                      loadType: type,
-                      loadData: JSON.stringify(parsed),
-                    },
-                  });
-                }}
-              >
                 <Ionicons
-                  name="create-outline"
-                  size={18}
-                  color={isDark ? "#000" : "#fff"}
+                  name="refresh-outline"
+                  size={16}
+                  color={colors.text}
                 />
                 <Text
                   style={[
                     styles.resultBtnLabel,
-                    { color: isDark ? "#000" : "#fff" },
+                    { color: colors.text, fontFamily: Fonts.monoMedium },
                   ]}
                 >
-                  Load
+                  Rescan
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+            <TouchableOpacity
+              style={[
+                styles.resultPrimary,
+                { backgroundColor: colors.primary },
+              ]}
+              onPress={() => {
+                if (!result) return;
+                const { type, parsed } = detectQRType(result);
+                router.push({
+                  pathname: "/",
+                  params: {
+                    loadType: type,
+                    loadData: JSON.stringify(parsed),
+                  },
+                });
+              }}
+            >
+              <Ionicons
+                name="create-outline"
+                size={17}
+                color={isDark ? "#000" : "#fff"}
+              />
+              <Text
+                style={[
+                  styles.resultPrimaryLabel,
+                  {
+                    color: isDark ? "#000" : "#fff",
+                    fontFamily: Fonts.monoBold,
+                  },
+                ]}
+              >
+                Load into Generator
+              </Text>
+              <Ionicons
+                name="arrow-forward"
+                size={16}
+                color={isDark ? "#000" : "#fff"}
+              />
+            </TouchableOpacity>
+          </Animated.View>
         )}
       </View>
     </View>
   );
 }
+
+const FRAME_SIZE = 260;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#000" },
@@ -320,92 +541,155 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     padding: Spacing.xl,
   },
+
   overlay: { ...StyleSheet.absoluteFill, justifyContent: "center" },
 
+  // Top bar
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
-    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  topTitle: { color: "#fff", fontSize: FontSize.base, fontFamily: Fonts.monoMedium, fontWeight: "600" },
+  topBtn: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topTitle: {
+    fontSize: FontSize.base,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
 
+  // Frame
   frameWrap: { alignItems: "center", gap: Spacing.lg },
   frame: {
-    width: 260,
-    height: 260,
+    width: FRAME_SIZE,
+    height: FRAME_SIZE,
     backgroundColor: "transparent",
+    overflow: "hidden",
+    borderRadius: Radius.lg,
   },
-  corner: { position: "absolute", width: 24, height: 24, borderRadius: 3 },
+  corner: { position: "absolute", width: 26, height: 26, borderRadius: 4 },
   laser: {
     position: "absolute",
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: "#4ade80",
-    shadowColor: "#4ade80",
+    backgroundColor: "#22c55e",
+    shadowColor: "#22c55e",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
     shadowRadius: 8,
     elevation: 8,
   },
-  hint: {
-    color: "colors.text+'cc'",
-    fontSize: FontSize.sm,
-    fontFamily: Fonts.mono,
-    textAlign: "center",
+  frameFlash: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
+  hintPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+    borderRadius: Radius.full,
+  },
+  hintText: { fontSize: FontSize.xs, letterSpacing: 0.3 },
 
+  // Result panel
   resultPanel: {
-    backgroundColor: "rgba(0,0,0,0.85)",
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     padding: Spacing.lg,
     gap: Spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
-  resultLabel: {
-    color: "#ffffff80",
-    fontSize: FontSize.xs,
-    fontFamily: Fonts.monoMedium,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+  dragHandleWrap: {
+    alignItems: "center",
+    marginTop: -Spacing.sm,
+    marginBottom: -Spacing.xs,
   },
-  resultText: { color: "#fff", fontSize: FontSize.base, fontFamily: Fonts.mono, lineHeight: 22 },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+  },
+  resultHeader: { flexDirection: "row", alignItems: "center" },
+  resultBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  resultBadgeText: { fontSize: 9, letterSpacing: 1.2 },
+  resultTextBox: {
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.md,
+  },
+  resultText: {
+    fontSize: FontSize.sm,
+    lineHeight: 20,
+  },
   resultActions: { flexDirection: "row", gap: Spacing.sm },
   resultBtn: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: Spacing.xs,
+    gap: 6,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  resultBtnLabel: { fontSize: FontSize.xs, fontWeight: "600" },
+  resultPrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
     paddingVertical: Spacing.md,
     borderRadius: Radius.lg,
   },
-  resultBtnLabel: { color: "#fff", fontSize: FontSize.sm, fontFamily: Fonts.monoMedium, fontWeight: "600" },
+  resultPrimaryLabel: {
+    fontSize: FontSize.base,
+    letterSpacing: 0.2,
+  },
 
+  // Permission screen
+  permIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   permTitle: {
-    color: "#fff",
     fontSize: FontSize.lg,
-    fontFamily: Fonts.monoBold,
-    fontWeight: "700",
     textAlign: "center",
   },
   permSub: {
-    color: "#ffffff80",
     fontSize: FontSize.sm,
-    fontFamily: Fonts.mono,
     textAlign: "center",
     maxWidth: 280,
   },
   permBtn: {
-    backgroundColor: "#fff",
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
     borderRadius: Radius.full,
     marginTop: Spacing.sm,
   },
-  permBtnLabel: { color: "#000", fontSize: FontSize.base, fontFamily: Fonts.monoBold, fontWeight: "700" },
+  permBtnLabel: { fontSize: FontSize.base },
+  permBack: { marginTop: Spacing.sm, padding: Spacing.sm },
+  permBackLabel: { fontSize: FontSize.sm },
 });

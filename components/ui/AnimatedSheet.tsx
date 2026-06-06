@@ -6,11 +6,11 @@ import {
   ViewStyle,
   Keyboard,
   KeyboardEvent,
+  BackHandler,
 } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
   runOnJS,
   Easing,
@@ -30,9 +30,14 @@ interface Props {
   disableSwipeDown?: boolean;
 }
 
-const SPRING = { damping: 30, stiffness: 420, mass: 0.6 };
+// Sheet motion timings — tuned for "feels expensive, not bouncy".
+// 340ms entrance with ease-out cubic: rises smoothly and parks without
+// overshoot.  Spring physics felt rough on successive opens.
+const ENTER_DURATION = 340;
+const CLOSE_DURATION = 180;
+const BACKDROP_ENTER = 160;
+const BACKDROP_CLOSE = 140;
 const SHEET_OFFSCREEN = 1200;
-const CLOSE_DURATION = 160;
 
 export function AnimatedSheet({
   visible,
@@ -45,72 +50,71 @@ export function AnimatedSheet({
   disableSwipeDown = false,
 }: Props) {
   const overlay = useOverlay();
+  // Single source of truth: the overlay's *internal* visibility.  This
+  // tracks the *animation phase*, not the *user intent*.  When the user
+  // presses back / swipes / taps backdrop, we transition to "closing" and
+  // keep the overlay mounted until the animation finishes, then dismiss.
+  const [phase, setPhase] = useState<"closed" | "open" | "closing">("closed");
   const [overlayId, setOverlayId] = useState<number | null>(null);
 
+  // requestClose is what user-initiated dismisses call.  It moves us into
+  // the closing phase — SheetContent detects that and animates out.
+  // The parent never has to know that any animation is happening.
   useEffect(() => {
-    if (visible) {
-      // Push a placeholder first, then update with the real content
+    if (visible && phase === "closed") {
+      setPhase("open");
+    } else if (!visible && phase !== "closed") {
+      setPhase("closing");
+    }
+  }, [visible, phase]);
+
+  // Mount the overlay once (on first open) and update its props when phase
+  // changes.  Crucially, we DON'T call overlay.dismiss in any cleanup —
+  // dismissal happens only after the close animation's runOnJS callback
+  // fires, inside SheetContent.  That's what makes the back-gesture close
+  // animate properly.
+  useEffect(() => {
+    if (phase === "open" && overlayId === null) {
       const id = overlay.show(
         <SheetContent
-          visible={visible}
+          phase="open"
           bgColor={bgColor}
           borderColor={borderColor}
           style={style}
           disableBackdropPress={disableBackdropPress}
           disableSwipeDown={disableSwipeDown}
-          onClose={() => {
+          onRequestClose={onClose}
+          onDismissed={() => {
             overlay.dismiss(id);
-            onClose();
+            setOverlayId(null);
+            setPhase("closed");
           }}
         >
           {children}
         </SheetContent>,
       );
       setOverlayId(id);
-      return () => {
-        overlay.dismiss(id);
-        setOverlayId(null);
-      };
-    } else if (overlayId !== null) {
-      // Tell the SheetContent to animate out, then dismiss
-      overlay.update(
-        overlayId,
-        <SheetContent
-          visible={false}
-          bgColor={bgColor}
-          borderColor={borderColor}
-          style={style}
-          disableBackdropPress={disableBackdropPress}
-          disableSwipeDown={disableSwipeDown}
-          onClose={() => {
-            overlay.dismiss(overlayId);
-            setOverlayId(null);
-            onClose();
-          }}
-        >
-          {children}
-        </SheetContent>,
-      );
+      return; // no cleanup
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
 
-  // Keep overlay content in sync with children changes
-  useEffect(() => {
-    if (overlayId !== null) {
+    if (phase === "closing" && overlayId !== null) {
+      // Tell the existing SheetContent to animate out.  The
+      // onDismissed callback (from the original show call) will fire
+      // when the animation completes, removing the overlay.
       overlay.update(
         overlayId,
         <SheetContent
-          visible={visible}
+          phase="closing"
           bgColor={bgColor}
           borderColor={borderColor}
           style={style}
           disableBackdropPress={disableBackdropPress}
           disableSwipeDown={disableSwipeDown}
-          onClose={() => {
+          onRequestClose={onClose}
+          onDismissed={() => {
             overlay.dismiss(overlayId);
             setOverlayId(null);
-            onClose();
+            setPhase("closed");
           }}
         >
           {children}
@@ -118,36 +122,87 @@ export function AnimatedSheet({
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [children, bgColor, borderColor, visible]);
+  }, [phase]);
+
+  // Keep overlay content in sync with children / style changes (only while
+  // open — once we're closing, we don't want to re-mount or change the
+  // animation).
+  useEffect(() => {
+    if (phase === "open" && overlayId !== null) {
+      overlay.update(
+        overlayId,
+        <SheetContent
+          phase="open"
+          bgColor={bgColor}
+          borderColor={borderColor}
+          style={style}
+          disableBackdropPress={disableBackdropPress}
+          disableSwipeDown={disableSwipeDown}
+          onRequestClose={onClose}
+          onDismissed={() => {
+            overlay.dismiss(overlayId);
+            setOverlayId(null);
+            setPhase("closed");
+          }}
+        >
+          {children}
+        </SheetContent>,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [children, bgColor, borderColor, phase]);
 
   return null;
 }
 
 interface SheetContentProps {
-  visible: boolean;
+  /** Animation phase the SheetContent should be in. */
+  phase: "open" | "closing";
   bgColor?: string;
   borderColor?: string;
   style?: ViewStyle;
   disableBackdropPress: boolean;
   disableSwipeDown: boolean;
-  onClose: () => void;
+  /** Called when the user dismisses (swipe, backdrop, back, X).  Triggers
+   *  the close animation by setting `visible: false` in the parent. */
+  onRequestClose: () => void;
+  /** Called after the close animation finishes.  Removes the overlay
+   *  entry from the tree. */
+  onDismissed: () => void;
   children: ReactNode;
 }
 
 function SheetContent({
-  visible,
+  phase,
   bgColor,
   borderColor,
   style,
   disableBackdropPress,
   disableSwipeDown,
-  onClose,
+  onRequestClose,
+  onDismissed,
   children,
 }: SheetContentProps) {
+  // Start offscreen so the very first frame of the open animation is
+  // already at the offscreen position, not at 0.
   const sheetY = useSharedValue(SHEET_OFFSCREEN);
   const backdropOp = useSharedValue(0);
   const keyboardH = useSharedValue(0);
   const keyboardHeight = useSharedValue(0);
+
+  // Intercept the Android hardware back / gesture back so the sheet
+  // closes (with animation) instead of the app exiting or the parent
+  // screen popping.  We call onRequestClose which moves the parent
+  // into the "closing" phase — the next render's useLayoutEffect will
+  // animate out, then runOnJS(onDismissed) will tear down.
+  useEffect(() => {
+    if (phase !== "open") return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      onRequestClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [phase, onRequestClose]);
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -180,37 +235,35 @@ function SheetContent({
     };
   }, []);
 
-  // Animate in on mount, or animate out if visible becomes false
+  // Animate in on open, out on closing.  Always go to 0 on open and to
+  // offscreen on closing, regardless of current value — that way
+  // re-entering a half-open sheet always resolves cleanly.
+  //
+  // The close completion is wired to the *sheet* (the slower of the two
+  // animations).  If we fired onDismissed from the backdrop instead, the
+  // overlay would unmount while the sheet is still sliding out, freezing
+  // it mid-animation.
   useLayoutEffect(() => {
-    if (visible) {
-      sheetY.value = withSpring(0, SPRING);
-      backdropOp.value = withTiming(0.5, { duration: 140 });
+    if (phase === "open") {
+      sheetY.value = withTiming(0, {
+        duration: ENTER_DURATION,
+        easing: Easing.out(Easing.cubic),
+      });
+      backdropOp.value = withTiming(0.5, { duration: BACKDROP_ENTER });
     } else {
-      sheetY.value = withTiming(SHEET_OFFSCREEN, {
-        duration: CLOSE_DURATION,
-        easing: Easing.in(Easing.cubic),
-      });
-      backdropOp.value = withTiming(0, { duration: CLOSE_DURATION }, (f) => {
-        if (f) {
-          runOnJS(onClose)();
-        }
-      });
+      sheetY.value = withTiming(
+        SHEET_OFFSCREEN,
+        { duration: CLOSE_DURATION, easing: Easing.in(Easing.cubic) },
+        (finished) => {
+          if (finished) {
+            runOnJS(onDismissed)();
+          }
+        },
+      );
+      backdropOp.value = withTiming(0, { duration: BACKDROP_CLOSE });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
-
-  const dismiss = () => {
-    "worklet";
-    sheetY.value = withTiming(SHEET_OFFSCREEN, {
-      duration: CLOSE_DURATION,
-      easing: Easing.in(Easing.cubic),
-    });
-    backdropOp.value = withTiming(0, { duration: CLOSE_DURATION }, (f) => {
-      if (f) {
-        runOnJS(onClose)();
-      }
-    });
-  };
+  }, [phase]);
 
   const pan = Gesture.Pan()
     .activeOffsetY(30)
@@ -219,9 +272,12 @@ function SheetContent({
     })
     .onEnd((e) => {
       if (e.translationY > 100 || e.velocityY > 600) {
-        dismiss();
+        onRequestClose();
       } else {
-        sheetY.value = withSpring(0, SPRING);
+        sheetY.value = withTiming(0, {
+          duration: 220,
+          easing: Easing.out(Easing.cubic),
+        });
       }
     });
 
@@ -244,7 +300,7 @@ function SheetContent({
       >
         <Pressable
           style={StyleSheet.absoluteFill}
-          onPress={disableBackdropPress ? undefined : dismiss}
+          onPress={disableBackdropPress ? undefined : onRequestClose}
         />
       </Animated.View>
 
