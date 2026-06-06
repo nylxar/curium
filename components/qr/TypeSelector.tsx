@@ -98,6 +98,7 @@ export function TypeSelector({ selected, tintColor, bgColor, onChange }: Props) 
           );
           setOpen(true);
         }}
+        style={() => [{}]}
       >
         <Animated.View
           style={[
@@ -110,7 +111,9 @@ export function TypeSelector({ selected, tintColor, bgColor, onChange }: Props) 
             pointerEvents="none"
             style={[
               StyleSheet.absoluteFill,
-              { backgroundColor: colors.surfaceOffset },
+              // Tint-aware press flash so it doesn't read as a gray wash
+              // against the colored row bg.
+              { backgroundColor: tintColor + "22" },
               pressStyle,
             ]}
           />

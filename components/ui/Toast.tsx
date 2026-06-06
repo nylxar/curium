@@ -47,6 +47,16 @@ interface ToastEntry extends Required<Omit<ToastOptions, "message" | "action">> 
   action?: ToastAction;
 }
 
+interface ConfirmEntry {
+  id: number;
+  title: string;
+  message?: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  danger: boolean;
+  onConfirm: () => void;
+}
+
 interface ToastContextValue {
   show: (opts: ToastOptions) => void;
   success: (title: string, message?: string) => void;
@@ -85,6 +95,7 @@ const VARIANT_META: Record<
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastEntry | null>(null);
+  const [confirmEntry, setConfirmEntry] = useState<ConfirmEntry | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const counterRef = useRef(0);
 
@@ -94,6 +105,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       timeoutRef.current = null;
     }
     setToast(null);
+  }, []);
+
+  const dismissConfirm = useCallback(() => {
+    setConfirmEntry(null);
   }, []);
 
   const show = useCallback((opts: ToastOptions) => {
@@ -144,20 +159,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       confirmLabel = "Confirm",
       danger = false,
     ) => {
-      show({
+      counterRef.current += 1;
+      setConfirmEntry({
+        id: counterRef.current,
         title,
         message,
-        variant: danger ? "warning" : "info",
-        duration: 6000,
-        action: {
-          label: confirmLabel,
-          onPress: () => {
-            onConfirm();
-          },
-        },
+        confirmLabel,
+        cancelLabel: "Cancel",
+        danger,
+        onConfirm,
       });
     },
-    [show],
+    [],
   );
 
   return (
@@ -166,6 +179,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     >
       {children}
       {toast && <ToastView toast={toast} onDismiss={dismiss} />}
+      {confirmEntry && (
+        <ConfirmDialog entry={confirmEntry} onDismiss={dismissConfirm} />
+      )}
     </ToastContext.Provider>
   );
 }
@@ -312,4 +328,228 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
+  // Confirm dialog
+  confirmWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: Spacing.base,
+    alignItems: "center",
+  },
+  confirmCard: {
+    width: "100%",
+    maxWidth: 420,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.lg,
+    alignItems: "center",
+    gap: Spacing.md,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 12,
+  },
+  confirmIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -Spacing.xs,
+  },
+  confirmTitle: {
+    fontSize: FontSize.md,
+    textAlign: "center",
+  },
+  confirmMessage: {
+    fontSize: FontSize.sm,
+    textAlign: "center",
+    lineHeight: 19,
+    paddingHorizontal: Spacing.xs,
+  },
+  confirmActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    width: "100%",
+    marginTop: Spacing.xs,
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmBtnLabel: {
+    fontSize: FontSize.sm,
+  },
 });
+
+// ─── Confirm dialog ───────────────────────────────────────────────────────────
+// A real two-button dialog (Cancel + Confirm).  Replaces the previous toast-
+// with-one-action approach, which had no way to cancel — users could only
+// wait for the toast to time out or tap the destructive action by accident.
+function ConfirmDialog({
+  entry,
+  onDismiss,
+}: {
+  entry: ConfirmEntry;
+  onDismiss: () => void;
+}) {
+  const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const opacity = useSharedValue(0);
+  const cardY = useSharedValue(24);
+  const cardOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 140 });
+    cardY.value = withTiming(0, {
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+    });
+    cardOpacity.value = withTiming(1, { duration: 180 });
+  }, []);
+
+  const handleClose = (run: boolean) => {
+    opacity.value = withTiming(0, { duration: 140 }, (f) => {
+      if (f) runOnJS(onDismiss)();
+    });
+    cardY.value = withTiming(12, { duration: 160, easing: Easing.in(Easing.cubic) });
+    cardOpacity.value = withTiming(0, { duration: 140 });
+    if (run) {
+      // Defer the confirm action slightly so the animation can start
+      setTimeout(() => entry.onConfirm(), 60);
+    }
+  };
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+  const cardStyle = useAnimatedStyle(() => ({
+    opacity: cardOpacity.value,
+    transform: [{ translateY: cardY.value }],
+  }));
+
+  const accent = entry.danger ? colors.error : colors.primary;
+
+  return (
+    <View
+      style={StyleSheet.absoluteFill}
+      pointerEvents="box-none"
+    >
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: "rgba(0,0,0,0.45)" },
+          backdropStyle,
+        ]}
+      >
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => handleClose(false)} />
+      </Animated.View>
+
+      <View
+        style={[
+          styles.confirmWrap,
+          { paddingBottom: insets.bottom + Spacing.lg },
+        ]}
+        pointerEvents="box-none"
+      >
+        <Animated.View
+          style={[
+            styles.confirmCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+            cardStyle,
+          ]}
+        >
+          <View
+            style={[
+              styles.confirmIconWrap,
+              { backgroundColor: accent + "18" },
+            ]}
+          >
+            <Ionicons
+              name={entry.danger ? "warning" : "help"}
+              size={22}
+              color={accent}
+            />
+          </View>
+          <Text
+            style={[
+              styles.confirmTitle,
+              { color: colors.text, fontFamily: Fonts.monoBold },
+            ]}
+          >
+            {entry.title}
+          </Text>
+          {entry.message ? (
+            <Text
+              style={[
+                styles.confirmMessage,
+                { color: colors.textMuted, fontFamily: Fonts.mono },
+              ]}
+            >
+              {entry.message}
+            </Text>
+          ) : null}
+          <View style={styles.confirmActions}>
+            <Pressable
+              onPress={() => handleClose(false)}
+              style={({ pressed }) => [
+                styles.confirmBtn,
+                {
+                  backgroundColor: pressed
+                    ? colors.surfaceOffset
+                    : colors.bg,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.confirmBtnLabel,
+                  { color: colors.text, fontFamily: Fonts.monoMedium },
+                ]}
+              >
+                {entry.cancelLabel}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleClose(true)}
+              style={({ pressed }) => [
+                styles.confirmBtn,
+                {
+                  backgroundColor: pressed
+                    ? accent
+                    : accent,
+                  borderColor: accent,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.confirmBtnLabel,
+                  {
+                    color: isDark ? "#000" : "#fff",
+                    fontFamily: Fonts.monoBold,
+                  },
+                ]}
+              >
+                {entry.confirmLabel}
+              </Text>
+            </Pressable>
+          </View>
+        </Animated.View>
+      </View>
+    </View>
+  );
+}
