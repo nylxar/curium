@@ -63,7 +63,7 @@ import {
 } from "@/components/qr/InputForms";
 
 import { Fonts, Spacing, Radius, FontSize, QR_COLORS } from "@/constants/theme";
-import { tierVariant } from "@/constants/colorUtils";
+import { mixHex } from "@/constants/colorUtils";
 import { GlowPulse } from "@/components/qr/ColorTransitionCurtain";
 import {
   QRType,
@@ -147,6 +147,173 @@ const PUPIL_SHAPES: QRStyle["pupilShape"][] = [
   "heart",
   "none",
 ];
+
+// Eye↔Pupil compatibility map for the shuffle.  Some combinations
+// look absurd in the shuffle (e.g. `dot` eye + `dot` pupil is a
+// solid blob with a confusing smaller dot, `heart` eye + `heart`
+// pupil is a redundant double-heart, `star` eye + `cross` pupil is
+// a busy double-motif).  We classify each pupil for each eye as
+// PREFERRED (clean pairing), ACCEPTABLE (visually fine, but a bit
+// busy), or BANNED (always looks wrong).  The shuffle picks 80% of
+// the time from PREFERRED and 20% from ACCEPTABLE — so the user
+// mostly sees "feels right" pairings, with a sprinkle of variety.
+// BANNED shapes are never picked.  The user can still pick any
+// combination manually via the option rows — the filter only
+// applies to `handleShuffle`.
+type Compat = "preferred" | "acceptable" | "banned";
+const EYE_PUPIL_COMPAT: Record<
+  QRStyle["eyeShape"],
+  Record<QRStyle["pupilShape"], Compat>
+> = {
+  // Geometric eyes — work with almost any pupil motif.
+  sharp: {
+    dot: "preferred",
+    square: "preferred",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "acceptable",
+    heart: "acceptable",
+    none: "banned",
+  },
+  soft: {
+    dot: "preferred",
+    square: "preferred",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "acceptable",
+    heart: "acceptable",
+    none: "banned",
+  },
+  round: {
+    dot: "preferred",
+    square: "acceptable",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "acceptable",
+    heart: "acceptable",
+    none: "banned",
+  },
+  pill: {
+    dot: "preferred",
+    square: "acceptable",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "acceptable",
+    heart: "acceptable",
+    none: "banned",
+  },
+  leaf: {
+    dot: "preferred",
+    square: "acceptable",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "acceptable",
+    heart: "acceptable",
+    none: "banned",
+  },
+  shield: {
+    dot: "preferred",
+    square: "preferred",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "acceptable",
+    heart: "acceptable",
+    none: "banned",
+  },
+  hexagon: {
+    dot: "preferred",
+    square: "acceptable",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "acceptable",
+    heart: "acceptable",
+    none: "banned",
+  },
+  octagon: {
+    dot: "preferred",
+    square: "acceptable",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "acceptable",
+    heart: "acceptable",
+    none: "banned",
+  },
+  // "dot" eye is a solid disc — many pupils look bad.  A "dot"
+  // pupil is the same shape, just smaller (confusing).  A "ring"
+  // pupil needs an outer ring to show the donut shape, which we
+  // don't have.  "none" leaves the disc unchanged.  All banned.
+  dot: {
+    dot: "banned",
+    square: "preferred",
+    ring: "banned",
+    cross: "preferred",
+    diamond: "preferred",
+    star: "acceptable",
+    heart: "acceptable",
+    none: "banned",
+  },
+  // Decorative eyes — same-motif pupils are banned (redundant),
+  // geometric pupils (square/dot/cross/diamond) are clean.
+  diamond: {
+    dot: "preferred",
+    square: "preferred",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "banned",
+    star: "acceptable",
+    heart: "acceptable",
+    none: "banned",
+  },
+  heart: {
+    dot: "preferred",
+    square: "preferred",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "acceptable",
+    heart: "banned",
+    none: "banned",
+  },
+  // "plus" eye + same-motif pupils are too busy (no "plus" in
+  // PupilShape, but `cross` is the equivalent — banned).  Geometric
+  // pupils keep it readable.
+  plus: {
+    dot: "preferred",
+    square: "preferred",
+    ring: "acceptable",
+    cross: "banned",
+    diamond: "acceptable",
+    star: "acceptable",
+    heart: "acceptable",
+    none: "banned",
+  },
+  // "star" eye — same-motif star pupil is busy; geometric pupils
+  // (dot, square, cross, diamond) keep it readable.  Heart is OK
+  // as a contrasting motif.
+  star: {
+    dot: "preferred",
+    square: "preferred",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "banned",
+    heart: "acceptable",
+    none: "banned",
+  },
+};
+
+// `pupil === "none"` is the "no pupil" case — which produces a
+// fully hollow eye.  The shuffle's `none` weight is intentionally
+// low so we don't end up with "no center dot" most of the time.
+const NONE_PROBABILITY = 0.1;
 const PIXEL_SHAPES: QRStyle["pixelShape"][] = [
   "sharp",
   "soft",
@@ -163,16 +330,10 @@ const PIXEL_SHAPES: QRStyle["pixelShape"][] = [
   "heart",
   "sparkle",
 ];
-const FRAME_STYLES: QRStyle["frame"][] = [
-  "none",
-  "thin",
-  "rounded",
-  "thick",
-  "dashed",
-  "dotted",
-  "double",
-];
-const CORNER_RADII = [0, 8, 16, 24, 32];
+// Note: FRAME_STYLES, gradient, and qrCorners are intentionally not in
+// the shuffle pool — see handleShuffle for the rationale.  Their
+// selectors (FrameSelector, GradientPicker, CornerSelector) still
+// offer the full lists.
 const LOGO_BACKGROUNDS: QRStyle["logoStyle"]["background"][] = [
   "none",
   "circle",
@@ -197,24 +358,22 @@ const QR_SIZE = Math.floor(width) - 32;
   // ─── Animated Form Trigger ────────────────────────────────────────────────────
   // Matches OptionRow's visual treatment (tinted bg, same border, same icon
   // box) but stacks a label + value inside a single column to read as an
-  // "input field" rather than a settings row.  Cross-fades the bg color in
-  // lock-step with the option rows.
+  // "input field" rather than a settings row.  Bg is theme-driven (same
+  // as OptionRow) so the input field doesn't swing with palette swaps.
   function AnimatedFormTrigger({
     tint,
     colors,
     activeType,
     qrValue,
-    bgColor,
     onPress,
   }: {
     tint: string;
     colors: any;
     activeType: QRType;
     qrValue: string;
-    bgColor: string;
     onPress: () => void;
   }) {
-    const rowBg = tierVariant(bgColor, 0.08);
+    const rowBg = colors.surface;
     const bgFrom = useSharedValue(rowBg);
     const bgTo = useSharedValue(rowBg);
     const bgProgress = useSharedValue(1);
@@ -275,12 +434,18 @@ const QR_SIZE = Math.floor(width) - 32;
             ]}
           />
           <View
-            style={[styles.formTriggerIcon, { backgroundColor: tint + "18" }]}
+            style={[
+              styles.formTriggerIcon,
+              // Theme-driven icon-box bg + theme text icon.  Tinted bg
+              // would disappear on light-fg palettes (ink), so we use
+              // `colors.surfaceOffset` for the same reason as OptionRow.
+              { backgroundColor: colors.surfaceOffset },
+            ]}
           >
             <Ionicons
               name={(currentType?.icon as any) ?? "create-outline"}
               size={18}
-              color={tint}
+              color={colors.text}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -393,10 +558,6 @@ export default function CreateScreen() {
   const { show: showToast } = useToast();
 
   // Derived — no hooks
-  const qrStyleRef = useRef(qrStyle);
-  useEffect(() => {
-    qrStyleRef.current = qrStyle;
-  }, [qrStyle]);
   const qrValue = useMemo(
     () => encodeQR(activeType, forms),
     [activeType, forms],
@@ -405,6 +566,13 @@ export default function CreateScreen() {
 
   useEffect(() => {
     if (!qrValue) return;
+    // Capture the latest style in the effect's closure.  Reading
+    // `qrStyle` directly (rather than going through a ref) is the
+    // most reliable pattern: refs are a known foot-gun for "stale
+    // read inside a scheduled callback" because they don't trigger
+    // re-runs.  Since the effect re-fires on every `qrStyle` change,
+    // the closure always has the freshest value.
+    const styleNow = qrStyle;
     const t = setTimeout(() => {
       // We compare against the last-saved *signature*: value + style
       // fingerprint.  Without the style fingerprint, the user could add a
@@ -415,25 +583,25 @@ export default function CreateScreen() {
         qrValue +
         "::" +
         JSON.stringify({
-          colorId: qrStyleRef.current.colorId,
-          fgColor: qrStyleRef.current.fgColor,
-          bgColor: qrStyleRef.current.bgColor,
-          eyeColor: qrStyleRef.current.eyeColor,
-          eyeShape: qrStyleRef.current.eyeShape,
-          pupilShape: qrStyleRef.current.pupilShape,
-          pixelShape: qrStyleRef.current.pixelShape,
-          frame: qrStyleRef.current.frame,
-          qrCorners: qrStyleRef.current.qrCorners,
-          logoStyle: qrStyleRef.current.logoStyle,
-          logoUri: qrStyleRef.current.logoUri,
-          gradient: qrStyleRef.current.gradient,
+          colorId: styleNow.colorId,
+          fgColor: styleNow.fgColor,
+          bgColor: styleNow.bgColor,
+          eyeColor: styleNow.eyeColor,
+          eyeShape: styleNow.eyeShape,
+          pupilShape: styleNow.pupilShape,
+          pixelShape: styleNow.pixelShape,
+          frame: styleNow.frame,
+          qrCorners: styleNow.qrCorners,
+          logoStyle: styleNow.logoStyle,
+          logoUri: styleNow.logoUri,
+          gradient: styleNow.gradient,
         });
       if (sig === lastSaved.current) return;
       lastSaved.current = sig;
       saveToHistory({
         type: activeType,
         value: qrValue,
-        qrStyle: qrStyleRef.current,
+        qrStyle: styleNow,
       });
     }, 2500);
 
@@ -460,19 +628,35 @@ export default function CreateScreen() {
   const handleShuffle = useCallback(() => {
     const r = RANDOM_STYLES[Math.floor(Math.random() * RANDOM_STYLES.length)];
     const eye = EYE_SHAPES[Math.floor(Math.random() * EYE_SHAPES.length)];
-    const pupil = PUPIL_SHAPES[Math.floor(Math.random() * PUPIL_SHAPES.length)];
+    // Pick a pupil from the curated pool for the picked eye.  80%
+    // chance of "preferred" pairings (clean), 20% of "acceptable"
+    // (a bit busier).  "banned" pupils are never picked.  See
+    // EYE_PUPIL_COMPAT for the per-eye map.
+    const compat = EYE_PUPIL_COMPAT[eye];
+    const preferred = PUPIL_SHAPES.filter((p) => compat[p] === "preferred");
+    const acceptable = PUPIL_SHAPES.filter((p) => compat[p] === "acceptable");
+    const pool =
+      preferred.length > 0 && Math.random() < 0.8
+        ? preferred
+        : acceptable.length > 0
+          ? acceptable
+          : preferred;
+    // `none` is a valid pupil shape but visually rare.  Down-weight
+    // it so we don't end up with hollow eyes most of the time.
+    const weightedPool =
+      pool.length > 1 && Math.random() < NONE_PROBABILITY
+        ? pool.filter((p) => p === "none" || p === "ring")
+        : pool.filter((p) => p !== "none");
+    const pupil =
+      weightedPool[Math.floor(Math.random() * weightedPool.length)] ??
+      PUPIL_SHAPES[0];
     const pixel = PIXEL_SHAPES[Math.floor(Math.random() * PIXEL_SHAPES.length)];
-    const frame = FRAME_STYLES[Math.floor(Math.random() * FRAME_STYLES.length)];
-    const corners = CORNER_RADII[Math.floor(Math.random() * CORNER_RADII.length)];
+    // Note: frame, gradient, and qrCorners are intentionally NOT
+    // randomized.  These are more deliberate choices that can clash
+    // with each other or with the palette, and shuffling them feels
+    // jarring.  The user can still change them manually via their
+    // respective option rows.
     const logoBg = LOGO_BACKGROUNDS[Math.floor(Math.random() * LOGO_BACKGROUNDS.length)];
-    // 40% chance of enabling a gradient, otherwise leave the previous
-    // gradient disabled.  We pre-rotate start/end by 30° on the wheel so
-    // subtle changes still feel "fresh" without being loud.
-    const enableGradient = Math.random() < 0.4;
-    const startHue = Math.floor(Math.random() * 360);
-    const endHue = (startHue + 30 + Math.floor(Math.random() * 90)) % 360;
-    const startColor = `hsl(${startHue}, 70%, 30%)`;
-    const endColor = `hsl(${endHue}, 70%, 25%)`;
 
     setQrStyle((p) => ({
       ...p,
@@ -483,18 +667,9 @@ export default function CreateScreen() {
       eyeShape: eye,
       pupilShape: pupil,
       pixelShape: pixel,
-      frame,
-      qrCorners: corners,
       logoStyle: {
         ...p.logoStyle,
         background: logoBg,
-      },
-      gradient: {
-        ...p.gradient,
-        enabled: enableGradient,
-        startColor,
-        endColor,
-        angle: Math.floor(Math.random() * 360),
       },
     }));
     setQRColors(r.fg, r.bg);
@@ -642,32 +817,41 @@ export default function CreateScreen() {
     }
   }, []);
 
-  // 3-tier color hierarchy matching the reference image:
+  // 3-tier color hierarchy:
   //   • QR canvas  = original color (most saturated)
-  //   • Option row = tierVariant(bg, 0.08)  (medium)
-  //   • Screen bg  = tierVariant(bg, 0.18)  (lightest)
-  // The reference image shows the rows clearly lighter than the QR, and the
-  // screen bg clearly lighter than the rows — so the differences need to be
-  // visible, not subtle.
+  //   • Option row = theme surface (independent of palette)
+  //   • Screen bg  = theme bg blended 8% with QR bg
   //
-  // We use the same "reset to old, then withTiming to new" pattern as
-  // QRCanvas and OptionRow, and a useLayoutEffect so all three transitions
-  // kick off in the SAME commit — the screen bg changes color at exactly
-  // the same instant as the QR and the rows.
-  const screenBg = useSharedValue(tierVariant(qrStyle.bgColor, 0.18));
-  const prevScreenBg = useRef(tierVariant(qrStyle.bgColor, 0.18));
+  // Option rows are theme-driven (not palette-driven) so the chrome
+  // stays consistent across palettes and themes.  Only the screen bg
+  // picks up the QR hue at 8% — a subtle paper-tint that signals
+  // which palette is active without making the chrome feel like part
+  // of the QR.
+  //
+  // The screen bg blends a small amount (8%) of the QR bg into the
+  // theme bg so the screen picks up the active palette's hue without
+  // washing out to near-white (which was the slate issue with
+  // tierVariant(bg, 0.18) — that mixed 18% of the QR bg toward white
+  // or black depending on luminance, producing a cold look in light
+  // mode).  At 8%, the screen still reads as "paper" or "ink" but
+  // shifts subtly with palette swaps.
+  const screenBgTarget = useMemo(
+    () => mixHex(colors.bg, qrStyle.bgColor, 0.08),
+    [colors.bg, qrStyle.bgColor],
+  );
+  const screenBg = useSharedValue(screenBgTarget);
+  const prevScreenBg = useRef(screenBgTarget);
   useLayoutEffect(() => {
-    const target = tierVariant(qrStyle.bgColor, 0.18);
-    if (target !== prevScreenBg.current) {
+    if (screenBgTarget !== prevScreenBg.current) {
       const old = prevScreenBg.current;
-      prevScreenBg.current = target;
+      prevScreenBg.current = screenBgTarget;
       screenBg.value = old;
-      screenBg.value = withTiming(target, {
+      screenBg.value = withTiming(screenBgTarget, {
         duration: 420,
         easing: Easing.out(Easing.cubic),
       });
     }
-  }, [qrStyle.bgColor]);
+  }, [screenBgTarget]);
   const screenBgStyle = useAnimatedStyle(() => ({
     backgroundColor: screenBg.value,
   }));
@@ -691,9 +875,6 @@ export default function CreateScreen() {
                   containerSize={QR_SIZE}
                   style={qrStyle.logoStyle}
                   bgColor={qrStyle.bgColor}
-                  onRemove={() =>
-                    setQrStyle((p: QRStyle) => ({ ...p, logoUri: undefined }))
-                  }
                 />
               )}
             </View>
@@ -709,7 +890,6 @@ export default function CreateScreen() {
             colors={colors}
             activeType={activeType}
             qrValue={qrValue}
-            bgColor={qrStyle.bgColor}
             onPress={() => setFormModalOpen(true)}
           />
         </View>
@@ -737,7 +917,7 @@ export default function CreateScreen() {
             label="Color"
             iconName="color-palette-outline"
             tintColor={tint}
-            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+            bgColor={colors.surface}
             sheetOpen={activeSheet === "color"}
             onOpen={() => openSheet("color")}
             onClose={closeSheet}
@@ -823,7 +1003,7 @@ export default function CreateScreen() {
             label="Eye Style"
             iconName="eye-outline"
             tintColor={tint}
-            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+            bgColor={colors.surface}
             sheetOpen={activeSheet === "eye"}
             onOpen={() => openSheet("eye")}
             onClose={closeSheet}
@@ -844,7 +1024,7 @@ export default function CreateScreen() {
             label="Pupil"
             iconName="radio-button-on-outline"
             tintColor={tint}
-            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+            bgColor={colors.surface}
             sheetOpen={activeSheet === "pupil"}
             onOpen={() => openSheet("pupil")}
             onClose={closeSheet}
@@ -869,7 +1049,7 @@ export default function CreateScreen() {
             label="Pixel Style"
             iconName="grid-outline"
             tintColor={tint}
-            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+            bgColor={colors.surface}
             sheetOpen={activeSheet === "pixel"}
             onOpen={() => openSheet("pixel")}
             onClose={closeSheet}
@@ -890,7 +1070,7 @@ export default function CreateScreen() {
             label="Frame"
             iconName="square-outline"
             tintColor={tint}
-            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+            bgColor={colors.surface}
             sheetOpen={activeSheet === "frame"}
             onOpen={() => openSheet("frame")}
             onClose={closeSheet}
@@ -915,7 +1095,7 @@ export default function CreateScreen() {
             label="QR Corners"
             iconName="scan-circle-outline"
             tintColor={tint}
-            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+            bgColor={colors.surface}
             sheetOpen={activeSheet === "corners"}
             onOpen={() => openSheet("corners")}
             onClose={closeSheet}
@@ -940,7 +1120,7 @@ export default function CreateScreen() {
             label="Gradient"
             iconName="color-filter-outline"
             tintColor={tint}
-            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+            bgColor={colors.surface}
             sheetOpen={activeSheet === "gradient"}
             onOpen={() => openSheet("gradient")}
             onClose={closeSheet}
@@ -959,7 +1139,7 @@ export default function CreateScreen() {
             <GradientPicker
               value={qrStyle.gradient}
               fgColor={tint}
-              bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+              bgColor={colors.surface}
               onChange={(g) => {
                 setQrStyle((p) => ({ ...p, gradient: g }));
               }}
@@ -970,7 +1150,7 @@ export default function CreateScreen() {
             label="Logo"
             iconName="image-outline"
             tintColor={tint}
-            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+            bgColor={colors.surface}
             sheetOpen={activeSheet === "logo"}
             onOpen={() => openSheet("logo")}
             onClose={closeSheet}
@@ -1000,7 +1180,7 @@ export default function CreateScreen() {
               label="Logo Style"
               iconName="aperture-outline"
               tintColor={tint}
-              bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+              bgColor={colors.surface}
               sheetOpen={activeSheet === "logoStyle"}
               onOpen={() => openSheet("logoStyle")}
               onClose={closeSheet}
@@ -1015,7 +1195,7 @@ export default function CreateScreen() {
               <LogoStyleSelector
                 value={qrStyle.logoStyle}
                 fgColor={tint}
-                bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+                bgColor={colors.surface}
                 onChange={(s) => {
                   setQrStyle((p) => ({ ...p, logoStyle: s }));
                 }}
@@ -1027,7 +1207,7 @@ export default function CreateScreen() {
             label="Error Correction"
             iconName="shield-checkmark-outline"
             tintColor={tint}
-            bgColor={tierVariant(qrStyle.bgColor, 0.08)}
+            bgColor={colors.surface}
             sheetOpen={activeSheet === "ecl"}
             onOpen={() => openSheet("ecl")}
             onClose={closeSheet}
