@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
+import { useTheme } from "@/context/ThemeContext";
 import { EyeShape, PixelShape, PupilShape } from "@/types/qr";
 import Svg, { Path } from "react-native-svg";
 import { EyeShapePaths, PixelShapePath } from "./QRCanvas";
@@ -257,6 +258,7 @@ function ShapeGrid<T extends string>({
   renderPreview: (s: T) => React.ReactNode;
   onChange: (s: T) => void;
 }) {
+  const { colors } = useTheme();
   return (
     <View style={styles.grid}>
       {options.map((shape) => {
@@ -271,15 +273,17 @@ function ShapeGrid<T extends string>({
             activeOpacity={0.6}
             style={[
               styles.cell,
-              { borderColor: active ? fgColor : fgColor + "25" },
-              active && { backgroundColor: fgColor + "18" },
+              {
+                backgroundColor: active ? fgColor + "20" : colors.surface,
+                borderColor: active ? fgColor : colors.border,
+              },
             ]}
           >
             {renderPreview(shape)}
             <Text
               style={[
                 styles.cellLabel,
-                { color: active ? fgColor : fgColor + "90" },
+                { color: active ? fgColor : colors.textMuted },
               ]}
             >
               {getLabel(shape)}

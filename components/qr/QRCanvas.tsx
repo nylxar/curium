@@ -307,31 +307,81 @@ function eyeShapePaths(
   }
 }
 
+// ─── Pupil scaling per eye shape ──────────────────────────────────────────────
+// Some eye shapes have an inner cut whose narrowest cross-section is
+// smaller than its 5*pw bounding box:
+//   • `plus`  — arms are 0.45*pw wide → circle pupil of radius 1.5*pw
+//                spills well past the arms into the corners.
+//   • `star`  — waist is 0.382*5*pw = 1.91*pw from center → circle pupil
+//                of radius 1.5*pw pokes out of the waist.
+//   • `heart` — narrows to a point at the bottom; wide in the lobes.
+//   • `diamond`/`hexagon`/`octagon` — apothem is shorter than circumradius,
+//                so a circle pupil fits but only just.
+//   • `pill`  — the inner cut is a horizontally-stretched pill; a circle
+//                pupil fits the height but extends past the rounded
+//                ends.
+// We scale the pupil down for these so it never bleeds onto the
+// eye's `eyeFill`.  Geometric eyes (sharp/soft/round) and `dot`
+// (no inner cut, pupil is just a smaller disc on top) keep a
+// multiplier of 1.
+const EYE_PUPIL_SCALE: Record<EyeShape, number> = {
+  sharp: 1.0,
+  soft: 1.0,
+  round: 1.0,
+  pill: 0.78,
+  leaf: 0.9,
+  diamond: 0.7,
+  shield: 0.85,
+  dot: 1.0,
+  heart: 0.7,
+  hexagon: 0.78,
+  plus: 0.55,
+  star: 0.7,
+  octagon: 0.85,
+};
+
 // ─── Pupil path generator ─────────────────────────────────────────────────────
 // The pupil is the 3×3 solid shape at the center of each finder eye.  It is
 // styled independently of the eye shape, so a round eye can have a star
 // pupil, a heart eye can have a cross pupil, etc.  When `pupilShape` is
 // "none", the pupil path is empty and the eye renders without a center dot.
-function pupilPath(shape: PupilShape, ox: number, oy: number, pw: number): string {
-  const D = 3 * pw;
-  const cxD = ox + 2 * pw + D / 2;
-  const cyD = oy + 2 * pw + D / 2;
+//
+// `sizeMul` is a per-eye multiplier (see EYE_PUPIL_SCALE) that shrinks
+// the pupil so it stays inside the eye's inner cut.  Pupil motifs with
+// extra "reach" (star points, heart lobes) use a smaller intrinsic
+// multiplier inside the switch as well, on top of `sizeMul`.
+//
+// The pupil is ALWAYS centered at the eye's inner-cut center
+// (ox + 3.5·pw, oy + 3.5·pw) regardless of `sizeMul`.  Only the SIZE
+// scales — the POSITION stays fixed so the pupil never drifts toward
+// the top-left when `sizeMul` shrinks it.
+function pupilPath(
+  shape: PupilShape,
+  ox: number,
+  oy: number,
+  pw: number,
+  sizeMul: number,
+): string {
+  const D = 3 * pw * sizeMul;
+  // Fixed center of the eye's inner cut (5·pw square starting at ox+pw).
+  const cxP = ox + 3.5 * pw;
+  const cyP = oy + 3.5 * pw;
   if (shape === "none") return "";
   switch (shape) {
     case "dot":
-      return circlePath(cxD, cyD, D * 0.5);
+      return circlePath(cxP, cyP, D * 0.5);
     case "square":
-      return rrCW(ox + 2 * pw, oy + 2 * pw, D, D, 0);
+      return rrCW(cxP - D / 2, cyP - D / 2, D, D, 0);
     case "ring":
-      return ringPath(cxD, cyD, D * 0.5, D * 0.28);
+      return ringPath(cxP, cyP, D * 0.5, D * 0.28);
     case "cross":
-      return crossPath(cxD, cyD, D * 0.5);
+      return crossPath(cxP, cyP, D * 0.5);
     case "diamond":
-      return diamondPath(cxD, cyD, D * 0.5);
+      return diamondPath(cxP, cyP, D * 0.5);
     case "star":
-      return star5Path(cxD, cyD, D * 0.5);
+      return star5Path(cxP, cyP, D * 0.5);
     case "heart":
-      return heartPath(cxD, cyD, D * 0.45);
+      return heartPath(cxP, cyP, D * 0.45);
   }
 }
 
@@ -348,7 +398,9 @@ function drawEye(
   const oy = pad + eyeRow * pw;
   const { outer, innerCut } = eyeShapePaths(eyeShape, ox, oy, pw);
   const ring = `${outer} ${innerCut}`;
-  const pupil = pupilPath(pupilShape, ox, oy, pw);
+  // Scale the pupil by the per-eye multiplier so it stays inside the
+  // inner cut.  See EYE_PUPIL_SCALE.
+  const pupil = pupilPath(pupilShape, ox, oy, pw, EYE_PUPIL_SCALE[eyeShape]);
   return { ring, pupil };
 }
 
@@ -367,10 +419,6 @@ function drawEye(
 // plays ONCE per app session on the very first QRCanvas mount, regardless of
 // which screen it lives on.  Subsequent mounts (e.g., navigating to
 // qr-detail.tsx, which also renders QRCanvas) skip the animation entirely
-// so the QR pops in instantly instead of fading/scaling at the same time
-// the screen transition is playing — that double-motion was feeling rough.
-let hasGeneratedAnyQR = false;
-
 // ─── Frame styling ────────────────────────────────────────────────────────────
 // Returns the View-style props that wrap the QR in a decorative border.
 function frameStyle(frame: FrameStyle, fg: string): {
@@ -488,16 +536,11 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
   useLayoutEffect(() => {
     if (!isEmpty && matrix && !localDidGenerate.current) {
       localDidGenerate.current = true;
-      if (!hasGeneratedAnyQR) {
-        hasGeneratedAnyQR = true;
-        genProgress.value = 0;
-        genProgress.value = withTiming(1, {
-          duration: 240,
-          easing: Easing.out(Easing.cubic),
-        });
-      } else {
-        genProgress.value = 1;
-      }
+      genProgress.value = 0;
+      genProgress.value = withTiming(1, {
+        duration: 240,
+        easing: Easing.out(Easing.cubic),
+      });
     } else if (isEmpty) {
       localDidGenerate.current = false;
       genProgress.value = 0;
@@ -832,9 +875,12 @@ export const EyeShapePaths = {
     const { innerCut } = eyeShapePaths(shape, x, y, pw);
     return innerCut;
   },
+  // Preview uses a generic 1.0 multiplier (no per-eye scaling) so the
+  // pupil shape is fully visible in the picker.  The actual QR uses
+  // EYE_PUPIL_SCALE[eyeShape] to fit the pupil into the inner cut.
   pupil: (shape: PupilShape, x: number, y: number, s: number): string => {
     const pw = s / 7;
-    return pupilPath(shape, x, y, pw);
+    return pupilPath(shape, x, y, pw, 1.0);
   },
 };
 

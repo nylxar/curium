@@ -7,6 +7,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Props {
   selected: number; // 0 / 8 / 16 / 24 / 32
@@ -62,6 +63,7 @@ function CornerPreview({
 }
 
 export function CornerSelector({ selected, fgColor, onChange }: Props) {
+  const { colors } = useTheme();
   return (
     <View style={styles.grid}>
       {CORNER_OPTIONS.map((opt) => {
@@ -75,8 +77,10 @@ export function CornerSelector({ selected, fgColor, onChange }: Props) {
             }}
             style={[
               styles.cell,
-              { borderColor: active ? fgColor : fgColor + "25" },
-              active && { backgroundColor: fgColor + "18" },
+              {
+                backgroundColor: active ? fgColor + "20" : colors.surface,
+                borderColor: active ? fgColor : colors.border,
+              },
             ]}
             activeOpacity={0.6}
           >
@@ -88,7 +92,7 @@ export function CornerSelector({ selected, fgColor, onChange }: Props) {
             <Text
               style={[
                 styles.cellLabel,
-                { color: active ? fgColor : fgColor + "90" },
+                { color: active ? fgColor : colors.textMuted },
               ]}
             >
               {opt.label}

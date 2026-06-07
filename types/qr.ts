@@ -139,6 +139,9 @@ export interface QRStyle {
   gradient: GradientConfig;
   logoStyle: LogoStyleConfig;
   logoUri?: string;
+  /** Position of the logo plate inside the QR canvas (pixels from top-left).
+   *  Persisted so saved/shared QRs keep the user's placement. */
+  logoPosition?: { x: number; y: number };
   ecl: ECL;
 }
 

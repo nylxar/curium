@@ -259,6 +259,8 @@ export default function QRDetailScreen() {
             containerSize={QR_SIZE}
             style={item.qrStyle.logoStyle}
             bgColor={item.qrStyle.bgColor}
+            draggable={false}
+            initialPosition={item.qrStyle.logoPosition}
           />
         )}
       </View>

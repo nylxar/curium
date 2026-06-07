@@ -6,6 +6,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
+import { useTheme } from "@/context/ThemeContext";
 import { FrameStyle } from "@/types/qr";
 
 const FRAME_OPTIONS: FrameStyle[] = [
@@ -136,6 +137,7 @@ function FramePreview({
 }
 
 export function FrameSelector({ selected, fgColor, onChange }: Props) {
+  const { colors } = useTheme();
   return (
     <View style={styles.grid}>
       {FRAME_OPTIONS.map((frame) => {
@@ -150,15 +152,17 @@ export function FrameSelector({ selected, fgColor, onChange }: Props) {
             activeOpacity={0.6}
             style={[
               styles.cell,
-              { borderColor: active ? fgColor : fgColor + "25" },
-              active && { backgroundColor: fgColor + "18" },
+              {
+                backgroundColor: active ? fgColor + "20" : colors.surface,
+                borderColor: active ? fgColor : colors.border,
+              },
             ]}
           >
             <FramePreview style={frame} color={fgColor} />
             <Text
               style={[
                 styles.cellLabel,
-                { color: active ? fgColor : fgColor + "90" },
+                { color: active ? fgColor : colors.textMuted },
               ]}
             >
               {FRAME_LABELS[frame]}
