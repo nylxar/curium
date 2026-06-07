@@ -1,4 +1,4 @@
-import { useMemo, useState, useLayoutEffect, useRef } from "react";
+import { useMemo, useLayoutEffect, useRef } from "react";
 import { View, StyleSheet } from "react-native";
 import Svg, {
   Rect,
@@ -10,10 +10,8 @@ import Svg, {
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedProps,
   withTiming,
   Easing,
-  interpolateColor,
 } from "react-native-reanimated";
 import {
   QRStyle,
@@ -29,12 +27,6 @@ interface Props {
   value: string;
   qrStyle: QRStyle;
   size: number;
-}
-
-interface ColorSet {
-  fg: string;
-  bg: string;
-  eye: string;
 }
 
 // ─── Matrix ───────────────────────────────────────────────────────────────────
@@ -187,7 +179,13 @@ const PIXEL_CFG: Record<PixelShape, { r: number; inset: number; type: PixelShape
   soft: { r: 0.2, inset: 0.06, type: "rect" },
   round: { r: 0.38, inset: 0.08, type: "rect" },
   dots: { r: 0.5, inset: 0.1, type: "circle" },
-  liquid: { r: 0.35, inset: 0.02, type: "rect" },
+  // "liquid" = organic, fully-pillowed cell that almost touches its
+  // neighbors.  Radius = half the cell makes it a full pill, and the
+  // tiny inset (-0.02) intentionally lets the cell bleed slightly
+  // into the gap so adjacent cells visually merge into a flowing
+  // shape — the "liquid" feel.  `round` (r: 0.38) is a much more
+  // tame rounded rect, so the two read as distinct shapes.
+  liquid: { r: 0.5, inset: -0.02, type: "rect" },
   glued: { r: 0.28, inset: 0, type: "rect" },
   diamond: { r: 0, inset: 0.08, type: "diamond" },
   cross: { r: 0, inset: 0.08, type: "cross" },
@@ -355,9 +353,15 @@ function drawEye(
 }
 
 // ─── Animated SVG primitives ─────────────────────────────────────────────────
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-const AnimatedStop = Animated.createAnimatedComponent(Stop);
+// We deliberately do NOT wrap Rect/Path/Stop in Animated.createAnimatedComponent.
+// Reanimated 4 + react-native-svg 15 has known issues with animated SVG
+// components: the worklet subscription goes out of sync with the host
+// during fast re-renders (e.g. while typing), throwing
+// "Cannot find host instance for this component. Maybe it renders nothing?".
+// Best practice: keep SVG components plain and use static fill props.
+// Animation is applied to the outer Animated.View wrapper only (a core
+// React Native component, not an SVG component).
+//
 
 // Module-level "has any QR ever been generated" flag.  The entrance animation
 // plays ONCE per app session on the very first QRCanvas mount, regardless of
@@ -439,117 +443,19 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
     [value, qrStyle.ecl, isEmpty],
   );
 
-  // ── Color transition: direct color morph (NOT opacity blend) ──
-  // We use useState so the worklet closure captures the latest old/new
-  // color strings on every render.  useAnimatedProps + interpolateColor
-  // runs entirely on the UI thread — each SVG fill is directly morphed
-  // from old → new, pixel by pixel.  No double-exposure, no blur.
-  const [oldColors, setOldColors] = useState<ColorSet>({
-    fg: qrStyle.fgColor,
-    bg: qrStyle.bgColor,
-    eye: qrStyle.eyeColor,
-  });
-  const [newColors, setNewColors] = useState<ColorSet>({
-    fg: qrStyle.fgColor,
-    bg: qrStyle.bgColor,
-    eye: qrStyle.eyeColor,
-  });
-
-  // Gradient colors, captured the same way for stop-color animation.
-  const [oldGrad, setOldGrad] = useState({
-    start: qrStyle.gradient.startColor,
-    end: qrStyle.gradient.endColor,
-  });
-  const [newGrad, setNewGrad] = useState({
-    start: qrStyle.gradient.startColor,
-    end: qrStyle.gradient.endColor,
-  });
-
-  const crossProgress = useSharedValue(1);
-
-  useLayoutEffect(() => {
-    const colorChanged =
-      qrStyle.fgColor !== newColors.fg ||
-      qrStyle.bgColor !== newColors.bg ||
-      qrStyle.eyeColor !== newColors.eye;
-    const gradChanged =
-      qrStyle.gradient.startColor !== newGrad.start ||
-      qrStyle.gradient.endColor !== newGrad.end;
-
-    if (colorChanged) {
-      setOldColors(newColors);
-      setNewColors({
-        fg: qrStyle.fgColor,
-        bg: qrStyle.bgColor,
-        eye: qrStyle.eyeColor,
-      });
-    }
-    if (gradChanged) {
-      setOldGrad(newGrad);
-      setNewGrad({
-        start: qrStyle.gradient.startColor,
-        end: qrStyle.gradient.endColor,
-      });
-    }
-    if (colorChanged || gradChanged) {
-      crossProgress.value = 0;
-      crossProgress.value = withTiming(1, {
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-      });
-    }
-  }, [
-    qrStyle.fgColor,
-    qrStyle.bgColor,
-    qrStyle.eyeColor,
-    qrStyle.gradient.startColor,
-    qrStyle.gradient.endColor,
-  ]);
-
-  // Direct color morph on each SVG fill (UI thread via Reanimated)
-  const bgRectProps = useAnimatedProps(() => ({
-    fill: interpolateColor(
-      crossProgress.value,
-      [0, 1],
-      [oldColors.bg, newColors.bg],
-    ),
-  }));
-  const piecesProps = useAnimatedProps(() => ({
-    fill: interpolateColor(
-      crossProgress.value,
-      [0, 1],
-      [oldColors.fg, newColors.fg],
-    ),
-  }));
-  const eyeRingProps = useAnimatedProps(() => ({
-    fill: interpolateColor(
-      crossProgress.value,
-      [0, 1],
-      [oldColors.eye, newColors.eye],
-    ),
-  }));
-  const eyeDotProps = useAnimatedProps(() => ({
-    fill: interpolateColor(
-      crossProgress.value,
-      [0, 1],
-      [oldColors.fg, newColors.fg],
-    ),
-  }));
-  // Animated stop colors for the foreground gradient.
-  const gradStartProps = useAnimatedProps(() => ({
-    stopColor: interpolateColor(
-      crossProgress.value,
-      [0, 1],
-      [oldGrad.start, newGrad.start],
-    ),
-  }));
-  const gradEndProps = useAnimatedProps(() => ({
-    stopColor: interpolateColor(
-      crossProgress.value,
-      [0, 1],
-      [oldGrad.end, newGrad.end],
-    ),
-  }));
+  // ── Colors snap on commit (no cross-fade on the QR itself) ──
+  // The QR fills are static React props on plain SVG components, so
+  // there's nothing to animate.  The visual color transition is handled
+  // at the row level (OptionRow/TypeSelector/FabBar cross-fade their
+  // own backgrounds), so the QR snapping is visually consistent: the
+  // QR is the "anchor" and the rows are the "tint".  See the
+  // Animated SVG primitives comment above for why we don't animate
+  // SVG props in Reanimated 4 + react-native-svg 15.
+  const fgFill = qrStyle.fgColor;
+  const bgFill = qrStyle.bgColor;
+  const eyeFill = qrStyle.eyeColor;
+  const gradStartFill = qrStyle.gradient.startColor;
+  const gradEndFill = qrStyle.gradient.endColor;
 
   // Compute gradient endpoints from angle (degrees, 0 = up).
   // Returns {x1,y1,x2,y2} in [0,1] for use with LinearGradient.
@@ -598,39 +504,45 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
     }
   }, [isEmpty, matrix]);
 
-  // ── Empty / placeholder state ──
-  if (isEmpty || !matrix) {
-    const cornerR0 = qrStyle.qrCorners ?? 20;
-    return (
-      <View
-        style={{
-          width: size,
-          height: size,
-          backgroundColor: qrStyle.bgColor,
-          borderRadius: cornerR0,
-          alignItems: "center",
-          justifyContent: "center",
-          borderWidth: 1,
-          borderColor: qrStyle.fgColor + "15",
-        }}
-      >
-        <View
-          style={{
-            width: size * 0.28,
-            height: size * 0.28,
-            borderRadius: size * 0.14,
-            borderWidth: 2,
-            borderStyle: "dashed",
-            borderColor: qrStyle.fgColor + "55",
-          }}
-        />
-      </View>
-    );
-  }
+  // ── Empty state: always render the same Svg tree, just feed it an
+  // all-zero matrix.  Returning a different View for the empty state
+  // would unmount the entire Svg subtree, and re-mounting it on the
+  // next keystroke causes host-instance churn.  With the same Svg tree
+  // always mounted, the hosts are stable across value changes.  The
+  // placeholder overlay (rendered as a sibling of the Svg inside the
+  // same Animated.View) covers the 3 finder eyes so the user sees a
+  // proper "enter data" affordance instead of a broken QR with just
+  // the eyes visible.
+  const effectiveMatrix =
+    isEmpty || !matrix
+      ? // 21x21 is the smallest standard QR size.  All zeros means no
+        // modules are drawn — the eyes are always drawn from the eye
+        // positions array, so the placeholder overlay covers them.
+        Array.from({ length: 21 }, () => new Array(21).fill(0))
+      : matrix;
+  const n = effectiveMatrix.length;
 
-  const n = matrix.length;
-  const PAD = Math.round(size * 0.045);
-  const pw = (size - PAD * 2) / n;
+  // ── Frame sizing ──
+  // The frame's border sits on the outer View; the inner QR is shrunk
+  // to (size - 2*framePadding) and centered.  PAD/pw must be computed
+  // against innerSize (not the outer size) so the matrix fills the
+  // inner view exactly — otherwise the matrix overflows and gets
+  // clipped by overflow:hidden.  This is why frames were visually
+  // "cropping" the QR: the matrix filled `size` but the view was only
+  // `size - 2*framePad` wide.
+  //
+  // We force `hasFrame = false` when the QR is empty so the placeholder
+  // shows a clean canvas (no border, no padding) instead of a "framed
+  // empty" — which looks like the frame is leaking styles onto a
+  // not-yet-existing QR.
+  const userHasFrame = qrStyle.frame !== "none";
+  const fStyle = frameStyle(qrStyle.frame, fgFill);
+  const framePad = userHasFrame && !isEmpty ? fStyle.padding : 0;
+  const innerSize = size - framePad * 2;
+  const hasFrame = userHasFrame && !isEmpty;
+  const cornerR = qrStyle.qrCorners ?? 20;
+  const PAD = Math.round(innerSize * 0.045);
+  const pw = (innerSize - PAD * 2) / n;
 
   // ── Build data module (pixel) paths ──
   const cfg = PIXEL_CFG[qrStyle.pixelShape] ?? PIXEL_CFG.sharp;
@@ -641,7 +553,7 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
   const pieces: string[] = [];
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
-      if (!matrix[r][c] || inEye(r, c, n)) continue;
+      if (!effectiveMatrix[r][c] || inEye(r, c, n)) continue;
       const cx = PAD + c * pw + pw / 2;
       const cy = PAD + r * pw + pw / 2;
       const x = cx - drawSz / 2;
@@ -682,14 +594,23 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
   }
 
   // ── Build finder eye + pupil paths ──
+  // When isEmpty we emit empty path strings for the eyes so the Svg
+  // renders NO finder pattern — just the bg rect and a transparent
+  // grid (all-zero matrix).  The placeholder overlay then sits on top
+  // showing a proper "enter data" affordance.  This way the user
+  // never sees grayscale eyes leaking through the placeholder.
+  // We also keep the same Path elements in the tree (just with empty
+  // `d` attributes) so host-instance stability is preserved.
   const eyePos = [
     { r: 0, c: 0 },
     { r: 0, c: n - 7 },
     { r: n - 7, c: 0 },
   ];
-  const eyes = eyePos.map((e) =>
-    drawEye(e.r, e.c, pw, PAD, qrStyle.eyeShape, qrStyle.pupilShape),
-  );
+  const eyes = isEmpty
+    ? eyePos.map(() => ({ ring: "", pupil: "" }))
+    : eyePos.map((e) =>
+        drawEye(e.r, e.c, pw, PAD, qrStyle.eyeShape, qrStyle.pupilShape),
+      );
   const eyeRingPath = eyes.map((e) => e.ring).join(" ");
   const eyeDotPath = eyes
     .map((e) => e.pupil)
@@ -699,20 +620,7 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
 
   // The pieces fill — gradient URL or solid color.
   const useGradient = qrStyle.gradient.enabled;
-  const piecesFill = useGradient ? `url(#${gradIdRef.current})` : newColors.fg;
-
-  // Frame styling
-  const fStyle = frameStyle(qrStyle.frame, newColors.fg);
-  // The frame's border (when enabled) sits on the OUTER view so it doesn't
-  // get clipped by the inner overflow:hidden wrapper.  The inner QR is
-  // shrunk to (size - 2*framePadding) and centered, so the total visual
-  // size is still `size` — the frame sits in the gutter, not beyond it.
-  const framePad = qrStyle.frame === "none" ? 0 : fStyle.padding;
-  const innerSize = size - framePad * 2;
-  const hasFrame = qrStyle.frame !== "none";
-  // QR corner radius — driven by qrStyle.qrCorners, falling back to a
-  // sensible default.  0 = sharp, large = very rounded.
-  const cornerR = qrStyle.qrCorners ?? 20;
+  const piecesFill = useGradient ? `url(#${gradIdRef.current})` : fgFill;
 
   return (
     <View
@@ -725,7 +633,7 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
         borderRadius: hasFrame
           ? Math.max(fStyle.borderRadius, cornerR + framePad)
           : cornerR,
-        backgroundColor: hasFrame ? newColors.bg : "transparent",
+        backgroundColor: hasFrame ? bgFill : "transparent",
         borderWidth: hasFrame ? fStyle.borderWidth : 0,
         borderColor: hasFrame ? fStyle.borderColor : "transparent",
         borderStyle: hasFrame ? fStyle.borderStyle : "solid",
@@ -741,13 +649,17 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
           height: innerSize,
           borderRadius: cornerR,
           overflow: "hidden",
-          borderWidth: 1,
-          borderColor: "rgba(0,0,0,0.06)",
-          shadowColor: "#000",
+          // When empty, the inner "card" border + shadow disappear so
+          // the placeholder reads as a clean canvas.  The dashed border
+          // inside the placeholder overlay already provides the "input
+          // area" affordance, so we don't need the additional card border.
+          borderWidth: isEmpty ? 0 : 1,
+          borderColor: isEmpty ? "transparent" : "rgba(0,0,0,0.06)",
+          shadowColor: isEmpty ? "transparent" : "#000",
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
+          shadowOpacity: isEmpty ? 0 : 0.08,
           shadowRadius: 8,
-          elevation: 3,
+          elevation: isEmpty ? 0 : 3,
         }}
       >
         <Animated.View
@@ -759,23 +671,33 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
             viewBox={`0 0 ${innerSize} ${innerSize}`}
           >
             <Defs>
-              {useGradient && (
-                <LinearGradient
-                  id={gradIdRef.current}
-                  x1={gradCoords.x1}
-                  y1={gradCoords.y1}
-                  x2={gradCoords.x2}
-                  y2={gradCoords.y2}
-                >
-                  <AnimatedStop offset="0" animatedProps={gradStartProps} />
-                  <AnimatedStop offset="1" animatedProps={gradEndProps} />
-                </LinearGradient>
-              )}
+              {/*
+                The gradient <Defs> are ALWAYS rendered (not conditional on
+                useGradient) so the LinearGradient and Stop host instances
+                live for the full lifetime of the QRCanvas.  Conditionally
+                rendering them when the user toggled the gradient on/off
+                caused a "Cannot find host instance" error: the freshly
+                mounted Stop hosts tried to subscribe to a worklet that was
+                already bound to the old (now-unmounted) hosts.  The
+                LinearGradient is harmless when not referenced (piecesFill
+                just doesn't point at it), so leaving it mounted is safe.
+                The stop colors are static React props (no animation).
+              */}
+              <LinearGradient
+                id={gradIdRef.current}
+                x1={gradCoords.x1}
+                y1={gradCoords.y1}
+                x2={gradCoords.x2}
+                y2={gradCoords.y2}
+              >
+                <Stop offset="0" stopColor={gradStartFill} />
+                <Stop offset="1" stopColor={gradEndFill} />
+              </LinearGradient>
             </Defs>
-            <AnimatedRect
+            <Rect
               width={innerSize}
               height={innerSize}
-              animatedProps={bgRectProps}
+              fill={bgFill}
             />
             {useGradient ? (
               <Path
@@ -783,20 +705,90 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
                 fill={piecesFill}
               />
             ) : (
-              <AnimatedPath
+              <Path
                 d={pieces.join(" ")}
-                animatedProps={piecesProps}
+                fill={fgFill}
               />
             )}
-            <AnimatedPath
+            <Path
               d={eyeRingPath}
               fillRule="evenodd"
-              animatedProps={eyeRingProps}
+              fill={eyeFill}
             />
-            {hasPupil && (
-              <AnimatedPath d={eyeDotPath} animatedProps={eyeDotProps} />
-            )}
+            {hasPupil && <Path d={eyeDotPath} fill={fgFill} />}
           </Svg>
+          {/*
+            Placeholder overlay — shown when the QR value is empty.  The
+            Svg above keeps its host instances mounted (so Reanimated
+            doesn't throw "Cannot find host instance" on the next
+            keystroke), but the placeholder sits on top so the user
+            sees a proper "enter data" affordance instead of a broken
+            QR with just the 3 finder eyes.  pointerEvents="none" so
+            the overlay never blocks touches on the form below.
+          */}
+          {isEmpty && (
+            <View
+              pointerEvents="none"
+              style={StyleSheet.absoluteFill}
+            >
+              {/* Faint grid dots to hint at QR structure.  Drawn over
+                  the bg rect only — eyes are now fully suppressed
+                  above so there's no risk of grayscale eyes bleeding
+                  through.  These dots use the QR fg color at low alpha
+                  so they read as a subtle "pattern" without competing
+                  with the dashed border below. */}
+              {Array.from({ length: n }, (_, r) =>
+                Array.from({ length: n }, (_, c) => (
+                  <View
+                    key={`dot-${r}-${c}`}
+                    style={{
+                      position: "absolute",
+                      left: PAD + c * pw + pw * 0.18,
+                      top: PAD + r * pw + pw * 0.18,
+                      width: pw * 0.64,
+                      height: pw * 0.64,
+                      borderRadius: pw * 0.18,
+                      backgroundColor: fgFill + "10",
+                    }}
+                  />
+                )),
+              )}
+              {/* Dashed border + label */}
+              <View
+                style={{
+                  position: "absolute",
+                  top: innerSize * 0.22,
+                  left: innerSize * 0.22,
+                  right: innerSize * 0.22,
+                  bottom: innerSize * 0.22,
+                  borderRadius: innerSize * 0.04,
+                  borderWidth: 1.5,
+                  borderStyle: "dashed",
+                  borderColor: fgFill + "50",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                <View
+                  style={{
+                    width: innerSize * 0.07,
+                    height: innerSize * 0.07,
+                    borderRadius: innerSize * 0.018,
+                    backgroundColor: fgFill + "55",
+                  }}
+                />
+                <View
+                  style={{
+                    width: innerSize * 0.04,
+                    height: innerSize * 0.04,
+                    borderRadius: innerSize * 0.02,
+                    backgroundColor: fgFill + "40",
+                  }}
+                />
+              </View>
+            </View>
+          )}
         </Animated.View>
       </View>
     </View>

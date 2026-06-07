@@ -4,17 +4,18 @@ import {
   Image,
   PanResponder,
   Animated,
-  TouchableOpacity,
   StyleSheet,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { LogoStyleConfig } from "@/types/qr";
 
 interface Props {
   uri: string;
   containerSize: number;
   logoSize?: number;
-  onRemove: () => void;
+  /** Optional. The logo can be removed from the LogoStyle option
+   *  modal — the inline X button was removed because it cluttered
+   *  the QR canvas and the user already has a dedicated control. */
+  onRemove?: () => void;
   style?: LogoStyleConfig;
   bgColor?: string;
 }
@@ -23,7 +24,6 @@ export function LogoOverlay({
   uri,
   containerSize,
   logoSize = 60,
-  onRemove,
   style,
   bgColor = "#ffffff",
 }: Props) {
@@ -77,8 +77,6 @@ export function LogoOverlay({
       },
     }),
   ).current;
-
-  const BADGE = 20;
 
   // Plate corner radius driven by the background shape.
   const plateRadius = (() => {
@@ -175,26 +173,6 @@ export function LogoOverlay({
           />
         )}
       </Animated.View>
-
-      {/* X button — separate from pan handler, positioned via JS */}
-      <Animated.View
-        pointerEvents="box-none"
-        style={{
-          position: "absolute",
-          left: Animated.add(pos.x, plateSize - BADGE / 2),
-          top: Animated.add(pos.y, -BADGE / 2),
-          zIndex: 20,
-        }}
-      >
-        <TouchableOpacity
-          onPress={onRemove}
-          style={styles.removeBtn}
-          hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="close" size={11} color="#fff" />
-        </TouchableOpacity>
-      </Animated.View>
     </View>
   );
 }
@@ -204,14 +182,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-  },
-  removeBtn: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#e53e3e",
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 8,
   },
 });
