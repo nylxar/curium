@@ -28,7 +28,8 @@ import Animated, {
   clamp,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors, Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
 import { useOverlay } from "@/components/ui/Overlay";
 
 // ─── Color math (worklet-safe) ────────────────────────────────────────────────
@@ -345,6 +346,7 @@ function ColorPickerContent({
   onClose,
 }: ColorPickerContentProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [hue, setHue] = useState(0);
   const [sat, setSat] = useState(1);
   const [val, setVal] = useState(1);
@@ -462,7 +464,7 @@ function ColorPickerContent({
               spellCheck={false}
               textContentType="none"
               placeholder="FFFFFF"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               selectionColor={hex}
             />
             <View style={[s.hexDot, { backgroundColor: hex }]} />

@@ -175,12 +175,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.sm,
-    justifyContent: "flex-start",
+    // Centered so odd-count rows don't leave a gap on the right that
+    // reads as the grid "leaning" to the left.  See ShapeSelector for
+    // the full rationale.
+    justifyContent: "center",
   },
   cell: {
-    flexBasis: 0,
-    flexGrow: 1,
-    minWidth: 60,
+    // Fixed cell width matches ShapeSelector / CornerSelector so all
+    // option modals have the same-size cells.  See ShapeSelector for
+    // the full rationale.
+    width: 64,
     aspectRatio: 1,
     borderRadius: Radius.md,
     borderWidth: 1.5,

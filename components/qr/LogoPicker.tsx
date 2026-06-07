@@ -17,7 +17,8 @@ import Animated, {
   Easing,
   runOnJS,
 } from "react-native-reanimated";
-import { Colors, Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
+import { Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/ui/Toast";
 
 interface Props {
@@ -38,9 +39,11 @@ function triggerHaptic() {
 function LogoSizeControl({
   size,
   onSizeChange,
+  colors,
 }: {
   size: number;
   onSizeChange: (s: number) => void;
+  colors: ReturnType<typeof useTheme>["colors"];
 }) {
   const trackWidthSV = useSharedValue(0);
   const sv = useSharedValue(size);
@@ -112,14 +115,32 @@ function LogoSizeControl({
     <View style={styles.sizeControl}>
       <GestureDetector gesture={Gesture.Race(pan, tap)}>
         <View
-          style={styles.sizeTrack}
+          style={[
+            styles.sizeTrack,
+            { backgroundColor: colors.surfaceOffset },
+          ]}
           onLayout={(e) => (trackWidthSV.value = e.nativeEvent.layout.width)}
         >
-          <Animated.View style={[styles.sizeFill, fillStyle]} />
-          <Animated.View style={[styles.sizeKnob, knobStyle]} />
+          <Animated.View
+            style={[styles.sizeFill, { backgroundColor: colors.primary }, fillStyle]}
+          />
+          <Animated.View
+            style={[
+              styles.sizeKnob,
+              {
+                backgroundColor: colors.primary,
+                borderColor: colors.surface,
+              },
+              knobStyle,
+            ]}
+          />
         </View>
       </GestureDetector>
-      <Text style={styles.sizeLabel}>{displaySize}%</Text>
+      <Text
+        style={[styles.sizeLabel, { color: colors.textMuted }]}
+      >
+        {displaySize}%
+      </Text>
     </View>
   );
 }
@@ -130,6 +151,7 @@ export function LogoPicker({
   onChange,
   onSizeChange,
 }: Props) {
+  const { colors } = useTheme();
   const toast = useToast();
   const pick = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -163,10 +185,19 @@ export function LogoPicker({
 
   return (
     <View>
-      <Text style={styles.sectionTitle}>Logo (optional)</Text>
+      <Text
+        style={[styles.sectionTitle, { color: colors.textMuted }]}
+      >
+        Logo (optional)
+      </Text>
       <View style={styles.row}>
         {logoUri ? (
-          <View style={styles.logoPreview}>
+          <View
+            style={[
+              styles.logoPreview,
+              { borderColor: colors.border },
+            ]}
+          >
             <Image source={{ uri: logoUri }} style={styles.logoImage} />
             <TouchableOpacity
               style={styles.removeBtn}
@@ -174,29 +205,47 @@ export function LogoPicker({
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="close-circle" size={20} color={Colors.error} />
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={colors.error}
+              />
             </TouchableOpacity>
           </View>
         ) : null}
         <TouchableOpacity
-          style={styles.pickBtn}
+          style={[
+            styles.pickBtn,
+            {
+              backgroundColor: colors.surfaceOffset,
+              borderColor: colors.border,
+            },
+          ]}
           onPress={pick}
           activeOpacity={0.75}
         >
           <Ionicons
             name={logoUri ? "refresh-outline" : "image-outline"}
             size={18}
-            color={Colors.primary}
+            color={colors.text}
           />
-          <Text style={styles.pickLabel}>
+          <Text style={[styles.pickLabel, { color: colors.text }]}>
             {logoUri ? "Change" : "Pick Logo"}
           </Text>
         </TouchableOpacity>
       </View>
       {logoUri && onSizeChange && (
         <View style={styles.sizeRow}>
-          <Ionicons name="resize-outline" size={14} color={Colors.textFaint} />
-          <LogoSizeControl size={logoSize} onSizeChange={handleSizeChange} />
+          <Ionicons
+            name="resize-outline"
+            size={14}
+            color={colors.textMuted}
+          />
+          <LogoSizeControl
+            size={logoSize}
+            onSizeChange={handleSizeChange}
+            colors={colors}
+          />
         </View>
       )}
     </View>
@@ -208,7 +257,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontFamily: Fonts.monoMedium,
     fontWeight: "600",
-    color: Colors.textFaint,
     letterSpacing: 1.2,
     textTransform: "uppercase",
     marginLeft: Spacing.base,
@@ -220,7 +268,12 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     paddingHorizontal: Spacing.base,
   },
-  logoPreview: { position: "relative" },
+  logoPreview: {
+    position: "relative",
+    borderWidth: 1,
+    borderRadius: Radius.sm,
+    padding: 2,
+  },
   logoImage: {
     width: 44,
     height: 44,
@@ -233,16 +286,12 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
-    backgroundColor: Colors.primaryBg,
     borderRadius: Radius.full,
     borderWidth: 1,
-    borderColor: Colors.primary,
   },
   pickLabel: {
     fontSize: FontSize.sm,
     fontFamily: Fonts.monoMedium,
-    color: Colors.primary,
-    fontWeight: "600",
   },
   sizeRow: {
     flexDirection: "row",
@@ -260,7 +309,6 @@ const styles = StyleSheet.create({
   sizeTrack: {
     flex: 1,
     height: 6,
-    backgroundColor: Colors.surfaceOffset,
     borderRadius: 3,
     position: "relative",
     justifyContent: "center",
@@ -270,7 +318,6 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: Colors.primary,
     borderRadius: 3,
   },
   sizeKnob: {
@@ -278,9 +325,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: Colors.primary,
     borderWidth: 2.5,
-    borderColor: "#fff",
     shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowRadius: 3,
@@ -290,7 +335,6 @@ const styles = StyleSheet.create({
   sizeLabel: {
     fontSize: FontSize.xs,
     fontFamily: Fonts.monoMedium,
-    color: Colors.textMuted,
     minWidth: 32,
     textAlign: "right",
   },
