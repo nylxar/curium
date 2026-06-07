@@ -9,7 +9,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
-import { tierVariant } from "@/constants/colorUtils";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
 import { useEffect, useLayoutEffect } from "react";
 import Animated, {
@@ -50,13 +49,15 @@ export function OptionRow({
   noPressFlash,
 }: OptionRowProps) {
   const { colors } = useTheme();
-  // 3-tier hierarchy:
-  //   • bgColor (QR canvas)            = original
-  //   • row color (this row)           = mid tier
-  //   • screen bg (in index.tsx)       = lightest tier
-  // We still accept a custom bgColor prop; if absent, we derive the mid tier
-  // from the active palette so the depth is consistent.
-  const rowColor = bgColor ?? tierVariant(colors.surface, 0.05);
+  // Row bg is THEME-DRIVEN (not QR-color driven).  Using a tierVariant
+  // of the QR bg here made option rows swing with every palette
+  // change, which felt like the option rows were "part of" the QR
+  // instead of part of the app chrome.  Tying them to the theme
+  // keeps the screen, rows, and sheet bodies visually consistent
+  // across all palettes and themes (light/dark).  The QR fg color
+  // still tints the icon and the press flash — that's the only place
+  // the active palette leaks into the chrome.
+  const rowColor = bgColor ?? colors.surface;
 
   // Animate the row bg color so it cross-fades in lock-step with the QR and
   // screen bg transitions.  Otherwise the rows snap to the new color while
@@ -133,9 +134,21 @@ export function OptionRow({
             />
           )}
           <View
-            style={[styles.iconBox, { backgroundColor: tintColor + "18" }]}
+            style={[
+              styles.iconBox,
+              // Icon-box bg is THEME-driven (not palette-driven).  Using
+              // `tintColor + "18"` here was the original problem: when
+              // the QR fg is a light color (e.g. "ink" palette with
+              // #f5f0e8 fg), the box is barely visible and the icon —
+              // also `tintColor` — disappears into it.  Tying the box
+              // to `colors.surfaceOffset` keeps it readable on every
+              // palette, every theme.  The QR palette still tints the
+              // press flash and the active cell highlight, so the
+              // identity is preserved where it matters.
+              { backgroundColor: colors.surfaceOffset },
+            ]}
           >
-            <Ionicons name={iconName} size={18} color={tintColor} />
+            <Ionicons name={iconName} size={18} color={colors.text} />
           </View>
           <Text
             style={[
@@ -174,10 +187,14 @@ export function OptionRow({
           <View
             style={[
               styles.sheetIconCircle,
-              { backgroundColor: tintColor + "18" },
+              // Sheet header icon: a subtle palette-tinted bg (so the
+              // sheet still reads as belonging to the active palette),
+              // but the icon itself is theme text — readable on any
+              // bg.  This is the same trade-off as the row icon above.
+              { backgroundColor: tintColor + "12" },
             ]}
           >
-            <Ionicons name={iconName} size={20} color={tintColor} />
+            <Ionicons name={iconName} size={20} color={colors.text} />
           </View>
           <View style={styles.sheetTitles}>
             <Text

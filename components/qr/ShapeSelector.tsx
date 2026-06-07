@@ -339,16 +339,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.sm,
-    justifyContent: "flex-start",
+    // Centering the grid (not flex-start) keeps the row visually balanced
+    // when the count doesn't divide evenly into the sheet width.  With
+    // flex-start, a row of 5 cells leaves a gap on the right that reads
+    // as the grid "leaning" to the left.
+    justifyContent: "center",
   },
   cell: {
-    // Use flexBasis:0 + flexGrow:1 so the cells share the row width
-    // evenly.  Width:23.5% leaves a chunk of unused space on the right
-    // and reads as "left-aligned" — the flexGrow approach distributes
-    // the leftover space so the grid feels balanced.
-    flexBasis: 0,
-    flexGrow: 1,
-    minWidth: 60,
+    // Fixed cell width keeps the grid cells the same size across all
+    // option modals (Shape, Frame, Corners).  With flexGrow:1 the cells
+    // would stretch to fill the row, making the 4-col FrameSelector
+    // cells visibly bigger than the 7-col ColorPalette swatches and
+    // 5-col CornerSelector cells — that asymmetry looks broken.
+    width: 64,
     aspectRatio: 1,
     borderRadius: Radius.md,
     borderWidth: 1.5,
