@@ -26,6 +26,7 @@ import {
   deleteFromHistory,
 } from "@/services/history";
 import { QRCanvas } from "@/components/qr/QRCanvas";
+import { LogoOverlay } from "@/components/qr/LogoOverlay";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { useToast } from "@/components/ui/Toast";
@@ -230,7 +231,12 @@ export default function QRDetailScreen() {
 
   const renderItem = ({ item }: { item: HistoryItem }) => (
     <View style={[styles.page, { width, paddingTop: Spacing.lg }]}>
-      {/* Bare QR — no card wrapper, matches index.tsx */}
+      {/* Bare QR — no card wrapper, matches index.tsx.  The wrapper's
+          borderRadius is driven by the saved `qrCorners` so the outer
+          frame matches the inner QR's rounded corners (sharp = 0, soft
+          = 8, round = 16, very round = 24, pill = 32).  This is the
+          same value QRCanvas uses internally for its inner View, so
+          a 32-corner QR shows identical 32 corners in both screens. */}
       <View
         ref={(r) => {
           qrRefs.current[item.id] = r;
@@ -238,10 +244,23 @@ export default function QRDetailScreen() {
         collapsable={false}
         style={[
           styles.qrBare,
-          { width: QR_SIZE, height: QR_SIZE, backgroundColor: item.qrStyle?.bgColor ?? colors.surface },
+          {
+            width: QR_SIZE,
+            height: QR_SIZE,
+            backgroundColor: item.qrStyle?.bgColor ?? colors.surface,
+            borderRadius: item.qrStyle?.qrCorners ?? 20,
+          },
         ]}
       >
         <QRCanvas value={item.value} size={QR_SIZE} qrStyle={item.qrStyle} />
+        {item.qrStyle?.logoUri && (
+          <LogoOverlay
+            uri={item.qrStyle.logoUri}
+            containerSize={QR_SIZE}
+            style={item.qrStyle.logoStyle}
+            bgColor={item.qrStyle.bgColor}
+          />
+        )}
       </View>
 
       {/* Type pill */}
@@ -490,11 +509,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   qrBare: {
-    // No border, no shadow, no card — just the QR.  Same border-radius as
-    // the index.tsx canvas so the wrapper's bg color frames the rounded
-    // QR cleanly.
+    // No border, no shadow, no card — just the QR.  borderRadius is
+    // set per-render from `item.qrStyle?.qrCorners` so it matches the
+    // inner QRCanvas corners exactly (see QRCanvas's `cornerR`).
     overflow: "hidden",
-    borderRadius: 20,
   },
   typePill: {
     flexDirection: "row",

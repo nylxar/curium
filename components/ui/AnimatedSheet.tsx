@@ -249,7 +249,7 @@ function SheetContent({
         duration: ENTER_DURATION,
         easing: Easing.out(Easing.cubic),
       });
-      backdropOp.value = withTiming(0.5, { duration: BACKDROP_ENTER });
+      backdropOp.value = withTiming(0.32, { duration: BACKDROP_ENTER });
     } else {
       sheetY.value = withTiming(
         SHEET_OFFSCREEN,

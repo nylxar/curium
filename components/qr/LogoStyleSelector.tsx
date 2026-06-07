@@ -5,6 +5,12 @@
 //   • Padding slider (0–20%)
 //   • Border toggle
 //   • Shadow toggle
+//
+// Text colors use the theme's `colors.text` and `colors.textMuted`
+// instead of the QR's `fgColor`.  The QR fg can be a very light or
+// very dark color (depending on the active palette), and when it
+// matches the sheet's `colors.surface` background, the text becomes
+// invisible.  Theme text colors are always readable on the sheet.
 
 import {
   View,
@@ -14,6 +20,7 @@ import {
   Switch,
 } from "react-native";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
 import * as Haptics from "expo-haptics";
 import { LogoStyleConfig, LogoBackground } from "@/types/qr";
 
@@ -30,6 +37,7 @@ const BACKGROUNDS: Array<{
 
 interface Props {
   value: LogoStyleConfig;
+  /** Tint color for the active/highlighted state (QR fg color). */
   fgColor: string;
   bgColor: string;
   onChange: (s: LogoStyleConfig) => void;
@@ -41,10 +49,11 @@ export function LogoStyleSelector({
   bgColor,
   onChange,
 }: Props) {
+  const { colors } = useTheme();
   return (
     <View style={styles.wrap}>
       {/* Background shape */}
-      <Text style={[styles.sectionLabel, { color: fgColor + "99" }]}>
+      <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
         BACKGROUND
       </Text>
       <View style={styles.row}>
@@ -62,8 +71,8 @@ export function LogoStyleSelector({
                 {
                   backgroundColor: active
                     ? fgColor + "18"
-                    : bgColor + "05",
-                  borderColor: active ? fgColor : fgColor + "20",
+                    : colors.surfaceOffset + "60",
+                  borderColor: active ? fgColor : colors.border,
                 },
               ]}
               activeOpacity={0.6}
@@ -71,7 +80,7 @@ export function LogoStyleSelector({
               <Text
                 style={[
                   styles.bgIcon,
-                  { color: active ? fgColor : fgColor + "60" },
+                  { color: active ? fgColor : colors.text },
                 ]}
               >
                 {b.icon}
@@ -79,7 +88,7 @@ export function LogoStyleSelector({
               <Text
                 style={[
                   styles.bgLabel,
-                  { color: active ? fgColor : fgColor + "80" },
+                  { color: active ? fgColor : colors.text },
                 ]}
               >
                 {b.label}
@@ -90,7 +99,7 @@ export function LogoStyleSelector({
       </View>
 
       {/* Padding slider */}
-      <Text style={[styles.sectionLabel, { color: fgColor + "99" }]}>
+      <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
         PADDING · {value.padding}%
       </Text>
       <View style={styles.sliderRow}>
@@ -108,8 +117,8 @@ export function LogoStyleSelector({
                 {
                   backgroundColor: active
                     ? fgColor + "18"
-                    : bgColor + "05",
-                  borderColor: active ? fgColor : fgColor + "20",
+                    : colors.surfaceOffset + "60",
+                  borderColor: active ? fgColor : colors.border,
                 },
               ]}
               activeOpacity={0.6}
@@ -117,7 +126,7 @@ export function LogoStyleSelector({
               <Text
                 style={[
                   styles.padLabel,
-                  { color: active ? fgColor : fgColor + "80" },
+                  { color: active ? fgColor : colors.text },
                 ]}
               >
                 {p}
@@ -129,26 +138,30 @@ export function LogoStyleSelector({
 
       {/* Toggles */}
       <View style={styles.toggleRow}>
-        <Text style={[styles.toggleLabel, { color: fgColor }]}>Border</Text>
+        <Text style={[styles.toggleLabel, { color: colors.text }]}>
+          Border
+        </Text>
         <Switch
           value={value.border}
           onValueChange={(v) => {
             Haptics.selectionAsync();
             onChange({ ...value, border: v });
           }}
-          trackColor={{ false: fgColor + "20", true: fgColor + "60" }}
+          trackColor={{ false: colors.border, true: fgColor + "60" }}
           thumbColor={value.border ? fgColor : "#f4f3f4"}
         />
       </View>
       <View style={styles.toggleRow}>
-        <Text style={[styles.toggleLabel, { color: fgColor }]}>Shadow</Text>
+        <Text style={[styles.toggleLabel, { color: colors.text }]}>
+          Shadow
+        </Text>
         <Switch
           value={value.shadow}
           onValueChange={(v) => {
             Haptics.selectionAsync();
             onChange({ ...value, shadow: v });
           }}
-          trackColor={{ false: fgColor + "20", true: fgColor + "60" }}
+          trackColor={{ false: colors.border, true: fgColor + "60" }}
           thumbColor={value.shadow ? fgColor : "#f4f3f4"}
         />
       </View>
