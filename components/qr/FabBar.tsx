@@ -1,23 +1,25 @@
-import { useState, useLayoutEffect, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
+  Platform,
 } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withDelay,
+  withSequence,
   Easing,
-  interpolateColor,
 } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Radius, Spacing, FontSize, Fonts } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
 
 const NAV_ITEMS = [
@@ -31,33 +33,28 @@ interface NavRowProps {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
-  tintColor: string;
   isLast: boolean;
   index: number;
-  /** Bumped each time the sheet opens — used to retrigger the entrance
-   *  animation.  We use this rather than remounting the row on every
-   *  open so the underlying Pressable keeps its onPress closure stable. */
   openTick: number;
 }
 
 // A single row in the menu sheet.  Animates in with a small fade + lift
-// (140ms) staggered by `index * 35ms` so the menu feels intentional
+// (200ms) staggered by `index * 35ms` so the menu feels intentional
 // rather than just appearing.  Triggered by `openTick` changing — when
 // the sheet reopens, every row plays its entrance again.
 function NavRow({
   icon,
   label,
   onPress,
-  tintColor,
   isLast,
   index,
   openTick,
 }: NavRowProps) {
+  const { colors } = useTheme();
   const opacity = useSharedValue(0);
   const lift = useSharedValue(8);
 
   useEffect(() => {
-    // Reset and animate on every open.
     opacity.value = 0;
     lift.value = 8;
     opacity.value = withDelay(
@@ -81,29 +78,29 @@ function NavRow({
       <TouchableOpacity
         style={[
           styles.navRow,
-          !isLast && {
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: tintColor + "20",
-          },
+          !isLast && styles.navRowDivider,
         ]}
         onPress={() => {
           Haptics.selectionAsync();
           onPress();
         }}
-        activeOpacity={0.6}
+        activeOpacity={0.55}
       >
         <View
-          style={[styles.navIcon, { backgroundColor: tintColor + "18" }]}
+          style={[
+            styles.navIcon,
+            { backgroundColor: colors.surfaceOffset },
+          ]}
         >
-          <Ionicons name={icon} size={20} color={tintColor} />
+          <Ionicons name={icon} size={20} color={colors.text} />
         </View>
-        <Text style={[styles.navLabel, { color: tintColor }]}>
+        <Text style={[styles.navLabel, { color: colors.text }]}>
           {label}
         </Text>
         <Ionicons
           name="chevron-forward"
           size={16}
-          color={tintColor + "40"}
+          color={colors.textFaint}
         />
       </TouchableOpacity>
     </Animated.View>
@@ -115,48 +112,63 @@ interface BtnProps {
   label: string;
   onPress: () => void;
   primary?: boolean;
-  tintColor: string;
-  bgColor: string;
   disabled?: boolean;
 }
 
-function Btn({
-  icon,
-  label,
-  onPress,
-  primary,
-  tintColor,
-  bgColor,
-  disabled,
-}: BtnProps) {
+// iOS-style action button.  Inactive: subtle pill (theme surfaceOffset
+// bg, theme text icon).  Primary: filled pill (theme primary bg, theme
+// bg icon) — mirrors the iOS bottom-bar's "elevated" main action
+// (e.g. compose button in Mail).  Tap plays a one-shot scale flash
+// (0.92 → 1) for haptic-y feedback without springs.
+function Btn({ icon, label, onPress, primary, disabled }: BtnProps) {
+  const { colors } = useTheme();
+  const scale = useSharedValue(1);
+  const handlePress = () => {
+    if (disabled) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    scale.value = withSequence(
+      withTiming(0.9, { duration: 80, easing: Easing.out(Easing.quad) }),
+      withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) }),
+    );
+    onPress();
+  };
+  const scaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
   return (
     <View style={[styles.btnWrap, { opacity: disabled ? 0.4 : 1 }]}>
-      <TouchableOpacity
-        onPress={() => {
-          if (!disabled) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onPress();
-          }
-        }}
-        activeOpacity={0.6}
-        disabled={disabled}
-      >
-        <View
-          style={[
-            styles.btnCircle,
-            primary
-              ? { backgroundColor: tintColor }
-              : {
-                  backgroundColor: tintColor + "20",
-                  borderWidth: 1,
-                  borderColor: tintColor + "35",
-                },
-          ]}
+      <Animated.View style={scaleStyle}>
+        <TouchableOpacity
+          onPress={handlePress}
+          activeOpacity={1}
+          disabled={disabled}
         >
-          <Ionicons name={icon} size={21} color={primary ? bgColor : tintColor} />
-        </View>
-      </TouchableOpacity>
-      <Text style={[styles.btnLabel, { color: tintColor + "cc" }]}>
+          <View
+            style={[
+              styles.btnCircle,
+              primary
+                ? {
+                    backgroundColor: colors.text,
+                    shadowColor: colors.text,
+                    shadowOpacity: 0.18,
+                    shadowRadius: 6,
+                    shadowOffset: { width: 0, height: 2 },
+                    elevation: 4,
+                  }
+                : {
+                    backgroundColor: colors.surfaceOffset,
+                  },
+            ]}
+          >
+            <Ionicons
+              name={icon}
+              size={20}
+              color={primary ? colors.bg : colors.text}
+            />
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+      <Text style={[styles.btnLabel, { color: colors.textMuted }]}>
         {label}
       </Text>
     </View>
@@ -164,26 +176,36 @@ function Btn({
 }
 
 interface Props {
-  tintColor: string;
-  bgColor: string;
+  /** @deprecated — tintColor is ignored.  The bar is theme-driven. */
+  tintColor?: string;
+  /** @deprecated — bgColor is ignored.  The bar is theme-driven. */
+  bgColor?: string;
   disabled: boolean;
   onCopy: () => void;
   onShuffle: () => void;
   onShare: () => void;
 }
 
+// iOS-style floating action bar.
+//
+// Design notes:
+//   • Glass surface — theme `surface` with a hairline top border (no
+//     platform-specific blur; we use the theme surface so the bar
+//     reads as part of the app chrome instead of "tinted" by the QR.
+//   • The `primary` action (Random / Shuffle) is the elevated pill in
+//     the centre — same convention as iOS Mail's compose button.
+//   • 1px hairline divider above the bar (theme border).
+//   • Bottom safe-area inset is added to the inner padding so the
+//     bar clears the home indicator / gesture bar.
+//   • Pressed buttons flash a 0.9 → 1 scale, no spring.
 export function FabBar({
-  tintColor,
-  bgColor,
   disabled,
   onCopy,
   onShuffle,
   onShare,
 }: Props) {
+  const { colors } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
-  // Bumped on every "open" transition.  Each NavRow watches this and
-  // re-plays its staggered fade+lift when it changes — so re-opening
-  // the menu always animates, instead of just popping back in.
   const [openTick, setOpenTick] = useState(0);
   const prevOpenRef = useRef(false);
   useEffect(() => {
@@ -195,85 +217,58 @@ export function FabBar({
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // Animate the bar's bg + border colors in lock-step with the rest of the
-  // screen (QR, rows, GlowPulse).  Without this, the bar snaps instantly to
-  // the new color while everything else is mid-transition — visible desync.
-  const bgFrom = useSharedValue(bgColor);
-  const bgTo = useSharedValue(bgColor);
-  const bgProgress = useSharedValue(1);
-  const borderColor = tintColor + "20";
-  const borderFrom = useSharedValue(borderColor);
-  const borderTo = useSharedValue(borderColor);
-  const borderProgress = useSharedValue(1);
-
-  useLayoutEffect(() => {
-    if (bgColor !== bgTo.value) {
-      bgFrom.value = bgTo.value;
-      bgTo.value = bgColor;
-      bgProgress.value = 0;
-      bgProgress.value = withTiming(1, {
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-      });
-    }
-  }, [bgColor]);
-
-  useLayoutEffect(() => {
-    const next = tintColor + "20";
-    if (next !== borderTo.value) {
-      borderFrom.value = borderTo.value;
-      borderTo.value = next;
-      borderProgress.value = 0;
-      borderProgress.value = withTiming(1, {
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-      });
-    }
-  }, [tintColor]);
-
-  const animBarStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      bgProgress.value,
-      [0, 1],
-      [bgFrom.value, bgTo.value],
-    ),
-    borderTopColor: interpolateColor(
-      borderProgress.value,
-      [0, 1],
-      [borderFrom.value, borderTo.value],
-    ),
-  }));
-
   const go = (route: string) => {
     setMenuOpen(false);
-    setTimeout(() => router.push(route as any), 80);
+    setTimeout(() => {
+      if (route === "/") {
+        // Pop every pushed screen so the existing CreateScreen instance
+        // (with its form data and QR style) is revealed instead of
+        // pushing a fresh "/" which resets all state.
+        // NOTE: router.dismissAll() is not supported by Stack — it
+        // throws "POP_TO_TOP was not handled".  router.navigate pops
+        // to the existing "/" screen if it's already in the stack.
+        router.navigate("/");
+      } else {
+        router.push(route as any);
+      }
+    }, 80);
   };
 
   return (
     <>
-      <Animated.View
+      <View
         style={[
-          styles.bar,
+          styles.barWrap,
           {
             paddingBottom: insets.bottom + Spacing.sm,
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            // Subtle drop shadow on iOS so the bar feels "above" the
+            // page content.  Android uses elevation.
+            ...Platform.select({
+              ios: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: -2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 8,
+              },
+              android: {
+                elevation: 8,
+              },
+            }),
           },
-          animBarStyle,
         ]}
       >
         <View style={styles.row}>
           <Btn
             icon="copy-outline"
             label="Copy"
-            tintColor={tintColor}
-            bgColor={bgColor}
             onPress={onCopy}
             disabled={disabled}
           />
           <Btn
             icon="shuffle"
             label="Random"
-            tintColor={tintColor}
-            bgColor={bgColor}
             onPress={onShuffle}
             disabled={disabled}
             primary
@@ -281,33 +276,28 @@ export function FabBar({
           <Btn
             icon="share-outline"
             label="Share"
-            tintColor={tintColor}
-            bgColor={bgColor}
             onPress={onShare}
             disabled={disabled}
           />
           <Btn
             icon="menu"
             label="Menu"
-            tintColor={tintColor}
-            bgColor={bgColor}
             onPress={() => setMenuOpen(true)}
           />
         </View>
-      </Animated.View>
+      </View>
 
       <AnimatedSheet
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
-        bgColor={bgColor}
-        borderColor={tintColor + "25"}
+        bgColor={colors.surface}
+        borderColor={colors.border}
       >
         {NAV_ITEMS.map((item, i) => (
           <NavRow
             key={item.route}
             icon={item.icon as any}
             label={item.label}
-            tintColor={tintColor}
             isLast={i === NAV_ITEMS.length - 1}
             index={i}
             openTick={openTick}
@@ -320,9 +310,13 @@ export function FabBar({
 }
 
 const styles = StyleSheet.create({
-  bar: {
+  // The bar is a fixed-height floating surface pinned to the bottom
+  // of the parent.  We use a wrapping View (not Animated.View) so
+  // there's no animated background that could desync with the row
+  // cross-fades.
+  barWrap: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm + 2,
   },
   row: {
     flexDirection: "row",
@@ -332,26 +326,42 @@ const styles = StyleSheet.create({
   },
   btnWrap: { alignItems: "center", gap: Spacing.xs },
   btnCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
   },
-  btnLabel: { fontSize: FontSize.xs, fontFamily: Fonts.monoMedium, fontWeight: "600" },
+  btnLabel: {
+    fontSize: FontSize.xs,
+    fontFamily: Fonts.monoMedium,
+    fontWeight: "600",
+    letterSpacing: 0.2,
+  },
 
+  // Nav menu sheet rows — iOS-style list with hairline dividers.
   navRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
     paddingVertical: Spacing.md + 2,
+    paddingHorizontal: Spacing.xs,
+  },
+  navRowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(127,127,127,0.2)",
   },
   navIcon: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: Radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
-  navLabel: { flex: 1, fontSize: FontSize.md ?? 15, fontFamily: Fonts.monoMedium, fontWeight: "600" },
+  navLabel: {
+    flex: 1,
+    fontSize: FontSize.md,
+    fontFamily: Fonts.monoMedium,
+    fontWeight: "600",
+  },
 });
