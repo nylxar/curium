@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -11,21 +11,17 @@ import * as Haptics from "expo-haptics";
 import { QRType } from "@/types/qr";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
-import { tierVariant } from "@/constants/colorUtils";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSequence,
-  Easing,
-  interpolateColor,
-} from "react-native-reanimated";
 
 interface Props {
   selected: QRType;
+  /** Tint color (QR fg) — used only for the press flash and the
+   *  active cell highlight in the picker.  Inactive cells, the
+   *  row bg, and the icons are theme-driven. */
   tintColor: string;
-  bgColor: string;
+  /** @deprecated — bgColor prop is kept for API compatibility but
+   *  unused; the row bg is `colors.surface` (theme-driven). */
+  bgColor?: string;
   onChange: (t: QRType) => void;
 }
 
@@ -44,81 +40,43 @@ const TYPES: {
   { id: "location", label: "Location", icon: "location-outline" },
 ];
 
-interface Props {
-  selected: QRType;
-  tintColor: string;
-  bgColor: string;
-  onChange: (t: QRType) => void;
-}
-
-export function TypeSelector({ selected, tintColor, bgColor, onChange }: Props) {
+export function TypeSelector({ selected, tintColor, onChange }: Props) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const current = TYPES.find((t) => t.id === selected)!;
 
-  // Same cross-fade bg pattern as OptionRow — row animates in lock-step
-  // with the rest of the screen so the color transition looks coordinated.
-  const rowBg = tierVariant(bgColor, 0.08);
-  const bgFrom = useSharedValue(rowBg);
-  const bgTo = useSharedValue(rowBg);
-  const bgProgress = useSharedValue(1);
-  const pressOpacity = useSharedValue(0);
-
-  useLayoutEffect(() => {
-    if (rowBg !== bgTo.value) {
-      bgFrom.value = bgTo.value;
-      bgTo.value = rowBg;
-      bgProgress.value = 0;
-      bgProgress.value = withTiming(1, {
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-      });
-    }
-  }, [rowBg]);
-
-  const animBgStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      bgProgress.value,
-      [0, 1],
-      [bgFrom.value, bgTo.value],
-    ),
-  }));
-  const pressStyle = useAnimatedStyle(() => ({
-    opacity: pressOpacity.value,
-  }));
-
+  // Row bg is THEME-driven (not palette-driven).  See OptionRow for
+  // the rationale: a palette-tinted row makes the chrome feel like
+  // part of the QR; tying it to `colors.surface` keeps the chrome
+  // consistent across palettes and themes.  The QR palette still
+  // tints the press flash and the active cell highlight.
   return (
     <>
       <Pressable
         onPress={() => {
           Haptics.selectionAsync();
-          pressOpacity.value = withSequence(
-            withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) }),
-            withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) }),
-          );
           setOpen(true);
         }}
         style={() => [{}]}
       >
-        <Animated.View
+        <View
           style={[
             styles.row,
-            animBgStyle,
-            { borderColor: colors.border, overflow: "hidden" },
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
           ]}
         >
-          <Animated.View
-            pointerEvents="none"
+          {/* Icon-box bg is theme-driven so the icon stays readable
+              on light-fg palettes (ink).  See OptionRow. */}
+          <View
             style={[
-              StyleSheet.absoluteFill,
-              // Tint-aware press flash so it doesn't read as a gray wash
-              // against the colored row bg.
-              { backgroundColor: tintColor + "22" },
-              pressStyle,
+              styles.rowIcon,
+              { backgroundColor: colors.surfaceOffset },
             ]}
-          />
-          <View style={[styles.rowIcon, { backgroundColor: tintColor + "18" }]}>
-            <Ionicons name={current.icon} size={18} color={tintColor} />
+          >
+            <Ionicons name={current.icon} size={18} color={colors.text} />
           </View>
           <View style={styles.rowText}>
             <Text
@@ -153,7 +111,7 @@ export function TypeSelector({ selected, tintColor, bgColor, onChange }: Props) 
               color={colors.textMuted}
             />
           </View>
-        </Animated.View>
+        </View>
       </Pressable>
 
       <AnimatedSheet
@@ -179,7 +137,12 @@ export function TypeSelector({ selected, tintColor, bgColor, onChange }: Props) 
                 style={[
                   styles.cell,
                   {
-                    backgroundColor: active ? tintColor + "18" : colors.surfaceOffset,
+                    // Active cell uses the QR palette tint (this is the
+                    // "selected" affordance).  Inactive cells use the
+                    // theme — that's the user's "chrome".
+                    backgroundColor: active
+                      ? tintColor + "18"
+                      : colors.surfaceOffset,
                     borderColor: active ? tintColor : colors.border,
                     borderWidth: active ? 2 : 1,
                   },
@@ -243,11 +206,19 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: FontSize.xs, marginBottom: 1 },
   rowSub: { fontSize: FontSize.base },
 
-  sheetTitle: { fontSize: FontSize.md, textAlign: "center", marginBottom: Spacing.md },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+  sheetTitle: {
+    fontSize: FontSize.md,
+    textAlign: "center",
+    marginBottom: Spacing.md,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    justifyContent: "center",
+  },
   cell: {
-    width: "22%",
-    flexGrow: 1,
+    width: 72,
     aspectRatio: 1,
     borderRadius: Radius.md,
     alignItems: "center",

@@ -14,7 +14,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withSequence,
   Easing,
   interpolateColor,
 } from "react-native-reanimated";
@@ -352,9 +351,6 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
   { id: "location", label: "Location", icon: "location-outline" },
 ];
 
-const { width } = useWindowDimensions();
-const QR_SIZE = Math.floor(width) - 32;
-
   // ─── Animated Form Trigger ────────────────────────────────────────────────────
   // Matches OptionRow's visual treatment (tinted bg, same border, same icon
   // box) but stacks a label + value inside a single column to read as an
@@ -377,7 +373,6 @@ const QR_SIZE = Math.floor(width) - 32;
     const bgFrom = useSharedValue(rowBg);
     const bgTo = useSharedValue(rowBg);
     const bgProgress = useSharedValue(1);
-    const pressOpacity = useSharedValue(0);
 
     useLayoutEffect(() => {
       if (rowBg !== bgTo.value) {
@@ -398,41 +393,21 @@ const QR_SIZE = Math.floor(width) - 32;
         [bgFrom.value, bgTo.value],
       ),
     }));
-    const pressStyle = useAnimatedStyle(() => ({
-      opacity: pressOpacity.value,
-    }));
 
     const currentType = QR_TYPES.find((t) => t.id === activeType);
 
     return (
       <Pressable
-        onPress={() => {
-          pressOpacity.value = withSequence(
-            withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) }),
-            withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) }),
-          );
-          onPress();
-        }}
+        onPress={onPress}
         style={() => [{}]}
       >
         <Animated.View
           style={[
             styles.formTrigger,
             animBgStyle,
-            { borderColor: colors.border, overflow: "hidden" },
+            { borderColor: colors.border },
           ]}
         >
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              StyleSheet.absoluteFill,
-              // Tint-aware press flash — matches the row's QR tint so the
-              // brief flash blends with the row color rather than reading
-              // as a generic gray wash.
-              { backgroundColor: tint + "22" },
-              pressStyle,
-            ]}
-          />
           <View
             style={[
               styles.formTriggerIcon,
@@ -535,6 +510,8 @@ function encodeQR(type: QRType, forms: FormState): string {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function CreateScreen() {
   // ALL hooks at top, unconditionally, always same order
+  const { width: screenWidth } = useWindowDimensions();
+  const QR_SIZE = Math.floor(screenWidth) - 32;
   const [activeType, setActiveType] = useState<QRType>("url");
   const [forms, setForms] = useState<FormState>(DEFAULT_FORMS);
   // Initial QR style follows the theme: paper/ink in light mode,
@@ -594,6 +571,7 @@ export default function CreateScreen() {
           qrCorners: styleNow.qrCorners,
           logoStyle: styleNow.logoStyle,
           logoUri: styleNow.logoUri,
+          logoPosition: styleNow.logoPosition,
           gradient: styleNow.gradient,
         });
       if (sig === lastSaved.current) return;
@@ -875,6 +853,10 @@ export default function CreateScreen() {
                   containerSize={QR_SIZE}
                   style={qrStyle.logoStyle}
                   bgColor={qrStyle.bgColor}
+                  initialPosition={qrStyle.logoPosition}
+                  onPositionChange={(pos) =>
+                    setQrStyle((p) => ({ ...p, logoPosition: pos }))
+                  }
                 />
               )}
             </View>

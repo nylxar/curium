@@ -1,9 +1,8 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   View,
   Image,
   PanResponder,
-  Animated,
   StyleSheet,
 } from "react-native";
 import { LogoStyleConfig } from "@/types/qr";
@@ -12,12 +11,14 @@ interface Props {
   uri: string;
   containerSize: number;
   logoSize?: number;
-  /** Optional. The logo can be removed from the LogoStyle option
-   *  modal — the inline X button was removed because it cluttered
-   *  the QR canvas and the user already has a dedicated control. */
-  onRemove?: () => void;
   style?: LogoStyleConfig;
   bgColor?: string;
+  /** When false the logo is static (used in qr-detail for saved QRs). */
+  draggable?: boolean;
+  /** Restore a previously saved logo position (from QRStyle.logoPosition). */
+  initialPosition?: { x: number; y: number };
+  /** Fired when the user finishes dragging the logo. */
+  onPositionChange?: (pos: { x: number; y: number }) => void;
 }
 
 export function LogoOverlay({
@@ -26,10 +27,10 @@ export function LogoOverlay({
   logoSize = 60,
   style,
   bgColor = "#ffffff",
+  draggable = true,
+  initialPosition,
+  onPositionChange,
 }: Props) {
-  // Default to the previous "rounded white plate" look if no style config
-  // was passed.  This keeps older call sites (qr-detail, history) working
-  // unchanged.
   const cfg = style ?? {
     background: "rounded" as const,
     padding: 10,
@@ -37,48 +38,61 @@ export function LogoOverlay({
     shadow: true,
   };
 
-  // Total visual plate size = logo + padding on each side.
   const pad = (cfg.padding / 100) * logoSize;
   const plateSize = logoSize + pad * 2;
 
-  // Center the plate in the container.
+  // Center the plate in the container (default position).
   const cx = (containerSize - plateSize) / 2;
   const cy = (containerSize - plateSize) / 2;
 
-  const pos = useRef(new Animated.ValueXY({ x: cx, y: cy })).current;
-  const posRef = useRef({ x: cx, y: cy });
+  // Use plain useState instead of Animated.ValueXY so the position is
+  // always committed to the native layer synchronously.  This fixes two
+  // issues:
+  //   1. react-native-view-shot (captureRef) couldn't see the logo
+  //      because Animated.ValueXY positions are resolved asynchronously
+  //      in Reanimated 4 — by the time captureRef snapshots the view,
+  //      the native layer still had the old (0,0) position.
+  //   2. Saved/shared QRs now always render the logo at the correct
+  //      position because useState is synchronous.
+  const [pos, setPos] = useState(
+    initialPosition ?? { x: cx, y: cy },
+  );
+  const posRef = useRef(initialPosition ?? { x: cx, y: cy });
+  // Position at the start of a gesture — g.dx/g.dy are cumulative from
+  // grant, so we must NOT add them to the live posRef (which would
+  // double-count and cause acceleration).
+  const panOrigin = useRef({ x: 0, y: 0 });
 
   const MAX_X = containerSize - plateSize;
   const MAX_Y = containerSize - plateSize;
 
   const pan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        pos.stopAnimation();
-      },
-      onPanResponderMove: (_, g) => {
-        pos.setValue({
-          x: Math.max(0, Math.min(MAX_X, posRef.current.x + g.dx)),
-          y: Math.max(0, Math.min(MAX_Y, posRef.current.y + g.dy)),
-        });
-      },
-      onPanResponderRelease: (_, g) => {
-        const nx = Math.max(0, Math.min(MAX_X, posRef.current.x + g.dx));
-        const ny = Math.max(0, Math.min(MAX_Y, posRef.current.y + g.dy));
-        posRef.current = { x: nx, y: ny };
-        Animated.spring(pos, {
-          toValue: { x: nx, y: ny },
-          useNativeDriver: false,
-          speed: 30,
-          bounciness: 4,
-        }).start();
-      },
-    }),
+    draggable
+      ? PanResponder.create({
+          onStartShouldSetPanResponder: () => true,
+          onMoveShouldSetPanResponder: () => true,
+          onPanResponderGrant: () => {
+            panOrigin.current = { ...posRef.current };
+          },
+          onPanResponderMove: (_, g) => {
+            const nx = Math.max(
+              0,
+              Math.min(MAX_X, panOrigin.current.x + g.dx),
+            );
+            const ny = Math.max(
+              0,
+              Math.min(MAX_Y, panOrigin.current.y + g.dy),
+            );
+            posRef.current = { x: nx, y: ny };
+            setPos({ x: nx, y: ny });
+          },
+          onPanResponderRelease: () => {
+            onPositionChange?.(posRef.current);
+          },
+        })
+      : { panHandlers: {} as any },
   ).current;
 
-  // Plate corner radius driven by the background shape.
   const plateRadius = (() => {
     switch (cfg.background) {
       case "circle":
@@ -92,13 +106,10 @@ export function LogoOverlay({
     }
   })();
 
-  // Image corner radius — same logic, slightly less so it insets into the
-  // plate nicely.  If background is "none" the image gets a small radius
-  // so rounded logos don't have hard corners either.
   const imageRadius = (() => {
     switch (cfg.background) {
       case "circle":
-        return (logoSize * 0.5);
+        return logoSize * 0.5;
       case "rounded":
         return Math.min(logoSize * 0.18, 12);
       case "square":
@@ -109,16 +120,16 @@ export function LogoOverlay({
   })();
 
   return (
-    // Outer View: full container size, pointerEvents="box-none" so taps pass through
     <View
       style={[
         StyleSheet.absoluteFill,
-        { width: containerSize, height: containerSize },
+        { width: containerSize, height: containerSize, zIndex: 10 },
       ]}
       pointerEvents="box-none"
     >
-      {/* Draggable logo plate */}
-      <Animated.View
+      {/* Logo plate — plain View (not Animated.View) so captureRef
+          sees the correct position synchronously. */}
+      <View
         {...pan.panHandlers}
         style={{
           position: "absolute",
@@ -126,6 +137,7 @@ export function LogoOverlay({
           top: pos.y,
           width: plateSize,
           height: plateSize,
+          zIndex: 10,
         }}
       >
         {cfg.background !== "none" && (
@@ -172,7 +184,7 @@ export function LogoOverlay({
             resizeMode="contain"
           />
         )}
-      </Animated.View>
+      </View>
     </View>
   );
 }
