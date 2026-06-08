@@ -133,8 +133,6 @@ export default function AboutScreen() {
     __DEV__ ? "dev" : "prod",
   );
 
-  useEffect(() => {}, []);
-
   const openLink = async (url: string, label: string) => {
     try {
       const can = await Linking.canOpenURL(url);
