@@ -1,11 +1,14 @@
-import { useMemo, useLayoutEffect, useRef } from "react";
-import { View, StyleSheet } from "react-native";
+import { useMemo, useLayoutEffect, useRef, useState, useCallback } from "react";
+import { View, StyleSheet, PanResponder } from "react-native";
 import Svg, {
   Rect,
   Path,
   Defs,
   LinearGradient,
   Stop,
+  Image as SvgImage,
+  ClipPath,
+  G,
 } from "react-native-svg";
 import Animated, {
   useSharedValue,
@@ -19,6 +22,7 @@ import {
   PupilShape,
   PixelShape,
   FrameStyle,
+  LogoStyleConfig,
 } from "@/types/qr";
 
 const QRLib = require("qrcode");
@@ -27,6 +31,17 @@ interface Props {
   value: string;
   qrStyle: QRStyle;
   size: number;
+  /** When true the gen entrance animation is skipped (e.g. history detail). */
+  skipAnimation?: boolean;
+  /** Logo props — when provided, the logo is rendered INSIDE the SVG
+   *  (as an <Image> element) so captureRef on Android captures it.
+   *  The separate LogoOverlay component is NOT used alongside this. */
+  logoUri?: string;
+  logoSize?: number;
+  logoStyle?: LogoStyleConfig;
+  logoBgColor?: string;
+  logoPosition?: { x: number; y: number };
+  onLogoPositionChange?: (pos: { x: number; y: number }) => void;
 }
 
 // ─── Matrix ───────────────────────────────────────────────────────────────────
@@ -483,7 +498,18 @@ function frameStyle(frame: FrameStyle, fg: string): {
 }
 
 // ─── QRCanvas ─────────────────────────────────────────────────────────────────
-export function QRCanvas({ value, qrStyle, size }: Props) {
+export function QRCanvas({
+  value,
+  qrStyle,
+  size,
+  skipAnimation,
+  logoUri,
+  logoSize = 60,
+  logoStyle: logoCfg,
+  logoBgColor = "#ffffff",
+  logoPosition: savedPos,
+  onLogoPositionChange,
+}: Props) {
   const isEmpty = !value || !value.trim();
 
   const matrix = useMemo(
@@ -524,28 +550,32 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
   const gradIdRef = useRef(`qrgrad_${Math.random().toString(36).slice(2, 9)}`);
 
   // ── Generation animation: subtle scale-up + opacity entrance ──
-  const genProgress = useSharedValue(0);
+  const genProgress = useSharedValue(skipAnimation ? 1 : 0);
   const localDidGenerate = useRef(false);
   const genStyle = useAnimatedStyle(() => ({
-    opacity: 0.25 + genProgress.value * 0.75,
+    opacity: 0.55 + genProgress.value * 0.45,
     transform: [
-      { scale: 0.965 + genProgress.value * 0.035 },
+      { scale: 0.97 + genProgress.value * 0.03 },
     ],
   }));
 
   useLayoutEffect(() => {
+    if (skipAnimation) {
+      genProgress.value = 1;
+      return;
+    }
     if (!isEmpty && matrix && !localDidGenerate.current) {
       localDidGenerate.current = true;
       genProgress.value = 0;
       genProgress.value = withTiming(1, {
-        duration: 240,
+        duration: 200,
         easing: Easing.out(Easing.cubic),
       });
     } else if (isEmpty) {
       localDidGenerate.current = false;
       genProgress.value = 0;
     }
-  }, [isEmpty, matrix]);
+  }, [isEmpty, matrix, skipAnimation]);
 
   // ── Empty state: always render the same Svg tree, just feed it an
   // all-zero matrix.  Returning a different View for the empty state
@@ -665,6 +695,42 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
   const useGradient = qrStyle.gradient.enabled;
   const piecesFill = useGradient ? `url(#${gradIdRef.current})` : fgFill;
 
+  // ── Logo position (inside SVG, draggable via overlay PanResponder) ──
+  const hasLogo = !!logoUri && !isEmpty;
+  const logoCfgInner = logoCfg ?? { background: "rounded" as const, padding: 10, border: true, shadow: true };
+  const logoPad = (logoCfgInner.padding / 100) * logoSize;
+  const logoPlateSz = logoSize + logoPad * 2;
+  const logoDefaultX = (innerSize - logoPlateSz) / 2;
+  const logoDefaultY = (innerSize - logoPlateSz) / 2;
+  const [logoPos, setLogoPos] = useState(
+    savedPos ?? { x: logoDefaultX, y: logoDefaultY },
+  );
+  const logoPosRef = useRef(savedPos ?? { x: logoDefaultX, y: logoDefaultY });
+  const logoPanOrigin = useRef({ x: 0, y: 0 });
+  const logoMaxX = innerSize - logoPlateSz;
+  const logoMaxY = innerSize - logoPlateSz;
+
+  const logoPan = useRef(
+    hasLogo && onLogoPositionChange
+      ? PanResponder.create({
+          onStartShouldSetPanResponder: () => true,
+          onMoveShouldSetPanResponder: () => true,
+          onPanResponderGrant: () => {
+            logoPanOrigin.current = { ...logoPosRef.current };
+          },
+          onPanResponderMove: (_, g) => {
+            const nx = Math.max(0, Math.min(logoMaxX, logoPanOrigin.current.x + g.dx));
+            const ny = Math.max(0, Math.min(logoMaxY, logoPanOrigin.current.y + g.dy));
+            logoPosRef.current = { x: nx, y: ny };
+            setLogoPos({ x: nx, y: ny });
+          },
+          onPanResponderRelease: () => {
+            onLogoPositionChange(logoPosRef.current);
+          },
+        })
+      : { panHandlers: {} as any },
+  ).current;
+
   return (
     <View
       style={{
@@ -759,6 +825,52 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
               fill={eyeFill}
             />
             {hasPupil && <Path d={eyeDotPath} fill={fgFill} />}
+
+            {/* ── Logo overlay (inside SVG for captureRef compatibility) ──
+                renderToHardwareTextureAndroid and captureRef on Android
+                cannot reliably capture absolutely-positioned React Views.
+                By rendering the logo as an SVG <Image> inside the same SVG
+                as the QR content, captureRef captures both as a single bitmap. */}
+            {logoUri && !isEmpty && (() => {
+              const cfg = logoCfg ?? { background: "rounded" as const, padding: 10, border: true, shadow: true };
+              const pad = (cfg.padding / 100) * logoSize;
+              const plateSz = logoSize + pad * 2;
+              const cx = (innerSize - plateSz) / 2;
+              const cy = (innerSize - plateSz) / 2;
+              const px = logoPos.x;
+              const py = logoPos.y;
+              const plateR = cfg.background === "circle" ? plateSz * 0.5
+                : cfg.background === "rounded" ? Math.min(plateSz * 0.22, 16)
+                : 0;
+              const imgR = cfg.background === "circle" ? logoSize * 0.5
+                : cfg.background === "rounded" ? Math.min(logoSize * 0.18, 12)
+                : 0;
+              return (
+                <>
+                  {cfg.background !== "none" && (
+                    <Rect
+                      x={px}
+                      y={py}
+                      width={plateSz}
+                      height={plateSz}
+                      rx={plateR}
+                      ry={plateR}
+                      fill={logoBgColor}
+                      stroke="#00000018"
+                      strokeWidth={cfg.border ? 1.5 : 0}
+                    />
+                  )}
+                  <SvgImage
+                    x={px + pad}
+                    y={py + pad}
+                    width={logoSize}
+                    height={logoSize}
+                    href={logoUri}
+                    preserveAspectRatio="xMidYMid meet"
+                  />
+                </>
+              );
+            })()}
           </Svg>
           {/*
             Placeholder overlay — shown when the QR value is empty.  The
@@ -831,6 +943,15 @@ export function QRCanvas({ value, qrStyle, size }: Props) {
                 />
               </View>
             </View>
+          )}
+          {/* Logo drag overlay — transparent, full-size, handles dragging
+              the logo position.  The actual logo is rendered inside the SVG
+              above; this overlay just captures drag gestures. */}
+          {hasLogo && !!onLogoPositionChange && (
+            <View
+              {...logoPan.panHandlers}
+              style={StyleSheet.absoluteFill}
+            />
           )}
         </Animated.View>
       </View>
