@@ -33,10 +33,12 @@ function CornerPreview({
   value,
   corner,
   color,
+  colors,
 }: {
   value: number;
   corner: number;
   color: string;
+  colors: any;
 }) {
   return (
     <View
@@ -44,16 +46,16 @@ function CornerPreview({
         styles.preview,
         {
           borderRadius: corner,
-          backgroundColor: color + "15",
+          backgroundColor: colors.surfaceOffset,
           borderWidth: 1.5,
-          borderColor: color + "60",
+          borderColor: colors.border,
         },
       ]}
     >
       <Text
         style={[
           styles.previewLabel,
-          { color: color + "90" },
+          { color: colors.textMuted },
         ]}
       >
         {value}
@@ -78,7 +80,7 @@ export function CornerSelector({ selected, fgColor, onChange }: Props) {
             style={[
               styles.cell,
               {
-                backgroundColor: active ? fgColor + "20" : colors.surface,
+                backgroundColor: active ? colors.primaryBg : colors.surface,
                 borderColor: active ? fgColor : colors.border,
               },
             ]}
@@ -88,11 +90,12 @@ export function CornerSelector({ selected, fgColor, onChange }: Props) {
               value={opt.value}
               corner={opt.corner}
               color={fgColor}
+              colors={colors}
             />
             <Text
               style={[
                 styles.cellLabel,
-                { color: active ? fgColor : colors.textMuted },
+                { color: active ? colors.text : colors.textMuted },
               ]}
             >
               {opt.label}

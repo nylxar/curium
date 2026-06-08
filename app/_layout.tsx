@@ -1,7 +1,7 @@
+import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -21,9 +21,13 @@ export default function RootLayout() {
     "IBMPlexMono-Bold": require("../assets/fonts/IBMPlexMono-Bold.otf"),
     "IBMPlexMono-Italic": require("../assets/fonts/IBMPlexMono-Italic.otf"),
   });
+
   useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync();
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
   }, [loaded, error]);
+
   if (!loaded && !error) return null;
 
   return (
@@ -42,7 +46,7 @@ export default function RootLayout() {
               >
                 <Stack.Screen
                   name="index"
-                  options={{ animation: "fade", animationDuration: 180 }}
+                  options={{ animation: "none" }}
                 />
                 <Stack.Screen
                   name="scan"
@@ -69,8 +73,8 @@ export default function RootLayout() {
                 <Stack.Screen
                   name="qr-detail"
                   options={{
-                    animation: "slide_from_bottom",
-                    animationDuration: 280,
+                    animation: "simple_push",
+                    animationDuration: 200,
                   }}
                 />
                 <Stack.Screen

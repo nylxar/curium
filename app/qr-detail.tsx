@@ -20,13 +20,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
+import { File } from "expo-file-system";
+import * as FileSystemLegacy from "expo-file-system/legacy";
 import {
   loadHistory,
   HistoryItem,
   deleteFromHistory,
 } from "@/services/history";
 import { QRCanvas } from "@/components/qr/QRCanvas";
-import { LogoOverlay } from "@/components/qr/LogoOverlay";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { useToast } from "@/components/ui/Toast";
@@ -159,7 +160,9 @@ export default function QRDetailScreen() {
         toast.warning("Permission needed", "Allow media access to save QR.");
         return;
       }
-      const uri = await captureRef(ref, { format: "png", quality: 1 });
+      // Wait for native layout to commit before capture.
+      await new Promise<void>((r) => setTimeout(r, 200));
+      const uri = await captureRef(ref, { format: "png", quality: 1, result: "tmpfile" });
       const { Asset } = await import("expo-media-library");
       await Asset.create(uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -174,10 +177,17 @@ export default function QRDetailScreen() {
     const ref = qrRefs.current[current.id];
     if (!ref) return;
     try {
-      const uri = await captureRef(ref, { format: "png", quality: 1 });
+      // Wait for native layout to commit before capture.
+      await new Promise<void>((r) => setTimeout(r, 200));
+      const tmpUri = await captureRef(ref, { format: "png", quality: 1, result: "tmpfile" });
+      // Copy to persistent directory — tmpfile URIs don't survive Android activity restarts.
+      const dest = FileSystemLegacy.documentDirectory + `curium_qr_${Date.now()}.png`;
+      const srcFile = new File(tmpUri);
+      const destFile = new File(dest);
+      await srcFile.copy(destFile);
       const Sharing = await import("expo-sharing");
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: "image/png" });
+        await Sharing.shareAsync(destFile.uri, { mimeType: "image/png" });
       } else {
         toast.warning("Unavailable", "Sharing is not available on this device.");
       }
@@ -252,17 +262,17 @@ export default function QRDetailScreen() {
           },
         ]}
       >
-        <QRCanvas value={item.value} size={QR_SIZE} qrStyle={item.qrStyle} />
-        {item.qrStyle?.logoUri && (
-          <LogoOverlay
-            uri={item.qrStyle.logoUri}
-            containerSize={QR_SIZE}
-            style={item.qrStyle.logoStyle}
-            bgColor={item.qrStyle.bgColor}
-            draggable={false}
-            initialPosition={item.qrStyle.logoPosition}
-          />
-        )}
+        <QRCanvas
+          value={item.value}
+          size={QR_SIZE}
+          qrStyle={item.qrStyle}
+          skipAnimation
+          logoUri={item.qrStyle?.logoUri}
+          logoSize={60}
+          logoStyle={item.qrStyle?.logoStyle}
+          logoBgColor={item.qrStyle?.bgColor}
+          logoPosition={item.qrStyle?.logoPosition}
+        />
       </View>
 
       {/* Type pill */}

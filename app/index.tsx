@@ -34,7 +34,6 @@ import { OptionRow } from "@/components/qr/OptionRow";
 import { FabBar } from "@/components/qr/FabBar";
 import { FormModal } from "@/components/qr/FormModal";
 import { useTheme } from "@/context/ThemeContext";
-import { LogoOverlay } from "@/components/qr/LogoOverlay";
 import { ColorPalette } from "@/components/qr/ColorPalette";
 import {
   EyeShapeSelector,
@@ -846,19 +845,19 @@ export default function CreateScreen() {
               collapsable={false}
               style={{ width: QR_SIZE, height: QR_SIZE }}
             >
-              <QRCanvas value={qrValue} qrStyle={qrStyle} size={QR_SIZE} />
-              {qrStyle.logoUri && (
-                <LogoOverlay
-                  uri={qrStyle.logoUri}
-                  containerSize={QR_SIZE}
-                  style={qrStyle.logoStyle}
-                  bgColor={qrStyle.bgColor}
-                  initialPosition={qrStyle.logoPosition}
-                  onPositionChange={(pos) =>
-                    setQrStyle((p) => ({ ...p, logoPosition: pos }))
-                  }
-                />
-              )}
+              <QRCanvas
+                value={qrValue}
+                qrStyle={qrStyle}
+                size={QR_SIZE}
+                logoUri={qrStyle.logoUri}
+                logoSize={60}
+                logoStyle={qrStyle.logoStyle}
+                logoBgColor={qrStyle.bgColor}
+                logoPosition={qrStyle.logoPosition}
+                onLogoPositionChange={(pos) =>
+                  setQrStyle((p) => ({ ...p, logoPosition: pos }))
+                }
+              />
             </View>
           </View>
 
