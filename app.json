@@ -2,7 +2,7 @@
   "expo": {
     "name": "Curium",
     "slug": "Curium",
-    "version": "1.0.0",
+    "version": "0.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "curium",
@@ -43,16 +43,20 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Curium uses the camera to scan QR codes."
+          "cameraPermission": "Curium uses the camera to scan QR codes.",
+          "microphonePermission": "Curium does not use the microphone.",
+          "recordAudioAndroid": false
         }
       ],
       [
         "expo-media-library",
         {
           "photosPermission": "Curium saves QR codes to your photo library.",
-          "savePhotosPermission": "Curium saves QR codes to your photo library."
+          "savePhotosPermission": "Curium saves QR codes to your photo library.",
+          "granularPermissions": ["photo"]
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "router": {},

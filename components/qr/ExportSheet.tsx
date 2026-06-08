@@ -1,6 +1,10 @@
-import { useRef } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import * as MediaLibrary from "expo-media-library";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
+import { Asset, requestPermissionsAsync } from "expo-media-library";
 import { File } from "expo-file-system";
 import * as FileSystemLegacy from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -9,7 +13,8 @@ import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
 import { Ionicons } from "@expo/vector-icons";
 import { OptionSheet } from "./OptionSheet";
-import { Spacing, Radius, FontSize } from "@/constants/theme";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { useToast } from "@/components/ui/Toast";
 
 interface ExportAction {
   icon: keyof typeof Ionicons.glyphMap;
@@ -35,24 +40,28 @@ export function ExportSheet({
   tintColor,
   bgColor,
 }: Props) {
+  const toast = useToast();
   const saveToGallery = async () => {
     if (!qrRef.current) return;
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      const { status } = await requestPermissionsAsync(true);
       if (status !== "granted") {
-        Alert.alert(
+        toast.warning(
           "Permission needed",
           "Allow media access to save QR to gallery.",
         );
         return;
       }
-      const uri = await captureRef(qrRef, { format: "png", quality: 1 });
-      await MediaLibrary.saveToLibraryAsync(uri);
+      // Wait for native layout to commit before capture.
+      await new Promise<void>((r) => setTimeout(r, 200));
+      const uri = await captureRef(qrRef, { format: "png", quality: 1, result: "tmpfile" });
+      await Asset.create(uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Saved!", "QR saved to your gallery.");
+      toast.success("Saved!", "QR saved to your gallery.");
       onClose();
-    } catch {
-      Alert.alert("Error", "Could not save to gallery.");
+    } catch (e) {
+      console.error("Save error:", e);
+      toast.error("Error", "Could not save to gallery.");
     }
   };
 
@@ -71,27 +80,34 @@ export function ExportSheet({
       onClose();
     } catch (e) {
       console.error("Export error:", e); // now you'll see the real error
-      Alert.alert("Error", "Could not export file.");
+      toast.error("Error", "Could not export file.");
     }
   };
 
   const shareImage = async () => {
     if (!qrRef.current) return;
     try {
-      const uri = await captureRef(qrRef, { format: "png", quality: 1 });
+      // Wait for native layout to commit before capture.
+      await new Promise<void>((r) => setTimeout(r, 200));
+      const tmpUri = await captureRef(qrRef, { format: "png", quality: 1, result: "tmpfile" });
+      // Copy to persistent directory — tmpfile URIs don't survive Android activity restarts.
+      const dest = FileSystemLegacy.documentDirectory + `curium_qr_${Date.now()}.png`;
+      const srcFile = new File(tmpUri);
+      const destFile = new File(dest);
+      await srcFile.copy(destFile);
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: "image/png" });
+        await Sharing.shareAsync(destFile.uri, { mimeType: "image/png" });
       }
       onClose();
     } catch {
-      Alert.alert("Error", "Could not share.");
+      toast.error("Error", "Could not share.");
     }
   };
 
   const copyText = async () => {
     await Clipboard.setStringAsync(qrValue);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Copied!", "QR content copied to clipboard.");
+    toast.success("Copied!", "QR content copied to clipboard.");
     onClose();
   };
 
@@ -127,6 +143,8 @@ export function ExportSheet({
       visible={visible}
       onClose={onClose}
       title="Export QR"
+      subtitle="Save or share your QR"
+      iconName="share-outline"
       tintColor={tintColor}
       bgColor={bgColor}
     >
@@ -173,6 +191,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   text: { flex: 1 },
-  label: { fontSize: FontSize.base, fontWeight: "600" },
-  sub: { fontSize: FontSize.xs, marginTop: 2 },
+  label: { fontSize: FontSize.base, fontFamily: Fonts.monoMedium, fontWeight: "600" },
+  sub: { fontSize: FontSize.xs, fontFamily: Fonts.mono, marginTop: 2 },
 });

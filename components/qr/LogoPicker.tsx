@@ -1,32 +1,167 @@
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   Image,
   StyleSheet,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  runOnJS,
+} from "react-native-reanimated";
+import { Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
+import { useToast } from "@/components/ui/Toast";
 
 interface Props {
   logoUri?: string;
+  logoSize?: number; // 0.1 to 0.4 of QR size
   onChange: (uri: string | undefined) => void;
+  onSizeChange?: (size: number) => void;
 }
 
-export function LogoPicker({ logoUri, onChange }: Props) {
+const DEFAULT_SIZE = 0.2;
+const MIN_SIZE = 0.1;
+const MAX_SIZE = 0.4;
+
+function triggerHaptic() {
+  Haptics.selectionAsync();
+}
+
+function LogoSizeControl({
+  size,
+  onSizeChange,
+  colors,
+}: {
+  size: number;
+  onSizeChange: (s: number) => void;
+  colors: ReturnType<typeof useTheme>["colors"];
+}) {
+  const trackWidthSV = useSharedValue(0);
+  const sv = useSharedValue(size);
+  const isActive = useSharedValue(0);
+  const [displaySize, setDisplaySize] = useState(Math.round(size * 100));
+
+  useEffect(() => {
+    sv.value = withTiming(size, {
+      duration: 200,
+      easing: Easing.out(Easing.cubic),
+    });
+    setDisplaySize(Math.round(size * 100));
+  }, [size]);
+
+  const fillStyle = useAnimatedStyle(() => {
+    const w = trackWidthSV.value;
+    const pct = w > 0 ? ((sv.value - MIN_SIZE) / (MAX_SIZE - MIN_SIZE)) * w : 0;
+    return { width: pct };
+  });
+
+  const knobStyle = useAnimatedStyle(() => {
+    const w = trackWidthSV.value;
+    const pct = w > 0 ? ((sv.value - MIN_SIZE) / (MAX_SIZE - MIN_SIZE)) * w : 0;
+    return {
+      transform: [
+        { translateX: pct - 10 },
+        { scale: isActive.value === 1 ? 1.2 : 1 },
+      ],
+    };
+  });
+
+  const pan = Gesture.Pan()
+    .onBegin(() => {
+      "worklet";
+      isActive.value = withTiming(1, { duration: 150 });
+      runOnJS(triggerHaptic)();
+    })
+    .onUpdate((e) => {
+      "worklet";
+      if (trackWidthSV.value <= 0) return;
+      const pct = Math.max(0, Math.min(1, e.x / trackWidthSV.value));
+      sv.value = MIN_SIZE + pct * (MAX_SIZE - MIN_SIZE);
+    })
+    .onEnd(() => {
+      "worklet";
+      isActive.value = withTiming(0, { duration: 200 });
+      const pct =
+        trackWidthSV.value > 0
+          ? Math.max(0, Math.min(1, sv.value / trackWidthSV.value))
+          : 0;
+      const finalSize = MIN_SIZE + pct * (MAX_SIZE - MIN_SIZE);
+      runOnJS(onSizeChange)(Math.round(finalSize * 100) / 100);
+    });
+
+  const tap = Gesture.Tap().onEnd((e) => {
+    "worklet";
+    if (trackWidthSV.value <= 0) return;
+    const pct = Math.max(0, Math.min(1, e.x / trackWidthSV.value));
+    const newSize = MIN_SIZE + pct * (MAX_SIZE - MIN_SIZE);
+    sv.value = withTiming(newSize, {
+      duration: 200,
+      easing: Easing.out(Easing.cubic),
+    });
+    runOnJS(onSizeChange)(Math.round(newSize * 100) / 100);
+    runOnJS(triggerHaptic)();
+  });
+
+  return (
+    <View style={styles.sizeControl}>
+      <GestureDetector gesture={Gesture.Race(pan, tap)}>
+        <View
+          style={[
+            styles.sizeTrack,
+            { backgroundColor: colors.surfaceOffset },
+          ]}
+          onLayout={(e) => (trackWidthSV.value = e.nativeEvent.layout.width)}
+        >
+          <Animated.View
+            style={[styles.sizeFill, { backgroundColor: colors.primary }, fillStyle]}
+          />
+          <Animated.View
+            style={[
+              styles.sizeKnob,
+              {
+                backgroundColor: colors.primary,
+                borderColor: colors.surface,
+              },
+              knobStyle,
+            ]}
+          />
+        </View>
+      </GestureDetector>
+      <Text
+        style={[styles.sizeLabel, { color: colors.textMuted }]}
+      >
+        {displaySize}%
+      </Text>
+    </View>
+  );
+}
+
+export function LogoPicker({
+  logoUri,
+  logoSize = DEFAULT_SIZE,
+  onChange,
+  onSizeChange,
+}: Props) {
+  const { colors } = useTheme();
+  const toast = useToast();
   const pick = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert(
+      toast.warning(
         "Permission needed",
         "Allow photo library access to embed a logo.",
       );
       return;
     }
-    // SDK 55: mediaTypes is string array, not enum [web:82]
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
@@ -44,38 +179,75 @@ export function LogoPicker({ logoUri, onChange }: Props) {
     onChange(undefined);
   };
 
+  const handleSizeChange = (s: number) => {
+    onSizeChange?.(s);
+  };
+
   return (
     <View>
-      <Text style={styles.sectionTitle}>Logo (optional)</Text>
+      <Text
+        style={[styles.sectionTitle, { color: colors.textMuted }]}
+      >
+        Logo (optional)
+      </Text>
       <View style={styles.row}>
         {logoUri ? (
-          <View style={styles.logoPreview}>
+          <View
+            style={[
+              styles.logoPreview,
+              { borderColor: colors.border },
+            ]}
+          >
             <Image source={{ uri: logoUri }} style={styles.logoImage} />
             <TouchableOpacity
               style={styles.removeBtn}
               onPress={remove}
               activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="close-circle" size={20} color={Colors.error} />
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={colors.error}
+              />
             </TouchableOpacity>
           </View>
         ) : null}
         <TouchableOpacity
-          style={styles.pickBtn}
+          style={[
+            styles.pickBtn,
+            {
+              backgroundColor: colors.surfaceOffset,
+              borderColor: colors.border,
+            },
+          ]}
           onPress={pick}
           activeOpacity={0.75}
         >
           <Ionicons
             name={logoUri ? "refresh-outline" : "image-outline"}
             size={18}
-            color={Colors.primary}
+            color={colors.text}
           />
-          <Text style={styles.pickLabel}>
+          <Text style={[styles.pickLabel, { color: colors.text }]}>
             {logoUri ? "Change" : "Pick Logo"}
           </Text>
         </TouchableOpacity>
-        {logoUri && <Text style={styles.hint}>Logo auto-centered in QR</Text>}
       </View>
+      {logoUri && onSizeChange && (
+        <View style={styles.sizeRow}>
+          <Ionicons
+            name="resize-outline"
+            size={14}
+            color={colors.textMuted}
+          />
+          <LogoSizeControl
+            size={logoSize}
+            onSizeChange={handleSizeChange}
+            colors={colors}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -83,8 +255,8 @@ export function LogoPicker({ logoUri, onChange }: Props) {
 const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FontSize.xs,
+    fontFamily: Fonts.monoMedium,
     fontWeight: "600",
-    color: Colors.textFaint,
     letterSpacing: 1.2,
     textTransform: "uppercase",
     marginLeft: Spacing.base,
@@ -96,30 +268,74 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     paddingHorizontal: Spacing.base,
   },
-  logoPreview: { position: "relative" },
-  logoImage: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.md,
+  logoPreview: {
+    position: "relative",
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderRadius: Radius.sm,
+    padding: 2,
   },
-  removeBtn: { position: "absolute", top: -8, right: -8 },
+  logoImage: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.sm,
+  },
+  removeBtn: { position: "absolute", top: -6, right: -6 },
   pickBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
-    backgroundColor: Colors.primaryBg,
     borderRadius: Radius.full,
     borderWidth: 1,
-    borderColor: Colors.primary,
   },
   pickLabel: {
     fontSize: FontSize.sm,
-    color: Colors.primary,
-    fontWeight: "600",
+    fontFamily: Fonts.monoMedium,
   },
-  hint: { fontSize: FontSize.xs, color: Colors.textFaint, flex: 1 },
+  sizeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.base,
+    marginTop: Spacing.sm,
+  },
+  sizeControl: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  sizeTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    position: "relative",
+    justifyContent: "center",
+  },
+  sizeFill: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 3,
+  },
+  sizeKnob: {
+    position: "absolute",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2.5,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 4,
+  },
+  sizeLabel: {
+    fontSize: FontSize.xs,
+    fontFamily: Fonts.monoMedium,
+    minWidth: 32,
+    textAlign: "right",
+  },
 });

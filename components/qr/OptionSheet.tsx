@@ -1,22 +1,24 @@
 import { ReactNode } from "react";
 import {
-  Modal,
   View,
   Text,
-  Pressable,
-  StyleSheet,
   TouchableOpacity,
+  StyleSheet,
+  Pressable,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Radius, Spacing, FontSize } from "@/constants/theme";
+import { Radius, Spacing, FontSize, Fonts } from "@/constants/theme";
+import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Props {
   visible: boolean;
   onClose: () => void;
   title: string;
+  subtitle?: string;
   tintColor: string;
   bgColor: string;
+  iconName?: keyof typeof Ionicons.glyphMap;
   children: ReactNode;
 }
 
@@ -24,84 +26,124 @@ export function OptionSheet({
   visible,
   onClose,
   title,
+  subtitle,
   tintColor,
   bgColor,
+  iconName,
   children,
 }: Props) {
-  const insets = useSafeAreaInsets();
-
+  const { colors } = useTheme();
   return (
-    <Modal
+    <AnimatedSheet
       visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onClose}
+      onClose={onClose}
+      bgColor={bgColor}
+      borderColor={colors.border}
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      {/* Header — drag handle + icon + title + close */}
+      <View style={s.header}>
+        <View
+          style={[s.iconCircle, { backgroundColor: tintColor + "18" }]}
+        >
+          {iconName && (
+            <Ionicons name={iconName} size={18} color={tintColor} />
+          )}
+        </View>
+        <View style={s.titles}>
+          <Text
+            style={[
+              s.title,
+              { color: colors.text, fontFamily: Fonts.monoBold },
+            ]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text
+              style={[
+                s.subtitle,
+                { color: colors.textMuted, fontFamily: Fonts.mono },
+              ]}
+              numberOfLines={1}
+            >
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
         <Pressable
-          style={[
-            styles.sheet,
+          onPress={onClose}
+          hitSlop={10}
+          style={({ pressed }) => [
+            s.closeBtn,
             {
-              backgroundColor: bgColor,
-              borderColor: tintColor + "25",
-              paddingBottom: insets.bottom + Spacing.lg,
+              backgroundColor: pressed
+                ? colors.surfaceOffset
+                : colors.surfaceOffset + "80",
+              borderColor: colors.border,
             },
           ]}
-          onPress={(e) => e.stopPropagation()}
         >
-          {/* Handle */}
-          <View
-            style={[styles.handle, { backgroundColor: tintColor + "40" }]}
-          />
-
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: tintColor }]}>{title}</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <Ionicons
-                name="close-circle"
-                size={24}
-                color={tintColor + "70"}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Content */}
-          <View style={styles.body}>{children}</View>
+          <Ionicons name="close" size={16} color={colors.textMuted} />
         </Pressable>
-      </Pressable>
-    </Modal>
+      </View>
+
+      {/* Accent line */}
+      <View
+        style={[
+          s.accent,
+          { backgroundColor: tintColor + "50" },
+        ]}
+      />
+
+      <View style={s.body}>{children}</View>
+    </AnimatedSheet>
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    borderWidth: 1,
-    paddingTop: Spacing.sm,
-    paddingHorizontal: Spacing.base,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: Radius.full,
-    alignSelf: "center",
-    marginBottom: Spacing.sm,
-  },
+const s = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: Spacing.md,
-    marginBottom: Spacing.sm,
+    gap: Spacing.md,
+    paddingTop: Spacing.xs,
   },
-  title: { fontSize: FontSize.lg, fontWeight: "700" },
-  body: { gap: Spacing.md },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  titles: {
+    flex: 1,
+    gap: 2,
+  },
+  title: {
+    fontSize: FontSize.lg,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: FontSize.xs,
+    letterSpacing: 0.5,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  accent: {
+    height: 2,
+    borderRadius: 1,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.lg,
+    alignSelf: "flex-start",
+    width: 36,
+  },
+  body: {
+    gap: Spacing.md,
+  },
 });

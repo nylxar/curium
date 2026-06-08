@@ -1,17 +1,26 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
   StyleSheet,
-  Pressable,
+  Platform,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  withSequence,
+  Easing,
+} from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { Radius, Spacing, FontSize } from "@/constants/theme";
+import { Radius, Spacing, FontSize, Fonts } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
+import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
 
 const NAV_ITEMS = [
   { route: "/", label: "Create", icon: "add-circle-outline" },
@@ -20,112 +29,246 @@ const NAV_ITEMS = [
   { route: "/settings", label: "Settings", icon: "settings-outline" },
 ] as const;
 
+interface NavRowProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  isLast: boolean;
+  index: number;
+  openTick: number;
+}
+
+// A single row in the menu sheet.  Animates in with a small fade + lift
+// (200ms) staggered by `index * 35ms` so the menu feels intentional
+// rather than just appearing.  Triggered by `openTick` changing — when
+// the sheet reopens, every row plays its entrance again.
+function NavRow({
+  icon,
+  label,
+  onPress,
+  isLast,
+  index,
+  openTick,
+}: NavRowProps) {
+  const { colors } = useTheme();
+  const opacity = useSharedValue(0);
+  const lift = useSharedValue(8);
+
+  useEffect(() => {
+    opacity.value = 0;
+    lift.value = 8;
+    opacity.value = withDelay(
+      60 + index * 35,
+      withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) }),
+    );
+    lift.value = withDelay(
+      60 + index * 35,
+      withTiming(0, { duration: 220, easing: Easing.out(Easing.cubic) }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openTick]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: lift.value }],
+  }));
+
+  return (
+    <Animated.View style={animStyle}>
+      <TouchableOpacity
+        style={[
+          styles.navRow,
+          !isLast && styles.navRowDivider,
+        ]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          onPress();
+        }}
+        activeOpacity={0.55}
+      >
+        <View
+          style={[
+            styles.navIcon,
+            { backgroundColor: colors.surfaceOffset },
+          ]}
+        >
+          <Ionicons name={icon} size={20} color={colors.text} />
+        </View>
+        <Text style={[styles.navLabel, { color: colors.text }]}>
+          {label}
+        </Text>
+        <Ionicons
+          name="chevron-forward"
+          size={16}
+          color={colors.textFaint}
+        />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 interface BtnProps {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
   primary?: boolean;
-  tintColor: string;
-  bgColor: string;
   disabled?: boolean;
 }
 
-function Btn({
-  icon,
-  label,
-  onPress,
-  primary,
-  tintColor,
-  bgColor,
-  disabled,
-}: BtnProps) {
+// iOS-style action button.  Inactive: subtle pill (theme surfaceOffset
+// bg, theme text icon).  Primary: filled pill (theme primary bg, theme
+// bg icon) — mirrors the iOS bottom-bar's "elevated" main action
+// (e.g. compose button in Mail).  Tap plays a one-shot scale flash
+// (0.92 → 1) for haptic-y feedback without springs.
+function Btn({ icon, label, onPress, primary, disabled }: BtnProps) {
+  const { colors } = useTheme();
+  const scale = useSharedValue(1);
+  const handlePress = () => {
+    if (disabled) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    scale.value = withSequence(
+      withTiming(0.9, { duration: 80, easing: Easing.out(Easing.quad) }),
+      withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) }),
+    );
+    onPress();
+  };
+  const scaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
   return (
-    <TouchableOpacity
-      onPress={() => {
-        if (!disabled) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onPress();
-        }
-      }}
-      activeOpacity={0.75}
-      disabled={disabled}
-      style={[styles.btnWrap, { opacity: disabled ? 0.4 : 1 }]}
-    >
-      <View
-        style={[
-          styles.btnCircle,
-          primary
-            ? { backgroundColor: tintColor }
-            : {
-                backgroundColor: tintColor + "20",
-                borderWidth: 1,
-                borderColor: tintColor + "35",
-              },
-        ]}
-      >
-        <Ionicons name={icon} size={21} color={primary ? bgColor : tintColor} />
-      </View>
-      <Text style={[styles.btnLabel, { color: tintColor + "cc" }]}>
+    <View style={[styles.btnWrap, { opacity: disabled ? 0.4 : 1 }]}>
+      <Animated.View style={scaleStyle}>
+        <TouchableOpacity
+          onPress={handlePress}
+          activeOpacity={1}
+          disabled={disabled}
+        >
+          <View
+            style={[
+              styles.btnCircle,
+              primary
+                ? {
+                    backgroundColor: colors.text,
+                    shadowColor: colors.text,
+                    shadowOpacity: 0.18,
+                    shadowRadius: 6,
+                    shadowOffset: { width: 0, height: 2 },
+                    elevation: 4,
+                  }
+                : {
+                    backgroundColor: colors.surfaceOffset,
+                  },
+            ]}
+          >
+            <Ionicons
+              name={icon}
+              size={20}
+              color={primary ? colors.bg : colors.text}
+            />
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+      <Text style={[styles.btnLabel, { color: colors.textMuted }]}>
         {label}
       </Text>
-    </TouchableOpacity>
+    </View>
   );
 }
 
 interface Props {
-  tintColor: string;
-  bgColor: string;
+  /** @deprecated — tintColor is ignored.  The bar is theme-driven. */
+  tintColor?: string;
+  /** @deprecated — bgColor is ignored.  The bar is theme-driven. */
+  bgColor?: string;
   disabled: boolean;
   onCopy: () => void;
   onShuffle: () => void;
   onShare: () => void;
 }
 
+// iOS-style floating action bar.
+//
+// Design notes:
+//   • Glass surface — theme `surface` with a hairline top border (no
+//     platform-specific blur; we use the theme surface so the bar
+//     reads as part of the app chrome instead of "tinted" by the QR.
+//   • The `primary` action (Random / Shuffle) is the elevated pill in
+//     the centre — same convention as iOS Mail's compose button.
+//   • 1px hairline divider above the bar (theme border).
+//   • Bottom safe-area inset is added to the inner padding so the
+//     bar clears the home indicator / gesture bar.
+//   • Pressed buttons flash a 0.9 → 1 scale, no spring.
 export function FabBar({
-  tintColor,
-  bgColor,
   disabled,
   onCopy,
   onShuffle,
   onShare,
 }: Props) {
+  const { colors } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openTick, setOpenTick] = useState(0);
+  const prevOpenRef = useRef(false);
+  useEffect(() => {
+    if (menuOpen && !prevOpenRef.current) {
+      setOpenTick((t) => t + 1);
+    }
+    prevOpenRef.current = menuOpen;
+  }, [menuOpen]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const go = (route: string) => {
     setMenuOpen(false);
-    setTimeout(() => router.push(route as any), 60);
-    Haptics.selectionAsync();
+    setTimeout(() => {
+      if (route === "/") {
+        // Pop every pushed screen so the existing CreateScreen instance
+        // (with its form data and QR style) is revealed instead of
+        // pushing a fresh "/" which resets all state.
+        // NOTE: router.dismissAll() is not supported by Stack — it
+        // throws "POP_TO_TOP was not handled".  router.navigate pops
+        // to the existing "/" screen if it's already in the stack.
+        router.navigate("/");
+      } else {
+        router.push(route as any);
+      }
+    }, 80);
   };
 
   return (
     <>
       <View
         style={[
-          styles.bar,
+          styles.barWrap,
           {
-            backgroundColor: bgColor,
             paddingBottom: insets.bottom + Spacing.sm,
-            borderTopColor: tintColor + "20",
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            // Subtle drop shadow on iOS so the bar feels "above" the
+            // page content.  Android uses elevation.
+            ...Platform.select({
+              ios: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: -2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 8,
+              },
+              android: {
+                elevation: 8,
+              },
+            }),
           },
         ]}
       >
-        {/* Single row — Copy | Random | Share | Menu */}
         <View style={styles.row}>
           <Btn
             icon="copy-outline"
             label="Copy"
-            tintColor={tintColor}
-            bgColor={bgColor}
             onPress={onCopy}
             disabled={disabled}
           />
           <Btn
             icon="shuffle"
             label="Random"
-            tintColor={tintColor}
-            bgColor={bgColor}
             onPress={onShuffle}
             disabled={disabled}
             primary
@@ -133,90 +276,47 @@ export function FabBar({
           <Btn
             icon="share-outline"
             label="Share"
-            tintColor={tintColor}
-            bgColor={bgColor}
             onPress={onShare}
             disabled={disabled}
           />
           <Btn
             icon="menu"
             label="Menu"
-            tintColor={tintColor}
-            bgColor={bgColor}
             onPress={() => setMenuOpen(true)}
           />
         </View>
       </View>
 
-      <Modal
+      <AnimatedSheet
         visible={menuOpen}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setMenuOpen(false)}
+        onClose={() => setMenuOpen(false)}
+        bgColor={colors.surface}
+        borderColor={colors.border}
       >
-        <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
-          <Pressable
-            style={[
-              styles.sheet,
-              {
-                backgroundColor: bgColor,
-                borderColor: tintColor + "25",
-                paddingBottom: insets.bottom + Spacing.lg,
-              },
-            ]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View
-              style={[styles.handle, { backgroundColor: tintColor + "40" }]}
-            />
-
-            {NAV_ITEMS.map((item, i) => (
-              <TouchableOpacity
-                key={item.route}
-                style={[
-                  styles.navRow,
-                  i < NAV_ITEMS.length - 1 && {
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: tintColor + "20",
-                  },
-                ]}
-                onPress={() => go(item.route)}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[
-                    styles.navIcon,
-                    { backgroundColor: tintColor + "18" },
-                  ]}
-                >
-                  <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color={tintColor}
-                  />
-                </View>
-                <Text style={[styles.navLabel, { color: tintColor }]}>
-                  {item.label}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={tintColor + "40"}
-                />
-              </TouchableOpacity>
-            ))}
-          </Pressable>
-        </Pressable>
-      </Modal>
+        {NAV_ITEMS.map((item, i) => (
+          <NavRow
+            key={item.route}
+            icon={item.icon as any}
+            label={item.label}
+            isLast={i === NAV_ITEMS.length - 1}
+            index={i}
+            openTick={openTick}
+            onPress={() => go(item.route)}
+          />
+        ))}
+      </AnimatedSheet>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: {
+  // The bar is a fixed-height floating surface pinned to the bottom
+  // of the parent.  We use a wrapping View (not Animated.View) so
+  // there's no animated background that could desync with the row
+  // cross-fades.
+  barWrap: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm + 2,
   },
   row: {
     flexDirection: "row",
@@ -226,45 +326,42 @@ const styles = StyleSheet.create({
   },
   btnWrap: { alignItems: "center", gap: Spacing.xs },
   btnCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
   },
-  btnLabel: { fontSize: FontSize.xs, fontWeight: "600" },
+  btnLabel: {
+    fontSize: FontSize.xs,
+    fontFamily: Fonts.monoMedium,
+    fontWeight: "600",
+    letterSpacing: 0.2,
+  },
 
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    borderWidth: 1,
-    paddingTop: Spacing.md,
-    paddingHorizontal: Spacing.base,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: Radius.full,
-    alignSelf: "center",
-    marginBottom: Spacing.md,
-  },
+  // Nav menu sheet rows — iOS-style list with hairline dividers.
   navRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
     paddingVertical: Spacing.md + 2,
+    paddingHorizontal: Spacing.xs,
+  },
+  navRowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(127,127,127,0.2)",
   },
   navIcon: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: Radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
-  navLabel: { flex: 1, fontSize: FontSize.md ?? 15, fontWeight: "600" },
+  navLabel: {
+    flex: 1,
+    fontSize: FontSize.md,
+    fontFamily: Fonts.monoMedium,
+    fontWeight: "600",
+  },
 });

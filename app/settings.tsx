@@ -6,8 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
-  Alert,
+  Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -16,6 +15,8 @@ import * as Haptics from "expo-haptics";
 import { clearHistory } from "@/services/history";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts, AppTheme } from "@/constants/theme";
+import { useToast } from "@/components/ui/Toast";
+import { ModernSwitch } from "@/components/ui/ModernSwitch";
 
 const THEME_OPTIONS: {
   id: AppTheme;
@@ -28,11 +29,165 @@ const THEME_OPTIONS: {
   { id: "dynamic", label: "Dynamic", icon: "color-palette-outline" },
 ];
 
+// ── Static section title — small caps label with a thin underline accent.
+function SectionTitle({
+  colors,
+  children,
+}: {
+  colors: any;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.sectionWrap}>
+      <Text
+        style={[
+          styles.sectionTitle,
+          { color: colors.textMuted, fontFamily: Fonts.monoBold },
+        ]}
+      >
+        {children}
+      </Text>
+      <View
+        style={[
+          styles.sectionUnderline,
+          { backgroundColor: colors.textMuted + "55" },
+        ]}
+      />
+    </View>
+  );
+}
+
+// ── Theme button — static render, no reveal animation.  Removing the
+//    cascade keeps the screen feeling snappy on entry.
+function ThemeBtn({
+  active,
+  colors,
+  onPress,
+  icon,
+  label,
+}: {
+  active: boolean;
+  colors: any;
+  onPress: () => void;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.themeBtn,
+        {
+          backgroundColor: active ? colors.primary + "22" : colors.surface,
+          borderColor: active ? colors.primary : colors.border,
+        },
+      ]}
+      onPress={onPress}
+    >
+      <Ionicons
+        name={icon}
+        size={20}
+        color={active ? colors.primary : colors.textMuted}
+      />
+      <Text
+        style={[
+          styles.themeBtnLabel,
+          { color: active ? colors.primary : colors.textMuted },
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+function Row({
+  icon,
+  label,
+  sub,
+  right,
+  onPress,
+  danger,
+  iconBg,
+  colors,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  sub?: string;
+  right?: React.ReactNode;
+  onPress?: () => void;
+  danger?: boolean;
+  iconBg?: string;
+  colors: any;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.row,
+        pressed && { backgroundColor: colors.surfaceOffset },
+      ]}
+      onPress={onPress}
+    >
+      <View
+        style={[
+          styles.rowIcon,
+          {
+            backgroundColor:
+              iconBg ?? (danger ? colors.error + "18" : colors.primary + "18"),
+          },
+        ]}
+      >
+        <Ionicons
+          name={icon}
+          size={17}
+          color={danger ? colors.error : colors.primary}
+        />
+      </View>
+      <View style={styles.rowText}>
+        <Text
+          style={[
+            styles.rowLabel,
+            {
+              color: danger ? colors.error : colors.text,
+              fontFamily: Fonts.monoMedium,
+            },
+          ]}
+        >
+          {label}
+        </Text>
+        {sub && (
+          <Text
+            style={[
+              styles.rowSub,
+              { color: colors.textMuted, fontFamily: Fonts.mono },
+            ]}
+          >
+            {sub}
+          </Text>
+        )}
+      </View>
+      <View>
+        {right ??
+          (onPress && (
+            <Ionicons
+              name="chevron-forward"
+              size={14}
+              color={colors.textFaint}
+            />
+          ))}
+      </View>
+    </Pressable>
+  );
+}
+
 export default function SettingsScreen() {
   const { colors, theme, setTheme } = useTheme();
   const [haptics, setHaptics] = useState(true);
+  const [soundOnScan, setSoundOnScan] = useState(false);
+  const [autoCopy, setAutoCopy] = useState(false);
+  const [keepScreenOn, setKeepScreenOn] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const toast = useToast();
 
   const S = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.bg },
@@ -53,13 +208,8 @@ export default function SettingsScreen() {
     },
     sectionTitle: {
       fontSize: FontSize.xs,
-      color: colors.textMuted,
-      fontFamily: Fonts.monoBold,
       textTransform: "uppercase",
       letterSpacing: 1.2,
-      marginTop: Spacing.xl,
-      marginBottom: Spacing.sm,
-      marginLeft: 2,
     },
     row: {
       flexDirection: "row",
@@ -89,15 +239,6 @@ export default function SettingsScreen() {
       fontFamily: Fonts.mono,
     },
     themeRow: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.sm },
-    themeBtn: {
-      flex: 1,
-      alignItems: "center",
-      gap: Spacing.xs,
-      paddingVertical: Spacing.md,
-      borderRadius: Radius.lg,
-      borderWidth: 1.5,
-    },
-    themeBtnLabel: { fontSize: FontSize.xs, fontFamily: Fonts.mono },
     versionBox: {
       marginTop: Spacing.xl,
       padding: Spacing.lg,
@@ -130,56 +271,6 @@ export default function SettingsScreen() {
     dynamicNoteText: { flex: 1, fontSize: FontSize.xs, lineHeight: 16 },
   });
 
-  const Row = ({
-    icon,
-    label,
-    sub,
-    right,
-    onPress,
-    danger,
-    iconBg,
-  }: {
-    icon: keyof typeof Ionicons.glyphMap;
-    label: string;
-    sub?: string;
-    right?: React.ReactNode;
-    onPress?: () => void;
-    danger?: boolean;
-    iconBg?: string;
-  }) => (
-    <TouchableOpacity
-      style={S.row}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
-    >
-      <View
-        style={[
-          S.rowIcon,
-          {
-            backgroundColor:
-              iconBg ?? (danger ? colors.error + "18" : colors.primary + "18"),
-          },
-        ]}
-      >
-        <Ionicons
-          name={icon}
-          size={17}
-          color={danger ? colors.error : colors.primary}
-        />
-      </View>
-      <View style={S.rowText}>
-        <Text style={[S.rowLabel, danger && { color: colors.error }]}>
-          {label}
-        </Text>
-        {sub && <Text style={S.rowSub}>{sub}</Text>}
-      </View>
-      {right ??
-        (onPress && (
-          <Ionicons name="chevron-forward" size={14} color={colors.textFaint} />
-        ))}
-    </TouchableOpacity>
-  );
-
   return (
     <View style={S.screen}>
       <View style={S.header}>
@@ -197,41 +288,22 @@ export default function SettingsScreen() {
         }}
       >
         {/* Theme */}
-        <Text style={S.sectionTitle}>Appearance</Text>
+        <SectionTitle colors={colors}>Appearance</SectionTitle>
         <View style={S.themeRow}>
           {THEME_OPTIONS.map((t) => {
             const active = theme === t.id;
             return (
-              <TouchableOpacity
+              <ThemeBtn
                 key={t.id}
-                style={[
-                  S.themeBtn,
-                  {
-                    backgroundColor: active
-                      ? colors.primary + "22"
-                      : colors.surface,
-                    borderColor: active ? colors.primary : colors.border,
-                  },
-                ]}
+                active={active}
+                colors={colors}
                 onPress={() => {
                   Haptics.selectionAsync();
                   setTheme(t.id);
                 }}
-              >
-                <Ionicons
-                  name={t.icon}
-                  size={20}
-                  color={active ? colors.primary : colors.textMuted}
-                />
-                <Text
-                  style={[
-                    S.themeBtnLabel,
-                    { color: active ? colors.primary : colors.textMuted },
-                  ]}
-                >
-                  {t.label}
-                </Text>
-              </TouchableOpacity>
+                icon={t.icon}
+                label={t.label}
+              />
             );
           })}
         </View>
@@ -262,30 +334,86 @@ export default function SettingsScreen() {
         )}
 
         {/* Interaction */}
-        <Text style={S.sectionTitle}>Interaction</Text>
+        <SectionTitle colors={colors}>Interaction</SectionTitle>
         <Row
           icon="pulse-outline"
           label="Haptic Feedback"
           sub="Vibrate on taps and actions"
+          colors={colors}
           right={
-            <Switch
+            <ModernSwitch
               value={haptics}
-              onValueChange={(v) => {
+              onChange={(v) => {
                 setHaptics(v);
+                if (v) Haptics.selectionAsync();
+              }}
+              activeColor={colors.primary}
+              inactiveColor={colors.surfaceOffset}
+            />
+          }
+        />
+        <Row
+          icon="volume-high-outline"
+          label="Sound on Scan"
+          sub="Play a beep when a QR is detected"
+          colors={colors}
+          right={
+            <ModernSwitch
+              value={soundOnScan}
+              onChange={(v) => {
+                setSoundOnScan(v);
                 Haptics.selectionAsync();
               }}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              thumbColor={haptics ? colors.primary : colors.textFaint}
+              activeColor={colors.primary}
+              inactiveColor={colors.surfaceOffset}
+            />
+          }
+        />
+        <Row
+          icon="sunny-outline"
+          label="Keep Screen On"
+          sub="Prevent screen from sleeping"
+          colors={colors}
+          right={
+            <ModernSwitch
+              value={keepScreenOn}
+              onChange={(v) => {
+                setKeepScreenOn(v);
+                Haptics.selectionAsync();
+              }}
+              activeColor={colors.primary}
+              inactiveColor={colors.surfaceOffset}
             />
           }
         />
 
-        {/* Privacy */}
-        <Text style={S.sectionTitle}>Privacy</Text>
+        {/* Generator */}
+        <SectionTitle colors={colors}>Generator</SectionTitle>
+        <Row
+          icon="clipboard-outline"
+          label="Auto-copy on Generate"
+          sub="Copy QR content when you create one"
+          colors={colors}
+          right={
+            <ModernSwitch
+              value={autoCopy}
+              onChange={(v) => {
+                setAutoCopy(v);
+                Haptics.selectionAsync();
+              }}
+              activeColor={colors.primary}
+              inactiveColor={colors.surfaceOffset}
+            />
+          }
+        />
+
+        {/* Privacy
+        <SectionTitle colors={colors}>Privacy</SectionTitle>
         <Row
           icon="shield-checkmark-outline"
           label="Offline Only"
           sub="No internet requests, ever"
+          colors={colors}
           right={
             <Ionicons
               name="checkmark-circle"
@@ -298,6 +426,7 @@ export default function SettingsScreen() {
           icon="eye-off-outline"
           label="No Tracking"
           sub="Zero analytics, zero telemetry"
+          colors={colors}
           right={
             <Ionicons
               name="checkmark-circle"
@@ -310,6 +439,7 @@ export default function SettingsScreen() {
           icon="lock-closed-outline"
           label="Local Storage Only"
           sub="All data stays on your device"
+          colors={colors}
           right={
             <Ionicons
               name="checkmark-circle"
@@ -318,24 +448,35 @@ export default function SettingsScreen() {
             />
           }
         />
+        */}
 
         {/* Data */}
-        <Text style={S.sectionTitle}>Data</Text>
+        <SectionTitle colors={colors}>Data</SectionTitle>
         <Row
           icon="trash-outline"
           label="Clear History"
           sub="Delete all saved QR codes"
           danger
+          colors={colors}
           onPress={() =>
-            Alert.alert("Clear History", "Delete everything?", [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Clear",
-                style: "destructive",
-                onPress: () => clearHistory(),
-              },
-            ])
+            toast.confirm(
+              "Clear History",
+              "Delete everything?",
+              () => clearHistory(),
+              "Clear",
+              true,
+            )
           }
+        />
+
+        {/* App */}
+        <SectionTitle colors={colors}>App</SectionTitle>
+        <Row
+          icon="information-circle-outline"
+          label="About Curium"
+          sub="Version, build, and more"
+          colors={colors}
+          onPress={() => router.push("/about")}
         />
 
         {/* Version card */}
@@ -350,3 +491,56 @@ export default function SettingsScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  rowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowText: { flex: 1 },
+  rowLabel: {
+    fontSize: FontSize.base,
+    fontFamily: Fonts.monoMedium,
+  },
+  rowSub: {
+    fontSize: FontSize.xs,
+    marginTop: 2,
+    fontFamily: Fonts.mono,
+  },
+  sectionWrap: {
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.sm,
+    marginLeft: 2,
+    gap: 4,
+  },
+  sectionTitle: {
+    fontSize: FontSize.xs,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+  },
+  sectionUnderline: {
+    height: 1.5,
+    width: 28,
+    borderRadius: 1,
+    transformOrigin: "left center",
+  },
+  themeBtn: {
+    flex: 1,
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+  },
+  themeBtnLabel: { fontSize: FontSize.xs, fontFamily: Fonts.mono },
+});
