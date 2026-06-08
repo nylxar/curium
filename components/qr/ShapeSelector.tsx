@@ -274,7 +274,7 @@ function ShapeGrid<T extends string>({
             style={[
               styles.cell,
               {
-                backgroundColor: active ? fgColor + "20" : colors.surface,
+                backgroundColor: active ? colors.primaryBg : colors.surface,
                 borderColor: active ? fgColor : colors.border,
               },
             ]}
@@ -283,7 +283,7 @@ function ShapeGrid<T extends string>({
             <Text
               style={[
                 styles.cellLabel,
-                { color: active ? fgColor : colors.textMuted },
+                { color: active ? colors.text : colors.textMuted },
               ]}
             >
               {getLabel(shape)}
@@ -296,26 +296,28 @@ function ShapeGrid<T extends string>({
 }
 
 export function EyeShapeSelector({ selected, fgColor, onChange }: EyeProps) {
+  const { colors } = useTheme();
   return (
     <ShapeGrid
       options={EYE_OPTIONS}
       selected={selected}
       fgColor={fgColor}
       getLabel={(s) => EYE_LABELS[s]}
-      renderPreview={(s) => <EyePreview shape={s} color={fgColor} />}
+      renderPreview={(s) => <EyePreview shape={s} color={colors.text} />}
       onChange={onChange}
     />
   );
 }
 
 export function PupilShapeSelector({ selected, fgColor, onChange }: PupilProps) {
+  const { colors } = useTheme();
   return (
     <ShapeGrid
       options={PUPIL_OPTIONS}
       selected={selected}
       fgColor={fgColor}
       getLabel={(s) => PUPIL_LABELS[s]}
-      renderPreview={(s) => <PupilPreview shape={s} color={fgColor} />}
+      renderPreview={(s) => <PupilPreview shape={s} color={colors.text} />}
       onChange={onChange}
     />
   );
@@ -326,13 +328,14 @@ export function PixelShapeSelector({
   fgColor,
   onChange,
 }: PixelProps) {
+  const { colors } = useTheme();
   return (
     <ShapeGrid
       options={PIXEL_OPTIONS}
       selected={selected}
       fgColor={fgColor}
       getLabel={(s) => PIXEL_LABELS[s]}
-      renderPreview={(s) => <PixelPreview shape={s} color={fgColor} />}
+      renderPreview={(s) => <PixelPreview shape={s} color={colors.text} />}
       onChange={onChange}
     />
   );

@@ -1,4 +1,9 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
 import { Asset, requestPermissionsAsync } from "expo-media-library";
 import { File } from "expo-file-system";
 import * as FileSystemLegacy from "expo-file-system/legacy";
@@ -47,7 +52,9 @@ export function ExportSheet({
         );
         return;
       }
-      const uri = await captureRef(qrRef, { format: "png", quality: 1 });
+      // Wait for native layout to commit before capture.
+      await new Promise<void>((r) => setTimeout(r, 200));
+      const uri = await captureRef(qrRef, { format: "png", quality: 1, result: "tmpfile" });
       await Asset.create(uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       toast.success("Saved!", "QR saved to your gallery.");
@@ -80,9 +87,16 @@ export function ExportSheet({
   const shareImage = async () => {
     if (!qrRef.current) return;
     try {
-      const uri = await captureRef(qrRef, { format: "png", quality: 1 });
+      // Wait for native layout to commit before capture.
+      await new Promise<void>((r) => setTimeout(r, 200));
+      const tmpUri = await captureRef(qrRef, { format: "png", quality: 1, result: "tmpfile" });
+      // Copy to persistent directory — tmpfile URIs don't survive Android activity restarts.
+      const dest = FileSystemLegacy.documentDirectory + `curium_qr_${Date.now()}.png`;
+      const srcFile = new File(tmpUri);
+      const destFile = new File(dest);
+      await srcFile.copy(destFile);
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: "image/png" });
+        await Sharing.shareAsync(destFile.uri, { mimeType: "image/png" });
       }
       onClose();
     } catch {

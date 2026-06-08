@@ -45,27 +45,20 @@ export function LogoOverlay({
   const cx = (containerSize - plateSize) / 2;
   const cy = (containerSize - plateSize) / 2;
 
-  // Use plain useState instead of Animated.ValueXY so the position is
-  // always committed to the native layer synchronously.  This fixes two
-  // issues:
-  //   1. react-native-view-shot (captureRef) couldn't see the logo
-  //      because Animated.ValueXY positions are resolved asynchronously
-  //      in Reanimated 4 — by the time captureRef snapshots the view,
-  //      the native layer still had the old (0,0) position.
-  //   2. Saved/shared QRs now always render the logo at the correct
-  //      position because useState is synchronous.
   const [pos, setPos] = useState(
     initialPosition ?? { x: cx, y: cy },
   );
   const posRef = useRef(initialPosition ?? { x: cx, y: cy });
-  // Position at the start of a gesture — g.dx/g.dy are cumulative from
-  // grant, so we must NOT add them to the live posRef (which would
-  // double-count and cause acceleration).
   const panOrigin = useRef({ x: 0, y: 0 });
 
   const MAX_X = containerSize - plateSize;
   const MAX_Y = containerSize - plateSize;
 
+  // PanResponder handles dragging via a transparent full-coverage
+  // overlay.  The actual logo View is a pure visual element with NO
+  // touch handlers — this is critical for captureRef (react-native-
+  // view-shot) on Android, which cannot capture absolutely-positioned
+  // children that have PanResponder attached.
   const pan = useRef(
     draggable
       ? PanResponder.create({
@@ -120,17 +113,13 @@ export function LogoOverlay({
   })();
 
   return (
-    <View
-      style={[
-        StyleSheet.absoluteFill,
-        { width: containerSize, height: containerSize, zIndex: 10 },
-      ]}
-      pointerEvents="box-none"
-    >
-      {/* Logo plate — plain View (not Animated.View) so captureRef
-          sees the correct position synchronously. */}
+    <View style={{ position: "absolute", left: 0, top: 0, width: containerSize, height: containerSize }}>
+      {/* Visual logo — NO touch handlers, pure rendering.
+          captureRef on Android can see this because there's no
+          PanResponder intercepting the native view. */}
       <View
-        {...pan.panHandlers}
+        collapsable={false}
+        renderToHardwareTextureAndroid
         style={{
           position: "absolute",
           left: pos.x,
@@ -142,6 +131,7 @@ export function LogoOverlay({
       >
         {cfg.background !== "none" && (
           <View
+            collapsable={false}
             style={[
               styles.plate,
               {
@@ -185,6 +175,21 @@ export function LogoOverlay({
           />
         )}
       </View>
+      {/* Touch overlay — transparent, full-size, handles dragging.
+          This View is where PanResponder lives.  It covers the
+          entire QR area so drag works even outside the logo bounds. */}
+      {draggable && (
+        <View
+          {...pan.panHandlers}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: containerSize,
+            height: containerSize,
+          }}
+        />
+      )}
     </View>
   );
 }

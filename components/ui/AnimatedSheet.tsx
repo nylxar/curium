@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useLayoutEffect, useState } from "react";
+import { ReactNode, useEffect, useLayoutEffect, useState, useRef, useCallback } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -183,6 +183,15 @@ function SheetContent({
   onDismissed,
   children,
 }: SheetContentProps) {
+  // Store onDismissed in a ref so the worklet callback doesn't capture
+  // React state setters (which can't be serialized for the UI thread).
+  const onDismissedRef = useRef(onDismissed);
+  onDismissedRef.current = onDismissed;
+
+  const handleDismissed = useCallback(() => {
+    onDismissedRef.current();
+  }, []);
+
   // Start offscreen so the very first frame of the open animation is
   // already at the offscreen position, not at 0.
   const sheetY = useSharedValue(SHEET_OFFSCREEN);
@@ -256,7 +265,7 @@ function SheetContent({
         { duration: CLOSE_DURATION, easing: Easing.in(Easing.cubic) },
         (finished) => {
           if (finished) {
-            runOnJS(onDismissed)();
+            runOnJS(handleDismissed)();
           }
         },
       );
