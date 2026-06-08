@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
@@ -11,7 +11,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   Easing,
-  runOnJS,
 } from "react-native-reanimated";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -30,21 +29,24 @@ export default function RootLayout() {
     "IBMPlexMono-Bold": require("../assets/fonts/IBMPlexMono-Bold.otf"),
     "IBMPlexMono-Italic": require("../assets/fonts/IBMPlexMono-Italic.otf"),
   });
-  const ready = loaded || error;
+  const fontsReady = !!(loaded || error);
 
   const appOp = useSharedValue(0);
-  const splashOp = useSharedValue(1);
-
   const appStyle = useAnimatedStyle(() => ({ opacity: appOp.value }));
 
+  const [splashHidden, setSplashHidden] = useState(false);
+
+  // Start app fade-in the instant fonts are ready — same moment the splash
+  // begins its fade-out.  Both animations run in parallel so there is no
+  // frame where the root View background is visible between them.
   useEffect(() => {
-    if (ready) {
-      appOp.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
-      splashOp.value = withTiming(0, { duration: 350, easing: Easing.in(Easing.cubic) }, (finished) => {
-        if (finished) runOnJS(SplashScreen.hideAsync)();
+    if (fontsReady) {
+      appOp.value = withTiming(1, {
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
       });
     }
-  }, [ready]);
+  }, [fontsReady]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -94,8 +96,14 @@ export default function RootLayout() {
             </ThemeProvider>
           </OverlayProvider>
         </Animated.View>
-        {/* Splash overlay on top — fades out when fonts are ready */}
-        <CustomSplash splashOpacity={splashOp} />
+        {/* Splash overlay — custom splash controls its own lifecycle and
+            calls SplashScreen.hideAsync() directly. */}
+        {!splashHidden && (
+          <CustomSplash
+            ready={fontsReady}
+            onHidden={() => setSplashHidden(true)}
+          />
+        )}
       </View>
     </GestureHandlerRootView>
   );

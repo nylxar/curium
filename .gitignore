@@ -41,4 +41,4 @@ yarn-error.*
 /android
 
 *.keystore
-*.md
+APP_NOTES.md

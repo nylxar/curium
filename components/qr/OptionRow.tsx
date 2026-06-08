@@ -10,14 +10,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
-import { useEffect, useLayoutEffect } from "react";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-  interpolateColor,
-} from "react-native-reanimated";
 
 interface OptionRowProps {
   label: string;
@@ -58,33 +50,6 @@ export function OptionRow({
   // the active palette leaks into the chrome.
   const rowColor = bgColor ?? colors.surface;
 
-  // Animate the row bg color so it cross-fades in lock-step with the QR and
-  // screen bg transitions.  Otherwise the rows snap to the new color while
-  // the screen bg is still mid-transition, producing a "mixed color" glitch.
-  const bgFrom = useSharedValue(rowColor);
-  const bgTo = useSharedValue(rowColor);
-  const bgProgress = useSharedValue(1);
-
-  useLayoutEffect(() => {
-    if (rowColor !== bgTo.value) {
-      bgFrom.value = bgTo.value;
-      bgTo.value = rowColor;
-      bgProgress.value = 0;
-      bgProgress.value = withTiming(1, {
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-      });
-    }
-  }, [rowColor]);
-
-  const animBgStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      bgProgress.value,
-      [0, 1],
-      [bgFrom.value, bgTo.value],
-    ),
-  }));
-
   return (
     <>
       <Pressable
@@ -94,11 +59,10 @@ export function OptionRow({
         // Explicitly opt out of any default hover style (gray wash on web).
         style={() => [{}]}
       >
-        <Animated.View
+        <View
           style={[
             styles.row,
-            animBgStyle,
-            { borderColor: colors.border },
+            { backgroundColor: rowColor, borderColor: colors.border },
           ]}
         >
           <View
@@ -142,7 +106,7 @@ export function OptionRow({
               />
             </View>
           </View>
-        </Animated.View>
+        </View>
       </Pressable>
 
       <AnimatedSheet

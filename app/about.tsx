@@ -36,10 +36,7 @@ interface InfoRowProps {
 function InfoRow({ icon, label, value, index, colors }: InfoRowProps) {
   const opacity = useSharedValue(0);
   useEffect(() => {
-    opacity.value = withDelay(
-      index * 40,
-      withTiming(1, { duration: 280 }),
-    );
+    opacity.value = withDelay(index * 40, withTiming(1, { duration: 280 }));
   }, []);
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
@@ -50,12 +47,18 @@ function InfoRow({ icon, label, value, index, colors }: InfoRowProps) {
         <Ionicons name={icon} size={15} color={colors.primary} />
       </View>
       <Text
-        style={[styles.infoLabel, { color: colors.textMuted, fontFamily: Fonts.mono }]}
+        style={[
+          styles.infoLabel,
+          { color: colors.textMuted, fontFamily: Fonts.mono },
+        ]}
       >
         {label}
       </Text>
       <Text
-        style={[styles.infoValue, { color: colors.text, fontFamily: Fonts.monoBold }]}
+        style={[
+          styles.infoValue,
+          { color: colors.text, fontFamily: Fonts.monoBold },
+        ]}
         numberOfLines={1}
       >
         {value}
@@ -73,13 +76,17 @@ interface ActionRowProps {
   index: number;
 }
 
-function ActionRow({ icon, label, sub, onPress, tintColor, index }: ActionRowProps) {
+function ActionRow({
+  icon,
+  label,
+  sub,
+  onPress,
+  tintColor,
+  index,
+}: ActionRowProps) {
   const opacity = useSharedValue(0);
   useEffect(() => {
-    opacity.value = withDelay(
-      index * 50,
-      withTiming(1, { duration: 280 }),
-    );
+    opacity.value = withDelay(index * 50, withTiming(1, { duration: 280 }));
   }, []);
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
@@ -112,11 +119,7 @@ function ActionRow({ icon, label, sub, onPress, tintColor, index }: ActionRowPro
             {sub}
           </Text>
         </View>
-        <Ionicons
-          name="open-outline"
-          size={14}
-          color={tintColor + "60"}
-        />
+        <Ionicons name="open-outline" size={14} color={tintColor + "60"} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -129,11 +132,7 @@ export default function AboutScreen() {
   const toast = useToast();
 
   const [appVersion] = useState(Constants.expoConfig?.version ?? "0.0.0");
-  const [appVariant] = useState<"dev" | "prod">(
-    __DEV__ ? "dev" : "prod",
-  );
-
-  useEffect(() => {}, []);
+  const [appVariant] = useState<"dev" | "prod">(__DEV__ ? "dev" : "prod");
 
   const openLink = async (url: string, label: string) => {
     try {
@@ -178,7 +177,10 @@ export default function AboutScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text
-          style={[styles.headerTitle, { color: colors.text, fontFamily: Fonts.monoBold }]}
+          style={[
+            styles.headerTitle,
+            { color: colors.text, fontFamily: Fonts.monoBold },
+          ]}
         >
           About
         </Text>
@@ -204,7 +206,10 @@ export default function AboutScreen() {
           <View
             style={[
               styles.logoBox,
-              { backgroundColor: colors.primary + "18", borderColor: colors.primary + "40" },
+              {
+                backgroundColor: colors.primary + "18",
+                borderColor: colors.primary + "40",
+              },
             ]}
           >
             <Image
@@ -214,14 +219,20 @@ export default function AboutScreen() {
             />
           </View>
           <Text
-            style={[styles.appName, { color: colors.text, fontFamily: Fonts.monoBold }]}
+            style={[
+              styles.appName,
+              { color: colors.text, fontFamily: Fonts.monoBold },
+            ]}
           >
             Curium
           </Text>
           <Text
-            style={[styles.appTagline, { color: colors.textMuted, fontFamily: Fonts.mono }]}
+            style={[
+              styles.appTagline,
+              { color: colors.textMuted, fontFamily: Fonts.mono },
+            ]}
           >
-            Privacy-first QR generator
+            Privacy-first QR customizer
           </Text>
           <View style={styles.badgeRow}>
             <View
@@ -229,9 +240,13 @@ export default function AboutScreen() {
                 styles.badge,
                 {
                   backgroundColor:
-                    appVariant === "dev" ? colors.warning + "20" : colors.success + "20",
+                    appVariant === "dev"
+                      ? colors.warning + "20"
+                      : colors.success + "20",
                   borderColor:
-                    appVariant === "dev" ? colors.warning + "50" : colors.success + "50",
+                    appVariant === "dev"
+                      ? colors.warning + "50"
+                      : colors.success + "50",
                 },
               ]}
             >
@@ -239,7 +254,8 @@ export default function AboutScreen() {
                 style={[
                   styles.badgeDot,
                   {
-                    backgroundColor: appVariant === "dev" ? colors.warning : colors.success,
+                    backgroundColor:
+                      appVariant === "dev" ? colors.warning : colors.success,
                   },
                 ]}
               />
@@ -247,7 +263,8 @@ export default function AboutScreen() {
                 style={[
                   styles.badgeText,
                   {
-                    color: appVariant === "dev" ? colors.warning : colors.success,
+                    color:
+                      appVariant === "dev" ? colors.warning : colors.success,
                     fontFamily: Fonts.monoBold,
                   },
                 ]}
@@ -308,7 +325,9 @@ export default function AboutScreen() {
           <InfoRow
             icon="calendar-outline"
             label="Committed"
-            value={buildInfo.commitDate ? buildInfo.commitDate.split(" ")[0] : "—"}
+            value={
+              buildInfo.commitDate ? buildInfo.commitDate.split(" ")[0] : "—"
+            }
             index={2}
             colors={colors}
           />
@@ -432,11 +451,7 @@ export default function AboutScreen() {
             </Text>
           </View>
           <View style={styles.privacyItem}>
-            <Ionicons
-              name="eye-off-outline"
-              size={16}
-              color={colors.success}
-            />
+            <Ionicons name="eye-off-outline" size={16} color={colors.success} />
             <Text
               style={[
                 styles.privacyText,
@@ -512,7 +527,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: Radius.lg,
-    borderWidth: 1.5,
+    borderWidth: 0,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,

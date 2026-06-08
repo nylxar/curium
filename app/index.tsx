@@ -15,7 +15,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   Easing,
-  interpolateColor,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { saveToHistory } from "@/services/history";
@@ -369,29 +368,6 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
     onPress: () => void;
   }) {
     const rowBg = colors.surface;
-    const bgFrom = useSharedValue(rowBg);
-    const bgTo = useSharedValue(rowBg);
-    const bgProgress = useSharedValue(1);
-
-    useLayoutEffect(() => {
-      if (rowBg !== bgTo.value) {
-        bgFrom.value = bgTo.value;
-        bgTo.value = rowBg;
-        bgProgress.value = 0;
-        bgProgress.value = withTiming(1, {
-          duration: 420,
-          easing: Easing.out(Easing.cubic),
-        });
-      }
-    }, [rowBg]);
-
-    const animBgStyle = useAnimatedStyle(() => ({
-      backgroundColor: interpolateColor(
-        bgProgress.value,
-        [0, 1],
-        [bgFrom.value, bgTo.value],
-      ),
-    }));
 
     const currentType = QR_TYPES.find((t) => t.id === activeType);
 
@@ -400,11 +376,10 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
         onPress={onPress}
         style={() => [{}]}
       >
-        <Animated.View
+        <View
           style={[
             styles.formTrigger,
-            animBgStyle,
-            { borderColor: colors.border },
+            { backgroundColor: rowBg, borderColor: colors.border },
           ]}
         >
           <View
@@ -457,7 +432,7 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
               color={colors.textMuted}
             />
           </View>
-        </Animated.View>
+        </View>
       </Pressable>
     );
   }

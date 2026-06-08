@@ -109,19 +109,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [isDark],
   );
 
+  const value = useMemo<ThemeCtx>(
+    () => ({
+      theme,
+      colors,
+      isDark,
+      setTheme,
+      qrFg,
+      qrBg,
+      setQRColors,
+      defaultQRStyleForTheme,
+    }),
+    [theme, colors, isDark, setTheme, qrFg, qrBg, setQRColors, defaultQRStyleForTheme],
+  );
+
   return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        colors,
-        isDark,
-        setTheme,
-        qrFg,
-        qrBg,
-        setQRColors,
-        defaultQRStyleForTheme,
-      }}
-    >
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

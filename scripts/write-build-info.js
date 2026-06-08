@@ -16,7 +16,11 @@ function safe(cmd) {
 
 const commit = safe("git rev-parse HEAD");
 const shortCommit = safe("git rev-parse --short HEAD");
-const branch = safe("git branch --show-current");
+const branch =
+  safe("git branch --show-current") ||
+  process.env.GITHUB_HEAD_REF ||    // PR branch
+  process.env.GITHUB_REF_NAME ||    // tag / branch trigger
+  "";
 const commitDate = safe('git log -1 --format="%ai"');
 const commitMessage = safe('git log -1 --format="%s"');
 const isDirty = safe("git status --porcelain").length > 0;

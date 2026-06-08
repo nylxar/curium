@@ -13,10 +13,12 @@ import Animated, {
   useAnimatedStyle,
   withDelay,
   withTiming,
+  withRepeat,
+  withSequence,
   Easing,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import {
@@ -37,17 +39,13 @@ function SkeletonCard({ colors }: { colors: any }) {
   const pulse = useSharedValue(0.4);
 
   useEffect(() => {
-    pulse.value = withTiming(0.85, {
-      duration: 900,
-      easing: Easing.inOut(Easing.cubic),
-    });
-    const id = setInterval(() => {
-      pulse.value = withTiming(
-        pulse.value > 0.6 ? 0.4 : 0.85,
-        { duration: 900, easing: Easing.inOut(Easing.cubic) },
-      );
-    }, 950);
-    return () => clearInterval(id);
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(0.85, { duration: 900, easing: Easing.inOut(Easing.cubic) }),
+        withTiming(0.4, { duration: 900, easing: Easing.inOut(Easing.cubic) }),
+      ),
+      -1,
+    );
   }, []);
 
   const skel = useAnimatedStyle(() => ({ opacity: pulse.value }));
@@ -210,18 +208,21 @@ export default function HistoryScreen() {
   const router = useRouter();
   const toast = useToast();
 
-  // Load on initial mount only.  Returning to history from qr-detail
-  // (or any other screen) just reuses the in-memory list — the skeleton
-  // only appears on the very first load, not on every focus event.
-  const hasLoaded = useRef(false);
-  useEffect(() => {
-    if (hasLoaded.current) return;
-    hasLoaded.current = true;
-    loadHistory().then((data) => {
-      setItems(data);
-      setLoading(false);
-    });
-  }, []);
+  // Reload history on every screen focus so new entries created elsewhere
+  // appear immediately.  The skeleton placeholder only shows on the very
+  // first load — subsequent focuses silently refresh the list.
+  const firstLoad = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      loadHistory().then((data) => {
+        setItems(data);
+        if (firstLoad.current) {
+          firstLoad.current = false;
+          setLoading(false);
+        }
+      });
+    }, []),
+  );
 
   const filtered = query.trim()
     ? items.filter(
