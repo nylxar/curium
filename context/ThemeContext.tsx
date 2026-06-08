@@ -27,7 +27,7 @@ interface ThemeCtx {
 }
 
 const ThemeContext = createContext<ThemeCtx>({
-  theme: "light",
+  theme: "system",
   colors: LightColors,
   isDark: false,
   setTheme: () => {},
@@ -39,9 +39,10 @@ const ThemeContext = createContext<ThemeCtx>({
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
-  // Default to "light" (paper + ink) since the brand is paper-themed.
-  // Users can switch to dark, system, or dynamic from Settings.
-  const [theme, setThemeState] = useState<AppTheme>("light");
+  // Default to "system" so the app follows device dark/light mode without
+  // waiting for AsyncStorage.  Users can pin to light, dark, or dynamic
+  // from Settings.
+  const [theme, setThemeState] = useState<AppTheme>("system");
   const [qrFg, setQrFg] = useState("#1c1917");
   const [qrBg, setQrBg] = useState("#fafaf9");
 

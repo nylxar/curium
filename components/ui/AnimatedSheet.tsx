@@ -281,7 +281,7 @@ function SheetContent({
     })
     .onEnd((e) => {
       if (e.translationY > 100 || e.velocityY > 600) {
-        onRequestClose();
+        runOnJS(onRequestClose)();
       } else {
         sheetY.value = withTiming(0, {
           duration: 220,

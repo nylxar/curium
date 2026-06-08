@@ -1,5 +1,5 @@
 import { useMemo, useLayoutEffect, useRef, useState, useCallback } from "react";
-import { View, StyleSheet, PanResponder } from "react-native";
+import { View, StyleSheet, PanResponder, Image } from "react-native";
 import Svg, {
   Rect,
   Path,
@@ -7,8 +7,8 @@ import Svg, {
   LinearGradient,
   Stop,
   Image as SvgImage,
+  Circle,
   ClipPath,
-  G,
 } from "react-native-svg";
 import Animated, {
   useSharedValue,
@@ -697,9 +697,12 @@ export function QRCanvas({
 
   // ── Logo position (inside SVG, draggable via overlay PanResponder) ──
   const hasLogo = !!logoUri && !isEmpty;
-  const logoCfgInner = logoCfg ?? { background: "rounded" as const, padding: 10, border: true, shadow: true };
-  const logoPad = (logoCfgInner.padding / 100) * logoSize;
+  const logoMerged = { background: "rounded" as const, padding: 10, border: true, shadow: true, ...logoCfg };
+  const logoPad = (logoMerged.padding / 100) * logoSize;
   const logoPlateSz = logoSize + logoPad * 2;
+  const logoPlateR = logoMerged.background === "circle" ? logoPlateSz * 0.5
+    : logoMerged.background === "rounded" ? Math.min(logoPlateSz * 0.22, 16)
+    : 0;
   const logoDefaultX = (innerSize - logoPlateSz) / 2;
   const logoDefaultY = (innerSize - logoPlateSz) / 2;
   const [logoPos, setLogoPos] = useState(
@@ -710,26 +713,59 @@ export function QRCanvas({
   const logoMaxX = innerSize - logoPlateSz;
   const logoMaxY = innerSize - logoPlateSz;
 
-  const logoPan = useRef(
-    hasLogo && onLogoPositionChange
-      ? PanResponder.create({
-          onStartShouldSetPanResponder: () => true,
-          onMoveShouldSetPanResponder: () => true,
-          onPanResponderGrant: () => {
-            logoPanOrigin.current = { ...logoPosRef.current };
-          },
-          onPanResponderMove: (_, g) => {
-            const nx = Math.max(0, Math.min(logoMaxX, logoPanOrigin.current.x + g.dx));
-            const ny = Math.max(0, Math.min(logoMaxY, logoPanOrigin.current.y + g.dy));
-            logoPosRef.current = { x: nx, y: ny };
-            setLogoPos({ x: nx, y: ny });
-          },
-          onPanResponderRelease: () => {
-            onLogoPositionChange(logoPosRef.current);
-          },
-        })
-      : { panHandlers: {} as any },
-  ).current;
+  // Shared values for smooth drag (UI thread, no React re-renders).
+  const logoDragX = useSharedValue(savedPos?.x ?? logoDefaultX);
+  const logoDragY = useSharedValue(savedPos?.y ?? logoDefaultY);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const logoDragStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: logoDragX.value },
+      { translateY: logoDragY.value },
+    ],
+  }));
+
+  const logoPan = useRef<ReturnType<typeof PanResponder.create> | null>(null);
+  const logoHitSlop = 20;
+  if (hasLogo && onLogoPositionChange && !logoPan.current) {
+    logoPan.current = PanResponder.create({
+      onStartShouldSetPanResponder: (e) => {
+        const { locationX, locationY } = e.nativeEvent;
+        const lx = logoPosRef.current.x;
+        const ly = logoPosRef.current.y;
+        return (
+          locationX >= lx - logoHitSlop &&
+          locationX <= lx + logoPlateSz + logoHitSlop &&
+          locationY >= ly - logoHitSlop &&
+          locationY <= ly + logoPlateSz + logoHitSlop
+        );
+      },
+      onMoveShouldSetPanResponder: (_, g) => {
+        return Math.abs(g.dx) > 4 || Math.abs(g.dy) > 4;
+      },
+      onPanResponderGrant: () => {
+        logoPanOrigin.current = { ...logoPosRef.current };
+        logoDragX.value = logoPosRef.current.x;
+        logoDragY.value = logoPosRef.current.y;
+        setIsDragging(true);
+      },
+      onPanResponderMove: (_, g) => {
+        const nx = Math.max(0, Math.min(logoMaxX, logoPanOrigin.current.x + g.dx));
+        const ny = Math.max(0, Math.min(logoMaxY, logoPanOrigin.current.y + g.dy));
+        logoPosRef.current = { x: nx, y: ny };
+        logoDragX.value = nx;
+        logoDragY.value = ny;
+      },
+      onPanResponderRelease: () => {
+        const pos = { ...logoPosRef.current };
+        setIsDragging(false);
+        setLogoPos(pos);
+        onLogoPositionChange(pos);
+      },
+    });
+  } else if ((!hasLogo || !onLogoPositionChange) && logoPan.current) {
+    logoPan.current = null;
+  }
 
   return (
     <View
@@ -802,6 +838,24 @@ export function QRCanvas({
                 <Stop offset="0" stopColor={gradStartFill} />
                 <Stop offset="1" stopColor={gradEndFill} />
               </LinearGradient>
+              {/* Logo clipPath — clips the logo image to the plate shape
+                  (circle/rounded/square).  Always rendered so host instance
+                  is stable; the clipPath geometry updates with logoPos. */}
+              {logoUri && !isEmpty && (() => {
+                const px = logoPos.x;
+                const py = logoPos.y;
+                const clipId = `logoClip_${gradIdRef.current}`;
+                if (logoMerged.background === "none") return null;
+                return (
+                  <ClipPath id={clipId}>
+                    {logoMerged.background === "circle" ? (
+                      <Circle cx={px + logoPlateSz / 2} cy={py + logoPlateSz / 2} r={logoPlateSz / 2} />
+                    ) : (
+                      <Rect x={px} y={py} width={logoPlateSz} height={logoPlateSz} rx={logoPlateR} ry={logoPlateR} />
+                    )}
+                  </ClipPath>
+                );
+              })()}
             </Defs>
             <Rect
               width={innerSize}
@@ -826,52 +880,106 @@ export function QRCanvas({
             />
             {hasPupil && <Path d={eyeDotPath} fill={fgFill} />}
 
-            {/* ── Logo overlay (inside SVG for captureRef compatibility) ──
+            {/* ── Logo (inside SVG for captureRef compatibility) ──
                 renderToHardwareTextureAndroid and captureRef on Android
                 cannot reliably capture absolutely-positioned React Views.
                 By rendering the logo as an SVG <Image> inside the same SVG
-                as the QR content, captureRef captures both as a single bitmap. */}
-            {logoUri && !isEmpty && (() => {
-              const cfg = logoCfg ?? { background: "rounded" as const, padding: 10, border: true, shadow: true };
-              const pad = (cfg.padding / 100) * logoSize;
-              const plateSz = logoSize + pad * 2;
-              const cx = (innerSize - plateSz) / 2;
-              const cy = (innerSize - plateSz) / 2;
+                as the QR content, captureRef captures both as a single bitmap.
+                A React Native overlay (below the SVG) shows the same logo
+                visually — it's always rendered so there's no transition
+                flash when drag starts.  The SVG logo stays for captureRef
+                and is visually hidden behind the overlay. */}
+            {logoUri && !isEmpty && !isDragging && (() => {
               const px = logoPos.x;
               const py = logoPos.y;
-              const plateR = cfg.background === "circle" ? plateSz * 0.5
-                : cfg.background === "rounded" ? Math.min(plateSz * 0.22, 16)
-                : 0;
-              const imgR = cfg.background === "circle" ? logoSize * 0.5
-                : cfg.background === "rounded" ? Math.min(logoSize * 0.18, 12)
-                : 0;
+              const clipId = `logoClip_${gradIdRef.current}`;
               return (
                 <>
-                  {cfg.background !== "none" && (
+                  {logoMerged.background !== "none" && (
                     <Rect
                       x={px}
                       y={py}
-                      width={plateSz}
-                      height={plateSz}
-                      rx={plateR}
-                      ry={plateR}
+                      width={logoPlateSz}
+                      height={logoPlateSz}
+                      rx={logoPlateR}
+                      ry={logoPlateR}
                       fill={logoBgColor}
                       stroke="#00000018"
-                      strokeWidth={cfg.border ? 1.5 : 0}
+                      strokeWidth={logoMerged.border ? 1.5 : 0}
                     />
                   )}
                   <SvgImage
-                    x={px + pad}
-                    y={py + pad}
+                    x={px + logoPad}
+                    y={py + logoPad}
                     width={logoSize}
                     height={logoSize}
                     href={logoUri}
                     preserveAspectRatio="xMidYMid meet"
+                    clipPath={logoMerged.background !== "none" ? `url(#${clipId})` : undefined}
                   />
                 </>
               );
             })()}
           </Svg>
+          {/*
+            Logo overlay — always rendered so there's no SVG→overlay
+            transition flash on drag start.  During drag the shared
+            values drive 60fps movement; at rest the overlay sits at
+            the same position as the SVG logo beneath it (which is
+            kept for captureRef compatibility).
+            The Image lives INSIDE the plate View so overflow:"hidden"
+            clips it to the plate's rounded rect — identical to the
+            SVG clipPath approach.
+          */}
+          {hasLogo && !!onLogoPositionChange && (() => {
+            return (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  { position: "absolute", width: logoPlateSz, height: logoPlateSz },
+                  logoDragStyle,
+                ]}
+              >
+                {logoMerged.background !== "none" ? (
+                  <View
+                    style={{
+                      width: logoPlateSz,
+                      height: logoPlateSz,
+                      borderRadius: logoPlateR,
+                      backgroundColor: logoBgColor,
+                      borderWidth: logoMerged.border ? 1.5 : 0,
+                      borderColor: "#00000018",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <Image
+                      source={{ uri: logoUri }}
+                      style={{
+                        position: "absolute",
+                        left: logoPad,
+                        top: logoPad,
+                        width: logoSize,
+                        height: logoSize,
+                      }}
+                      resizeMode="contain"
+                    />
+                  </View>
+                ) : (
+                  <Image
+                    source={{ uri: logoUri }}
+                    style={{
+                      position: "absolute",
+                      left: logoPad,
+                      top: logoPad,
+                      width: logoSize,
+                      height: logoSize,
+                    }}
+                    resizeMode="contain"
+                  />
+                )}
+              </Animated.View>
+            );
+          })()}
           {/*
             Placeholder overlay — shown when the QR value is empty.  The
             Svg above keeps its host instances mounted (so Reanimated
@@ -944,12 +1052,12 @@ export function QRCanvas({
               </View>
             </View>
           )}
-          {/* Logo drag overlay — transparent, full-size, handles dragging
-              the logo position.  The actual logo is rendered inside the SVG
-              above; this overlay just captures drag gestures. */}
-          {hasLogo && !!onLogoPositionChange && (
+          {/* Logo drag gesture capture — transparent overlay that captures
+              touch gestures.  During drag the animated overlay above shows
+              the logo; this View just captures pan gestures. */}
+          {hasLogo && !!onLogoPositionChange && logoPan.current && (
             <View
-              {...logoPan.panHandlers}
+              {...logoPan.current.panHandlers}
               style={StyleSheet.absoluteFill}
             />
           )}
