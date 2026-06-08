@@ -77,9 +77,7 @@ function ThemeBtn({
       style={[
         styles.themeBtn,
         {
-          backgroundColor: active
-            ? colors.primary + "22"
-            : colors.surface,
+          backgroundColor: active ? colors.primary + "22" : colors.surface,
           borderColor: active ? colors.primary : colors.border,
         },
       ]}
@@ -148,7 +146,10 @@ function Row({
         <Text
           style={[
             styles.rowLabel,
-            { color: danger ? colors.error : colors.text, fontFamily: Fonts.monoMedium },
+            {
+              color: danger ? colors.error : colors.text,
+              fontFamily: Fonts.monoMedium,
+            },
           ]}
         >
           {label}
@@ -406,7 +407,7 @@ export default function SettingsScreen() {
           }
         />
 
-        {/* Privacy */}
+        {/* Privacy
         <SectionTitle colors={colors}>Privacy</SectionTitle>
         <Row
           icon="shield-checkmark-outline"
@@ -447,6 +448,7 @@ export default function SettingsScreen() {
             />
           }
         />
+        */}
 
         {/* Data */}
         <SectionTitle colors={colors}>Data</SectionTitle>
