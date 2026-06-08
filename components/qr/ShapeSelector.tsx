@@ -1,89 +1,139 @@
-// components/qr/ShapeSelector.tsx — full rewrite
+// components/qr/ShapeSelector.tsx
+//
+// Previews use the SAME path helpers as QRCanvas (via EyeShapePaths /
+// PixelShapePath) so the picker is a faithful preview of the actual render.
 
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
 } from "react-native";
-import { Spacing, Radius, FontSize } from "@/constants/theme";
+import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
-import { EyeShape, PixelShape } from "@/types/qr";
-import Svg, { Rect, Circle, Path } from "react-native-svg";
+import { useTheme } from "@/context/ThemeContext";
+import { EyeShape, PixelShape, PupilShape } from "@/types/qr";
+import Svg, { Path } from "react-native-svg";
+import { EyeShapePaths, PixelShapePath } from "./QRCanvas";
+
+const PREVIEW_BOX = 32;
+const PREVIEW_PAD = 4;
 
 // ─── Mini QR eye previews via SVG ────────────────────────────────────────────
 
 function EyePreview({ shape, color }: { shape: EyeShape; color: string }) {
-  const r: Record<EyeShape, number> = {
-    sharp: 0,
-    soft: 3,
-    round: 12,
-    pill: 10,
-    leaf: 8,
-    diamond: 4,
-    shield: 8,
-    dot: 12,
-  };
-  const radius = r[shape];
+  const outer = EyeShapePaths.outer(shape, PREVIEW_PAD, PREVIEW_PAD, 24);
+  const inner = EyeShapePaths.innerCut(
+    shape,
+    PREVIEW_PAD,
+    PREVIEW_PAD,
+    24,
+  );
   return (
-    <Svg width={32} height={32} viewBox="0 0 32 32">
-      {/* Outer ring */}
-      <Rect
-        x={2}
-        y={2}
-        width={28}
-        height={28}
-        rx={radius}
-        ry={radius}
-        stroke={color}
-        strokeWidth={3}
-        fill="none"
-      />
-      {/* Inner fill */}
-      <Rect
-        x={9}
-        y={9}
-        width={14}
-        height={14}
-        rx={Math.max(0, radius - 3)}
-        ry={Math.max(0, radius - 3)}
-        fill={color}
-      />
+    <Svg width={PREVIEW_BOX} height={PREVIEW_BOX} viewBox="0 0 32 32">
+      <Path d={`${outer} ${inner}`} fill={color} fillRule="evenodd" />
+    </Svg>
+  );
+}
+
+// Pupil preview shows the pupil shape on its own.  32×32, centered, ~10px
+// wide.
+function PupilPreview({ shape, color }: { shape: PupilShape; color: string }) {
+  if (shape === "none") {
+    // Empty / hollow preview — show a thin dashed circle so the user
+    // knows "this means no pupil".
+    return (
+      <Svg width={PREVIEW_BOX} height={PREVIEW_BOX} viewBox="0 0 32 32">
+        <Path
+          d="M16 4 a12 12 0 1 0 0.01 0"
+          fill="none"
+          stroke={color}
+          strokeWidth={1.5}
+          strokeDasharray="3 3"
+        />
+      </Svg>
+    );
+  }
+  const d = (() => {
+    switch (shape) {
+      case "dot":
+        return `M16 6 a10 10 0 1 0 0.01 0`;
+      case "square":
+        return `M6 6h20v20h-20z`;
+      case "ring":
+        return `M16 6 a10 10 0 1 0 0.01 0 M16 11 a5 5 0 1 0 0.01 0`;
+      case "cross":
+        return PixelShapePath.cross(16, 16, 10);
+      case "diamond":
+        return PixelShapePath.diamond(16, 16, 9);
+      case "star":
+        return PixelShapePath.star(16, 16, 10);
+      case "heart":
+        return PixelShapePath.heart(16, 16, 10);
+    }
+  })();
+  const fillRule =
+    shape === "ring" ? "evenodd" : "nonzero";
+  return (
+    <Svg width={PREVIEW_BOX} height={PREVIEW_BOX} viewBox="0 0 32 32">
+      <Path d={d} fill={color} fillRule={fillRule as any} />
     </Svg>
   );
 }
 
 function PixelPreview({ shape, color }: { shape: PixelShape; color: string }) {
-  const configs: Record<PixelShape, { r: number; s: number }> = {
-    sharp: { r: 0, s: 8 },
-    soft: { r: 2, s: 8 },
-    round: { r: 4, s: 8 },
-    dots: { r: 5, s: 7 },
-    liquid: { r: 3, s: 7 },
-    glued: { r: 1, s: 9 },
-    diamond: { r: 2, s: 7 },
-    cross: { r: 0, s: 6 },
-    star: { r: 1, s: 6 },
+  // 3x3 sample grid of the cell shape, with a small gap between cells.
+  const cell = 8;
+  const gap = 2;
+  const step = cell + gap;
+  const start = (PREVIEW_BOX - cell * 3 - gap * 2) / 2;
+  const positions: Array<{ x: number; y: number }> = [];
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      positions.push({ x: start + col * step, y: start + row * step });
+    }
+  }
+
+  // Per-shape rendering — each shape draws a Path at the cell origin.
+  const renderCell = (x: number, y: number): string => {
+    const cx = x + cell / 2;
+    const cy = y + cell / 2;
+    switch (shape) {
+      case "dots":
+        return PixelShapePath.circle(cx, cy, cell * 0.42);
+      case "diamond":
+        return PixelShapePath.diamond(cx, cy, cell * 0.42);
+      case "cross":
+        return PixelShapePath.cross(cx, cy, cell * 0.5);
+      case "star":
+        return PixelShapePath.star(cx, cy, cell * 0.55);
+      case "plus":
+        return PixelShapePath.plus(cx, cy, cell * 0.5, cell * 0.16);
+      case "triangle":
+        return PixelShapePath.triangle(cx, cy, cell * 0.55);
+      case "hexagon":
+        return PixelShapePath.hexagon(cx, cy, cell * 0.5);
+      case "heart":
+        return PixelShapePath.heart(cx, cy, cell * 0.5);
+      case "sparkle":
+        return PixelShapePath.sparkle(cx, cy, cell * 0.5);
+      case "sharp":
+        return PixelShapePath.rect(x, y, cell, 0);
+      case "soft":
+        return PixelShapePath.rect(x + 0.5, y + 0.5, cell - 1, 1.5);
+      case "round":
+        return PixelShapePath.rect(x + 0.5, y + 0.5, cell - 1, 2.5);
+      case "liquid":
+        return PixelShapePath.rect(x + 0.5, y + 0.5, cell - 1, 2);
+      case "glued":
+        return PixelShapePath.rect(x, y, cell, 1.5);
+    }
   };
-  const { r, s } = configs[shape];
-  // 3x3 grid preview
-  const positions = [0, 1, 2].flatMap((row) =>
-    [0, 1, 2].map((col) => ({ x: col * 10 + 1, y: row * 10 + 1 })),
-  );
+
   return (
-    <Svg width={32} height={32} viewBox="0 0 32 32">
+    <Svg width={PREVIEW_BOX} height={PREVIEW_BOX} viewBox="0 0 32 32">
       {positions.map((pos, i) => (
-        <Rect
-          key={i}
-          x={pos.x}
-          y={pos.y}
-          width={s}
-          height={s}
-          rx={r}
-          ry={r}
-          fill={color}
-        />
+        <Path key={i} d={renderCell(pos.x, pos.y)} fill={color} />
       ))}
     </Svg>
   );
@@ -100,6 +150,21 @@ const EYE_OPTIONS: EyeShape[] = [
   "diamond",
   "shield",
   "dot",
+  "heart",
+  "hexagon",
+  "plus",
+  "star",
+  "octagon",
+];
+const PUPIL_OPTIONS: PupilShape[] = [
+  "dot",
+  "square",
+  "ring",
+  "cross",
+  "diamond",
+  "star",
+  "heart",
+  "none",
 ];
 const PIXEL_OPTIONS: PixelShape[] = [
   "sharp",
@@ -111,6 +176,11 @@ const PIXEL_OPTIONS: PixelShape[] = [
   "diamond",
   "cross",
   "star",
+  "triangle",
+  "hexagon",
+  "plus",
+  "heart",
+  "sparkle",
 ];
 
 const EYE_LABELS: Record<EyeShape, string> = {
@@ -122,6 +192,22 @@ const EYE_LABELS: Record<EyeShape, string> = {
   diamond: "Diamond",
   shield: "Shield",
   dot: "Dot",
+  heart: "Heart",
+  hexagon: "Hex",
+  plus: "Plus",
+  star: "Star",
+  octagon: "Oct",
+};
+
+const PUPIL_LABELS: Record<PupilShape, string> = {
+  dot: "Dot",
+  square: "Square",
+  ring: "Ring",
+  cross: "Cross",
+  diamond: "Diam",
+  star: "Star",
+  heart: "Heart",
+  none: "None",
 };
 
 const PIXEL_LABELS: Record<PixelShape, string> = {
@@ -134,12 +220,22 @@ const PIXEL_LABELS: Record<PixelShape, string> = {
   diamond: "Diamond",
   cross: "Cross",
   star: "Star",
+  triangle: "Tri",
+  hexagon: "Hex",
+  plus: "Plus",
+  heart: "Heart",
+  sparkle: "Spark",
 };
 
 interface EyeProps {
   selected: EyeShape;
   fgColor: string;
   onChange: (s: EyeShape) => void;
+}
+interface PupilProps {
+  selected: PupilShape;
+  fgColor: string;
+  onChange: (s: PupilShape) => void;
 }
 interface PixelProps {
   selected: PixelShape;
@@ -162,6 +258,7 @@ function ShapeGrid<T extends string>({
   renderPreview: (s: T) => React.ReactNode;
   onChange: (s: T) => void;
 }) {
+  const { colors } = useTheme();
   return (
     <View style={styles.grid}>
       {options.map((shape) => {
@@ -173,18 +270,20 @@ function ShapeGrid<T extends string>({
               Haptics.selectionAsync();
               onChange(shape);
             }}
-            activeOpacity={0.7}
+            activeOpacity={0.6}
             style={[
               styles.cell,
-              { borderColor: active ? fgColor : fgColor + "25" },
-              active && { backgroundColor: fgColor + "18" },
+              {
+                backgroundColor: active ? colors.primaryBg : colors.surface,
+                borderColor: active ? fgColor : colors.border,
+              },
             ]}
           >
             {renderPreview(shape)}
             <Text
               style={[
                 styles.cellLabel,
-                { color: active ? fgColor : fgColor + "90" },
+                { color: active ? colors.text : colors.textMuted },
               ]}
             >
               {getLabel(shape)}
@@ -197,13 +296,28 @@ function ShapeGrid<T extends string>({
 }
 
 export function EyeShapeSelector({ selected, fgColor, onChange }: EyeProps) {
+  const { colors } = useTheme();
   return (
     <ShapeGrid
       options={EYE_OPTIONS}
       selected={selected}
       fgColor={fgColor}
       getLabel={(s) => EYE_LABELS[s]}
-      renderPreview={(s) => <EyePreview shape={s} color={fgColor} />}
+      renderPreview={(s) => <EyePreview shape={s} color={colors.text} />}
+      onChange={onChange}
+    />
+  );
+}
+
+export function PupilShapeSelector({ selected, fgColor, onChange }: PupilProps) {
+  const { colors } = useTheme();
+  return (
+    <ShapeGrid
+      options={PUPIL_OPTIONS}
+      selected={selected}
+      fgColor={fgColor}
+      getLabel={(s) => PUPIL_LABELS[s]}
+      renderPreview={(s) => <PupilPreview shape={s} color={colors.text} />}
       onChange={onChange}
     />
   );
@@ -214,13 +328,14 @@ export function PixelShapeSelector({
   fgColor,
   onChange,
 }: PixelProps) {
+  const { colors } = useTheme();
   return (
     <ShapeGrid
       options={PIXEL_OPTIONS}
       selected={selected}
       fgColor={fgColor}
       getLabel={(s) => PIXEL_LABELS[s]}
-      renderPreview={(s) => <PixelPreview shape={s} color={fgColor} />}
+      renderPreview={(s) => <PixelPreview shape={s} color={colors.text} />}
       onChange={onChange}
     />
   );
@@ -231,19 +346,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.sm,
+    // Centering the grid (not flex-start) keeps the row visually balanced
+    // when the count doesn't divide evenly into the sheet width.  With
+    // flex-start, a row of 5 cells leaves a gap on the right that reads
+    // as the grid "leaning" to the left.
+    justifyContent: "center",
   },
   cell: {
-    width: "30%",
+    // Fixed cell width keeps the grid cells the same size across all
+    // option modals (Shape, Frame, Corners).  With flexGrow:1 the cells
+    // would stretch to fill the row, making the 4-col FrameSelector
+    // cells visibly bigger than the 7-col ColorPalette swatches and
+    // 5-col CornerSelector cells — that asymmetry looks broken.
+    width: 64,
     aspectRatio: 1,
     borderRadius: Radius.md,
     borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
+    gap: 2,
+    paddingVertical: Spacing.xs,
   },
   cellLabel: {
-    fontSize: FontSize.xs,
+    fontSize: 9,
+    fontFamily: Fonts.monoMedium,
     fontWeight: "600",
   },
 });

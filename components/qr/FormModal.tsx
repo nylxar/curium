@@ -1,19 +1,15 @@
 import {
   View,
   Text,
-  Modal,
-  Pressable,
-  TouchableOpacity,
   TextInput,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
+  TouchableOpacity,
+  Keyboard,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
 import {
   QRType,
   URLForm,
@@ -60,7 +56,6 @@ const TYPE_META: Record<
   location: { label: "Location", icon: "location-outline" },
 };
 
-// ─── Shared inline Field ──────────────────────────────────────────────────────
 function Field({
   label,
   value,
@@ -138,7 +133,6 @@ const fStyles = StyleSheet.create({
   },
 });
 
-// ─── FormModal ────────────────────────────────────────────────────────────────
 export function FormModal({
   visible,
   onClose,
@@ -148,8 +142,17 @@ export function FormModal({
   tintColor,
 }: Props) {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const meta = TYPE_META[activeType];
+
+  const handleDone = () => {
+    // Wait for the keyboard to fully dismiss before closing the sheet,
+    // so the two animations don't fight each other and cause a shutter.
+    const sub = Keyboard.addListener("keyboardDidHide", () => {
+      sub.remove();
+      onClose();
+    });
+    Keyboard.dismiss();
+  };
 
   const renderFields = () => {
     switch (activeType) {
@@ -406,77 +409,43 @@ export function FormModal({
   };
 
   return (
-    <Modal
+    <AnimatedSheet
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
+      onClose={onClose}
+      bgColor={colors.surface}
+      borderColor={colors.border}
+      disableSwipeDown
     >
-      <Pressable style={mStyles.backdrop} onPress={onClose} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={mStyles.kav}
-      >
-        <View
+      <View style={mStyles.header}>
+        <View style={[mStyles.iconBox, { backgroundColor: tintColor + "18" }]}>
+          <Ionicons name={meta.icon} size={18} color={tintColor} />
+        </View>
+        <Text
           style={[
-            mStyles.sheet,
-            {
-              backgroundColor: colors.surface,
-              borderTopColor: colors.border,
-              paddingBottom: insets.bottom + Spacing.lg,
-            },
+            mStyles.title,
+            { color: colors.text, fontFamily: Fonts.monoBold },
           ]}
         >
-          {/* Handle */}
-          <View style={[mStyles.handle, { backgroundColor: colors.border }]} />
-
-          {/* Header */}
-          <View style={mStyles.header}>
-            <View
-              style={[mStyles.iconBox, { backgroundColor: tintColor + "18" }]}
-            >
-              <Ionicons name={meta.icon} size={18} color={tintColor} />
-            </View>
-            <Text
-              style={[
-                mStyles.title,
-                { color: colors.text, fontFamily: Fonts.monoBold },
-              ]}
-            >
-              {meta.label}
-            </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              style={[mStyles.doneBtn, { backgroundColor: tintColor }]}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[mStyles.doneBtnText, { fontFamily: Fonts.monoBold }]}
-              >
-                Done
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Fields — no ScrollView needed, modal expands to fit */}
-          <View style={{ gap: Spacing.sm }}>{renderFields()}</View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+          {meta.label}
+        </Text>
+        <TouchableOpacity
+          onPress={handleDone}
+          style={[mStyles.doneBtn, { backgroundColor: tintColor }]}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[mStyles.doneBtnText, { fontFamily: Fonts.monoBold }]}
+          >
+            Done
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <View style={{ gap: Spacing.sm }}>{renderFields()}</View>
+    </AnimatedSheet>
   );
 }
 
 const mStyles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "#00000066" },
-  kav: { justifyContent: "flex-end" },
-  sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-  },
-  handle: { width: 40, height: 4, borderRadius: 2, alignSelf: "center" },
   header: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
   iconBox: {
     width: 36,

@@ -1,25 +1,30 @@
-import { useEffect } from "react";
 import {
-  ScrollView,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  useWindowDimensions,
 } from "react-native";
 import Animated, {
   useSharedValue,
-  withSpring,
+  withTiming,
   useAnimatedStyle,
+  interpolate,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
 import { QR_COLORS } from "@/constants/theme";
-import { Colors, Radius, FontSize, Spacing } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
+import { Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
 
 interface Props {
   selectedId: string;
   onSelect: (id: string, fg: string, bg: string) => void;
 }
+
+const COLUMNS = 7;
+const SWATCH_GAP = 8;
+const CONTAINER_PADDING = Spacing.base;
+const SWATCH_SIZE = 36;
 
 function ColorSwatch({
   item,
@@ -30,60 +35,95 @@ function ColorSwatch({
   selected: boolean;
   onPress: () => void;
 }) {
-  const scale = useSharedValue(1);
+  const press = useSharedValue(0);
 
-  useEffect(() => {
-    scale.value = withSpring(selected ? 1.15 : 1, {
-      damping: 12,
-      stiffness: 220,
-    });
-  }, [selected]);
-
-  // Ring/check visibility via JS conditional — NOT in Reanimated worklet
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+  const pressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(press.value, [0, 1], [1, 0.9]) }],
   }));
 
   return (
     <TouchableOpacity
+      onPressIn={() => {
+        press.value = withTiming(1, { duration: 80 });
+      }}
+      onPressOut={() => {
+        press.value = withTiming(0, { duration: 140 });
+      }}
       onPress={onPress}
-      activeOpacity={0.75}
-      style={styles.swatchWrap}
+      activeOpacity={1}
+      style={styles.swatchCell}
     >
-      <Animated.View style={animStyle}>
+      <Animated.View style={pressStyle}>
         <View
           style={[
             styles.swatch,
             { backgroundColor: item.bg },
-            selected && { borderColor: item.fg, borderWidth: 2.5 },
+            selected && {
+              borderColor: item.fg,
+              borderWidth: 2,
+            },
           ]}
         >
-          <View style={[styles.swatchInner, { backgroundColor: item.fg }]} />
-          {selected && (
-            <View style={styles.check}>
-              <Ionicons name="checkmark" size={10} color={item.bg} />
-            </View>
-          )}
+          {/* Small fg dot in the center to indicate the color combo */}
+          <View
+            style={[
+              styles.fgDot,
+              { backgroundColor: item.fg },
+            ]}
+          />
         </View>
       </Animated.View>
-      <Text
-        style={[styles.swatchLabel, selected && { color: item.fg }]}
-        numberOfLines={1}
-      >
-        {item.label}
-      </Text>
+
+      {/* Selection indicator dot below swatch */}
+      <View style={styles.indicatorSlot}>
+        {selected ? (
+          <View
+            style={[
+              styles.indicatorDot,
+              { backgroundColor: item.fg },
+            ]}
+          />
+        ) : null}
+      </View>
     </TouchableOpacity>
   );
 }
 
 export function ColorPalette({ selectedId, onSelect }: Props) {
+  const { width } = useWindowDimensions();
+  const { colors } = useTheme();
+
+  // Center the grid: calculate left offset to center the row
+  const totalGaps = SWATCH_GAP * (COLUMNS - 1);
+  const gridWidth = SWATCH_SIZE * COLUMNS + totalGaps;
+  const leftOffset = Math.max(0, (width - CONTAINER_PADDING * 2 - gridWidth) / 2);
+
   return (
     <View>
-      <Text style={styles.sectionTitle}>Color Presets</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
+      <View style={[styles.header, { paddingHorizontal: CONTAINER_PADDING }]}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.textFaint, fontFamily: Fonts.mono },
+          ]}
+        >
+          PRESETS
+        </Text>
+        <Text
+          style={[
+            styles.count,
+            { color: colors.textFaint, fontFamily: Fonts.mono },
+          ]}
+        >
+          {QR_COLORS.length}
+        </Text>
+      </View>
+
+      <View
+        style={[
+          styles.grid,
+          { paddingLeft: CONTAINER_PADDING + leftOffset, paddingRight: CONTAINER_PADDING },
+        ]}
       >
         {QR_COLORS.map((item) => (
           <ColorSwatch
@@ -96,52 +136,65 @@ export function ColorPalette({ selectedId, onSelect }: Props) {
             }}
           />
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.md,
+  },
   sectionTitle: {
     fontSize: FontSize.xs,
+    letterSpacing: 1.5,
     fontWeight: "600",
-    color: Colors.textFaint,
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-    marginLeft: Spacing.base,
-    marginBottom: Spacing.sm,
   },
-  row: {
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.md,
-    paddingBottom: Spacing.sm,
+  count: {
+    fontSize: FontSize.xs,
+    letterSpacing: 0.5,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.15)",
   },
-  swatchWrap: { alignItems: "center", gap: 5, width: 58 },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SWATCH_GAP,
+    rowGap: Spacing.md,
+  },
+  swatchCell: {
+    width: SWATCH_SIZE,
+    alignItems: "center",
+  },
   swatch: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 0.5,
-    borderColor: Colors.border,
-  },
-  swatchInner: { width: 22, height: 22, borderRadius: 11 },
-  check: {
-    position: "absolute",
-    bottom: 3,
-    right: 3,
-    width: 17,
-    height: 17,
-    borderRadius: 9,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    width: SWATCH_SIZE,
+    height: SWATCH_SIZE,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
-  swatchLabel: {
-    fontSize: 9,
-    color: Colors.textFaint,
-    textAlign: "center",
-    width: 58,
+  fgDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+  },
+  indicatorSlot: {
+    height: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  indicatorDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
   },
 });

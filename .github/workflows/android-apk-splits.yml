@@ -2,9 +2,21 @@ name: Android APK Splits
 
 on:
   workflow_dispatch:
+    inputs:
+      flavor:
+        description: "Build variant"
+        required: true
+        default: "stable"
+        type: choice
+        options:
+          - stable
+          - preview
+          - nightly
   push:
     tags:
       - "v*"
+  schedule:
+    - cron: "0 3 * * *"
 
 permissions:
   contents: write
@@ -19,8 +31,28 @@ jobs:
     timeout-minutes: 90
 
     steps:
+      - name: Resolve flavor and branch
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "flavor=nightly" >> "$GITHUB_OUTPUT"
+            echo "ref=nightly" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "flavor=stable" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            FLAVOR="${{ inputs.flavor || 'stable' }}"
+            echo "flavor=$FLAVOR" >> "$GITHUB_OUTPUT"
+            case "$FLAVOR" in
+              stable)  echo "ref=master" >> "$GITHUB_OUTPUT" ;;
+              preview) echo "ref=preview" >> "$GITHUB_OUTPUT" ;;
+              nightly) echo "ref=nightly" >> "$GITHUB_OUTPUT" ;;
+            esac
+          fi
+
       - uses: actions/checkout@v6
         with:
+          ref: ${{ steps.resolve.outputs.ref }}
           persist-credentials: false
 
       - uses: pnpm/action-setup@v6
@@ -41,6 +73,9 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Pillow for icon generation
+        run: pip install Pillow
+
       - name: Expo prebuild
         run: pnpm exec expo prebuild --platform android --clean --non-interactive
 
@@ -49,7 +84,7 @@ jobs:
           mkdir -p android/app
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
 
-      - name: Inject signing and ABI splits
+      - name: Inject signing, flavors, and ABI splits
         shell: bash
         run: |
           python3 - <<'PY'
@@ -64,89 +99,149 @@ jobs:
           def indent_of(line):
               return len(line) - len(line.lstrip())
 
+          def read_block(lines, idx):
+              depth = lines[idx].count('{') - lines[idx].count('}')
+              block = [lines[idx]]
+              i = idx + 1
+              while i < len(lines) and depth > 0:
+                  depth += lines[i].count('{') - lines[i].count('}')
+                  block.append(lines[i])
+                  i += 1
+              return block, i
+
           out = []
           i = 0
           while i < len(lines):
               line = lines[i]
               stripped = line.strip()
 
-              if stripped == "signingConfigs {" and "release {" not in stripped:
-                  out.append(line)
-                  sc_indent = indent_of(line)
-                  i += 1
-                  has_release = False
-                  depth = 1
-                  block = []
-                  while i < len(lines) and depth > 0:
-                      s = lines[i].strip()
-                      depth += lines[i].count('{') - lines[i].count('}')
-                      if s.startswith("release") and s.endswith("{"):
-                          has_release = True
-                      block.append(lines[i])
-                      i += 1
-                  if not has_release:
-                      block.insert(-1, f"{' ' * (sc_indent + 4)}release {{\n")
-                      block.insert(-1, f"{' ' * (sc_indent + 8)}storeFile file(\"release.keystore\")\n")
-                      block.insert(-1, f"{' ' * (sc_indent + 8)}storePassword System.getenv(\"ANDROID_KEYSTORE_PASSWORD\")\n")
-                      block.insert(-1, f"{' ' * (sc_indent + 8)}keyAlias System.getenv(\"ANDROID_KEY_ALIAS\")\n")
-                      block.insert(-1, f"{' ' * (sc_indent + 8)}keyPassword System.getenv(\"ANDROID_KEY_PASSWORD\")\n")
-                      block.insert(-1, f"{' ' * (sc_indent + 4)}}}\n")
+              if stripped == "signingConfigs {":
+                  block, i = read_block(lines, i)
+                  if "release {" not in "".join(block):
+                      ind = indent_of(block[0])
+                      block.insert(-1, f"{' '*(ind+4)}release {{\n")
+                      block.insert(-1, f"{' '*(ind+8)}storeFile file(\"release.keystore\")\n")
+                      block.insert(-1, f"{' '*(ind+8)}storePassword System.getenv(\"ANDROID_KEYSTORE_PASSWORD\")\n")
+                      block.insert(-1, f"{' '*(ind+8)}keyAlias System.getenv(\"ANDROID_KEY_ALIAS\")\n")
+                      block.insert(-1, f"{' '*(ind+8)}keyPassword System.getenv(\"ANDROID_KEY_PASSWORD\")\n")
+                      block.insert(-1, f"{' '*(ind+4)}}}\n")
                   out.extend(block)
 
-              elif stripped == "release {" and "signingConfig signingConfigs.release" not in "".join(out):
-                  out.append(line)
-                  r_indent = indent_of(line)
-                  i += 1
-                  depth = 1
-                  block = []
-                  while i < len(lines) and depth > 0:
-                      depth += lines[i].count('{') - lines[i].count('}')
-                      block.append(lines[i])
-                      i += 1
-                  block.insert(-1, f"{' ' * (r_indent + 4)}signingConfig signingConfigs.release\n")
+              elif stripped == "defaultConfig {":
+                  block, i = read_block(lines, i)
+                  if "productFlavors {" not in "".join(block):
+                      ind = indent_of(block[0])
+                      flavors = (
+                          f"{' '*(ind+4)}productFlavors {{\n"
+                          f"{' '*(ind+8)}stable {{\n"
+                          f"{' '*(ind+12)}dimension \"default\"\n"
+                          f"{' '*(ind+12)}applicationIdSuffix \".stable\"\n"
+                          f"{' '*(ind+12)}versionNameSuffix \"-stable\"\n"
+                          f"{' '*(ind+8)}}}\n"
+                          f"{' '*(ind+8)}preview {{\n"
+                          f"{' '*(ind+12)}dimension \"default\"\n"
+                          f"{' '*(ind+12)}applicationIdSuffix \".preview\"\n"
+                          f"{' '*(ind+12)}versionNameSuffix \"-preview\"\n"
+                          f"{' '*(ind+8)}}}\n"
+                          f"{' '*(ind+8)}nightly {{\n"
+                          f"{' '*(ind+12)}dimension \"default\"\n"
+                          f"{' '*(ind+12)}applicationIdSuffix \".nightly\"\n"
+                          f"{' '*(ind+12)}versionNameSuffix \"-nightly\"\n"
+                          f"{' '*(ind+8)}}}\n"
+                          f"{' '*(ind+4)}}}\n"
+                      )
+                      block.insert(-1, flavors)
                   out.extend(block)
 
-              elif stripped == "android {" and "splits {" not in "".join(lines):
+              elif stripped == "android {":
                   out.append(line)
-                  a_indent = indent_of(line)
                   i += 1
-                  splits = f"{' ' * (a_indent + 4)}splits {{\n"
-                  splits += f"{' ' * (a_indent + 8)}abi {{\n"
-                  splits += f"{' ' * (a_indent + 12)}enable true\n"
-                  splits += f"{' ' * (a_indent + 12)}reset()\n"
-                  splits += f"{' ' * (a_indent + 12)}include \"armeabi-v7a\", \"arm64-v8a\", \"x86_64\"\n"
-                  splits += f"{' ' * (a_indent + 12)}universalApk true\n"
-                  splits += f"{' ' * (a_indent + 8)}}}\n"
-                  splits += f"{' ' * (a_indent + 4)}}}\n"
-                  out.append(splits)
-                  depth = 1
-                  while i < len(lines) and depth > 0:
-                      depth += lines[i].count('{') - lines[i].count('}')
-                      out.append(lines[i])
-                      i += 1
+                  ind = indent_of(line)
+                  if "flavorDimensions" not in "".join(lines):
+                      out.append(f"{' '*(ind+4)}flavorDimensions \"default\"\n")
+                  if "splits {" not in "".join(lines):
+                      splits = (
+                          f"{' '*(ind+4)}splits {{\n"
+                          f"{' '*(ind+8)}abi {{\n"
+                          f"{' '*(ind+12)}enable true\n"
+                          f"{' '*(ind+12)}reset()\n"
+                          f"{' '*(ind+12)}include \"armeabi-v7a\", \"arm64-v8a\", \"x86_64\"\n"
+                          f"{' '*(ind+12)}universalApk true\n"
+                          f"{' '*(ind+8)}}}\n"
+                          f"{' '*(ind+4)}}}\n"
+                      )
+                      out.append(splits)
+
+              elif stripped == "release {":
+                  block, i = read_block(lines, i)
+                  if "signingConfig signingConfigs.release" not in "".join(block):
+                      ind = indent_of(block[0])
+                      block.insert(-1, f"{' '*(ind+4)}signingConfig signingConfigs.release\n")
+                  out.extend(block)
+
+              elif stripped == "react {":
+                  block, i = read_block(lines, i)
+                  if "debuggableVariants" not in "".join(block):
+                      ind = indent_of(block[0])
+                      block.insert(-1, f"{' '*(ind+4)}debuggableVariants = [\"stableDebug\", \"previewDebug\", \"nightlyDebug\"]\n")
+                  out.extend(block)
 
               else:
                   out.append(line)
                   i += 1
 
           path.write_text("".join(out), encoding="utf-8")
+          print("build.gradle patched successfully")
+
+          # --- Generate variant icons ---
+          icon_src = Path("assets/android-icon-foreground.png")
+          if icon_src.exists():
+              try:
+                  from PIL import Image
+
+                  variants = {
+                      "stable":  (0, 128, 255),
+                      "preview": (255, 153, 0),
+                      "nightly": (255, 0, 0),
+                  }
+                  fg = Image.open(icon_src).convert("RGBA")
+
+                  for name, (cr, cg, cb) in variants.items():
+                      bg = Image.new("RGBA", fg.size, (cr, cg, cb, 255))
+                      composited = Image.alpha_composite(bg, fg)
+
+                      for density, folder in [("mdpi", "mipmap-mdpi"), ("hdpi", "mipmap-hdpi"),
+                                               ("xhdpi", "mipmap-xhdpi"), ("xxhdpi", "mipmap-xxhdpi"),
+                                               ("xxxhdpi", "mipmap-xxxhdpi")]:
+                          scale = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}[density]
+                          out_dir = Path(f"android/app/src/{name}/res/{folder}")
+                          out_dir.mkdir(parents=True, exist_ok=True)
+                          resized = composited.resize((scale, scale), Image.LANCZOS)
+                          resized.save(out_dir / "ic_launcher.png")
+                          resized.save(out_dir / "ic_launcher_round.png")
+                  print("Variant icons generated")
+              except ImportError:
+                  print("WARNING: Pillow not available, skipping icon generation")
+          else:
+              print("WARNING: No foreground icon found, skipping icon generation")
           PY
 
       - uses: gradle/actions/setup-gradle@v6
 
       - name: Build release APKs
-        working-directory: android
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleRelease --build-cache --parallel --stacktrace
+          FLAVOR: ${{ steps.resolve.outputs.flavor }}
+        working-directory: android
+        run: ./gradlew ":app:assemble${FLAVOR^}Release" --build-cache --parallel --stacktrace
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: curium-apk-splits-${{ github.ref_name }}-${{ github.run_number }}
-          path: android/app/build/outputs/apk/**/*.apk
+          name: curium-${{ steps.resolve.outputs.flavor }}-${{ github.ref_name || github.run_number }}
+          path: android/app/build/outputs/apk/${{ steps.resolve.outputs.flavor }}/release/*.apk
           if-no-files-found: error
           retention-days: 14
 
@@ -154,12 +249,19 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          FLAVOR: ${{ steps.resolve.outputs.flavor }}
         run: |
           set -euo pipefail
 
-          gh release create "${{ github.ref_name }}" \
-            --title "${{ github.ref_name }}" \
+          TAG="${{ github.ref_name }}"
+          APK_DIR="android/app/build/outputs/apk/${FLAVOR}/release"
+
+          gh release create "$TAG" \
+            --title "$TAG" \
             --generate-notes \
             --draft=false \
-            --prerelease=false \
-            android/app/build/outputs/apk/**/*.apk
+            --prerelease=false
+
+          for apk in "$APK_DIR"/*.apk; do
+            gh release upload "$TAG" "$apk" --clobber
+          done

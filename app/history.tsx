@@ -1,16 +1,22 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
   TextInput,
   useWindowDimensions,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import {
@@ -21,29 +27,201 @@ import {
 } from "@/services/history";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { useTheme } from "@/context/ThemeContext";
+import { useToast } from "@/components/ui/Toast";
 import { DEFAULT_QR_STYLE } from "@/types/qr";
 
 const THUMB = 80;
 
+// Pulsing skeleton placeholder — same dimensions as AnimatedHistoryCard.
+function SkeletonCard({ colors }: { colors: any }) {
+  const pulse = useSharedValue(0.4);
+
+  useEffect(() => {
+    pulse.value = withTiming(0.85, {
+      duration: 900,
+      easing: Easing.inOut(Easing.cubic),
+    });
+    const id = setInterval(() => {
+      pulse.value = withTiming(
+        pulse.value > 0.6 ? 0.4 : 0.85,
+        { duration: 900, easing: Easing.inOut(Easing.cubic) },
+      );
+    }, 950);
+    return () => clearInterval(id);
+  }, []);
+
+  const skel = useAnimatedStyle(() => ({ opacity: pulse.value }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+        skel,
+      ]}
+    >
+      <View
+        style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}
+      />
+      <View style={styles.info}>
+        <View style={styles.row}>
+          <View
+            style={[styles.badge, { backgroundColor: colors.surfaceOffset }]}
+          />
+          <View
+            style={[
+              styles.skelLine,
+              { backgroundColor: colors.surfaceOffset, width: 52 },
+            ]}
+          />
+        </View>
+        <View
+          style={[
+            styles.skelLine,
+            { backgroundColor: colors.surfaceOffset, width: "85%" },
+          ]}
+        />
+        <View
+          style={[
+            styles.skelLine,
+            { backgroundColor: colors.surfaceOffset, width: "60%" },
+          ]}
+        />
+      </View>
+    </Animated.View>
+  );
+}
+
+function AnimatedHistoryCard({
+  item,
+  index,
+  colors,
+  onSelect,
+  onDelete,
+}: {
+  item: HistoryItem;
+  index: number;
+  colors: any;
+  onSelect: () => void;
+  onDelete: () => void;
+}) {
+  const translateY = useSharedValue(12);
+  const opacity = useSharedValue(0);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
+
+  // Staggered entrance — runs once on mount, not on every focus
+  useEffect(() => {
+    translateY.value = withDelay(
+      Math.min(index * 25, 200),
+      withTiming(0, { duration: 200, easing: Easing.out(Easing.cubic) }),
+    );
+    opacity.value = withDelay(
+      Math.min(index * 25, 200),
+      withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [index]);
+
+  const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+    url: "link-outline",
+    text: "text-outline",
+    wifi: "wifi-outline",
+    email: "mail-outline",
+    phone: "call-outline",
+    sms: "chatbubble-outline",
+    contact: "person-outline",
+    location: "location-outline",
+  };
+
+  return (
+    <Animated.View style={animStyle}>
+      <TouchableOpacity
+        style={[
+          styles.card,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+        onPress={onSelect}
+        activeOpacity={0.6}
+      >
+        <View style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}>
+          <Ionicons
+            name={TYPE_ICONS[item.type] ?? "qr-code-outline"}
+            size={22}
+            color={colors.primary}
+          />
+        </View>
+
+        <View style={styles.info}>
+          <View style={styles.row}>
+            <View style={[styles.badge, { backgroundColor: colors.surfaceOffset }]}>
+              <Text
+                style={[
+                  styles.badgeText,
+                  { color: colors.primary, fontFamily: Fonts.monoBold },
+                ]}
+              >
+                {item.type.toUpperCase()}
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.date,
+                { color: colors.textFaint, fontFamily: Fonts.mono },
+              ]}
+            >
+              {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+              })}
+            </Text>
+          </View>
+          <Text
+            style={[
+              styles.value,
+              { color: colors.text, fontFamily: Fonts.mono },
+            ]}
+            numberOfLines={2}
+          >
+            {item.value}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          onPress={onDelete}
+          hitSlop={12}
+          style={styles.del}
+        >
+          <Ionicons name="trash-outline" size={16} color={colors.error} />
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 export default function HistoryScreen() {
   const { colors } = useTheme();
   const [items, setItems] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const toast = useToast();
 
-  // useFocusEffect = loads every time screen comes into focus, no delay
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      loadHistory().then((data) => {
-        if (active) setItems(data);
-      });
-      return () => {
-        active = false;
-      };
-    }, []),
-  );
+  // Load on initial mount only.  Returning to history from qr-detail
+  // (or any other screen) just reuses the in-memory list — the skeleton
+  // only appears on the very first load, not on every focus event.
+  const hasLoaded = useRef(false);
+  useEffect(() => {
+    if (hasLoaded.current) return;
+    hasLoaded.current = true;
+    loadHistory().then((data) => {
+      setItems(data);
+      setLoading(false);
+    });
+  }, []);
 
   const filtered = query.trim()
     ? items.filter(
@@ -60,18 +238,17 @@ export default function HistoryScreen() {
   }, []);
 
   const handleClear = useCallback(() => {
-    Alert.alert("Clear History", "Delete all QR codes?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Clear All",
-        style: "destructive",
-        onPress: async () => {
-          await clearHistory();
-          setItems([]);
-        },
+    toast.confirm(
+      "Clear History",
+      "Delete all QR codes?",
+      async () => {
+        await clearHistory();
+        setItems([]);
       },
-    ]);
-  }, []);
+      "Clear All",
+      true,
+    );
+  }, [toast]);
 
   const openDetail = (index: number) => {
     // Pass index + serialized items via params
@@ -84,17 +261,6 @@ export default function HistoryScreen() {
     });
   };
 
-  const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-    url: "link-outline",
-    text: "text-outline",
-    wifi: "wifi-outline",
-    email: "mail-outline",
-    phone: "call-outline",
-    sms: "chatbubble-outline",
-    contact: "person-outline",
-    location: "location-outline",
-  };
-
   const renderItem = ({
     item,
     index,
@@ -102,65 +268,13 @@ export default function HistoryScreen() {
     item: HistoryItem;
     index: number;
   }) => (
-    <TouchableOpacity
-      style={[
-        styles.card,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-      ]}
-      onPress={() => openDetail(index)}
-      activeOpacity={0.8}
-    >
-      {/* Icon instead of QR thumbnail */}
-      <View style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}>
-        <Ionicons
-          name={TYPE_ICONS[item.type] ?? "qr-code-outline"}
-          size={22}
-          color={colors.primary}
-        />
-      </View>
-
-      <View style={styles.info}>
-        <View style={styles.row}>
-          <View
-            style={[styles.badge, { backgroundColor: colors.surfaceOffset }]}
-          >
-            <Text
-              style={[
-                styles.badgeText,
-                { color: colors.primary, fontFamily: Fonts.monoBold },
-              ]}
-            >
-              {item.type.toUpperCase()}
-            </Text>
-          </View>
-          <Text
-            style={[
-              styles.date,
-              { color: colors.textFaint, fontFamily: Fonts.mono },
-            ]}
-          >
-            {new Date(item.createdAt).toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-            })}
-          </Text>
-        </View>
-        <Text
-          style={[styles.value, { color: colors.text, fontFamily: Fonts.mono }]}
-          numberOfLines={2}
-        >
-          {item.value}
-        </Text>
-      </View>
-
-      <TouchableOpacity
-        onPress={() => handleDelete(item.id)}
-        hitSlop={12}
-        style={styles.del}
-      >
-        <Ionicons name="trash-outline" size={16} color={colors.error} />
-      </TouchableOpacity>
-    </TouchableOpacity>
+    <AnimatedHistoryCard
+      item={item}
+      index={index}
+      colors={colors}
+      onSelect={() => openDetail(index)}
+      onDelete={() => handleDelete(item.id)}
+    />
   );
 
   return (
@@ -221,7 +335,19 @@ export default function HistoryScreen() {
         </View>
       )}
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <View
+          style={{
+            padding: Spacing.base,
+            gap: Spacing.sm,
+            paddingBottom: insets.bottom + Spacing.xl,
+          }}
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} colors={colors} />
+          ))}
+        </View>
+      ) : filtered.length === 0 ? (
         <View style={styles.empty}>
           <Ionicons name="albums-outline" size={52} color={colors.textFaint} />
           <Text
@@ -319,6 +445,7 @@ const styles = StyleSheet.create({
   date: { fontSize: FontSize.xs },
   value: { fontSize: FontSize.sm, lineHeight: 18 },
   del: { padding: Spacing.xs },
+  skelLine: { height: 10, borderRadius: 4 },
   empty: {
     flex: 1,
     alignItems: "center",

@@ -48,6 +48,11 @@ function ShapePreview({
     diamond: 0,
     cross: 0,
     star: 0.1,
+    plus: 0,
+    triangle: 0,
+    hexagon: 0.15,
+    heart: 0,
+    sparkle: 0,
   };
   const r = R[pixelShape] * pw;
 
@@ -94,6 +99,11 @@ function ShapePreview({
     diamond: 0.12,
     shield: 0.18,
     dot: 0.5,
+    heart: 0.2,
+    hexagon: 0.18,
+    plus: 0.1,
+    star: 0.2,
+    octagon: 0.18,
   };
   const eyeR = ER[eyeShape] * pw * 3;
   const ex = 0.5,
