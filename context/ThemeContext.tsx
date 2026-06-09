@@ -14,7 +14,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   Easing,
-  runOnJS,
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DarkColors, LightColors, AppTheme } from "@/constants/theme";
@@ -123,7 +122,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setQRColors,
       defaultQRStyleForTheme,
     }),
-    [theme, colors, isDark, setTheme, qrFg, qrBg, setQRColors, defaultQRStyleForTheme],
+    [
+      theme,
+      colors,
+      isDark,
+      setTheme,
+      qrFg,
+      qrBg,
+      setQRColors,
+      defaultQRStyleForTheme,
+    ],
   );
 
   // ─── Smooth theme transition ──────────────────────────────────────────────
@@ -138,16 +146,24 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     backgroundColor: overlayBg.value,
   }));
   const prevBgRef = useRef(colors.bg);
+  // Skip the animation on the very first colors.bg change — that's the
+  // AsyncStorage restore (e.g. default "system" → stored "dark"), not
+  // a user-initiated theme switch.
+  const isInitialRef = useRef(true);
 
   useEffect(() => {
+    if (isInitialRef.current) {
+      isInitialRef.current = false;
+      prevBgRef.current = colors.bg;
+      return;
+    }
     if (prevBgRef.current !== colors.bg) {
-      // Capture old bg before updating
       overlayBg.value = prevBgRef.current;
       overlayOpacity.value = 1;
-      overlayOpacity.value = withTiming(
-        0,
-        { duration: 260, easing: Easing.out(Easing.cubic) },
-      );
+      overlayOpacity.value = withTiming(0, {
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+      });
       prevBgRef.current = colors.bg;
     }
   }, [colors.bg]);
