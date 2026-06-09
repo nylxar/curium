@@ -15,6 +15,9 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - master
+      - preview
   schedule:
     - cron: "0 3 * * *"
 
@@ -38,8 +41,15 @@ jobs:
             echo "flavor=nightly" >> "$GITHUB_OUTPUT"
             echo "ref=nightly" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.event_name }}" = "push" ]; then
-            echo "flavor=stable" >> "$GITHUB_OUTPUT"
-            echo "ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            REF="${{ github.ref_name }}"
+            case "$REF" in
+              master)   echo "flavor=stable" >> "$GITHUB_OUTPUT" ;;
+              preview)  echo "flavor=preview" >> "$GITHUB_OUTPUT" ;;
+              nightly)  echo "flavor=nightly" >> "$GITHUB_OUTPUT" ;;
+              v*)       echo "flavor=stable" >> "$GITHUB_OUTPUT" ;;
+              *)        echo "flavor=stable" >> "$GITHUB_OUTPUT" ;;
+            esac
+            echo "ref=$REF" >> "$GITHUB_OUTPUT"
           else
             FLAVOR="${{ inputs.flavor || 'stable' }}"
             echo "flavor=$FLAVOR" >> "$GITHUB_OUTPUT"
