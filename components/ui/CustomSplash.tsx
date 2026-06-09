@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { StyleSheet, Image, useColorScheme } from "react-native";
-import * as SplashScreen from "expo-splash-screen";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,10 +18,10 @@ const THEMES = {
 };
 
 /**
- * Custom splash shown while fonts load.  Controls its own lifecycle:
+ * Custom splash shown while fonts load.  The native splash (icon on #0d0d0f)
+ * auto-hides when React mounts, revealing CustomSplash immediately.
  * 1. Fades logo in on mount.
- * 2. When `ready` becomes true, fades out and calls
- *    `SplashScreen.hideAsync()` directly (no runOnJS bridge).
+ * 2. When `ready` becomes true, fades out background opacity.
  * 3. Calls `onHidden` so the parent can show the app tree.
  */
 export function CustomSplash({
@@ -66,7 +65,7 @@ export function CustomSplash({
     );
   }, []);
 
-  // When fonts are ready, fade out and hide native splash directly
+  // When fonts are ready, fade out background
   useEffect(() => {
     if (!ready) return;
     bgOpacity.value = withTiming(
@@ -74,7 +73,6 @@ export function CustomSplash({
       { duration: FADE_OUT_DURATION, easing: Easing.in(Easing.cubic) },
       (finished) => {
         if (finished) {
-          runOnJS(SplashScreen.hideAsync)();
           runOnJS(onHidden)();
         }
       },
