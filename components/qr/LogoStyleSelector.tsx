@@ -17,12 +17,12 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Switch,
 } from "react-native";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { useTheme } from "@/context/ThemeContext";
 import * as Haptics from "expo-haptics";
 import { LogoStyleConfig, LogoBackground } from "@/types/qr";
+import { ModernSwitch } from "@/components/ui/ModernSwitch";
 
 const BACKGROUNDS: Array<{
   id: LogoBackground;
@@ -141,28 +141,28 @@ export function LogoStyleSelector({
         <Text style={[styles.toggleLabel, { color: colors.text }]}>
           Border
         </Text>
-        <Switch
+        <ModernSwitch
           value={value.border}
-          onValueChange={(v) => {
+          onChange={(v) => {
             Haptics.selectionAsync();
             onChange({ ...value, border: v });
           }}
-          trackColor={{ false: colors.border, true: fgColor + "60" }}
-          thumbColor={value.border ? fgColor : "#f4f3f4"}
+          activeColor={fgColor}
+          inactiveColor={colors.surfaceOffset}
         />
       </View>
       <View style={styles.toggleRow}>
         <Text style={[styles.toggleLabel, { color: colors.text }]}>
           Shadow
         </Text>
-        <Switch
+        <ModernSwitch
           value={value.shadow}
-          onValueChange={(v) => {
+          onChange={(v) => {
             Haptics.selectionAsync();
             onChange({ ...value, shadow: v });
           }}
-          trackColor={{ false: colors.border, true: fgColor + "60" }}
-          thumbColor={value.shadow ? fgColor : "#f4f3f4"}
+          activeColor={fgColor}
+          inactiveColor={colors.surfaceOffset}
         />
       </View>
     </View>

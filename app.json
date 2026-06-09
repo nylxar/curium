@@ -2,11 +2,11 @@
   "expo": {
     "name": "Curium",
     "slug": "Curium",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "curium",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
@@ -34,17 +34,17 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-icon.png",
+          "image": "./assets/icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#0a0a0a"
+          "backgroundColor": "#0d0d0f"
         }
       ],
       [
         "expo-camera",
         {
           "cameraPermission": "Curium uses the camera to scan QR codes.",
-          "microphonePermission": "Curium does not use the microphone.",
+          "microphonePermission": false,
           "recordAudioAndroid": false
         }
       ],

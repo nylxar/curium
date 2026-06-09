@@ -15,6 +15,10 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - master
+      - preview
+      - nightly
   schedule:
     - cron: "0 3 * * *"
 
@@ -38,8 +42,15 @@ jobs:
             echo "flavor=nightly" >> "$GITHUB_OUTPUT"
             echo "ref=nightly" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.event_name }}" = "push" ]; then
-            echo "flavor=stable" >> "$GITHUB_OUTPUT"
-            echo "ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            REF="${{ github.ref_name }}"
+            case "$REF" in
+              master)   echo "flavor=stable" >> "$GITHUB_OUTPUT" ;;
+              preview)  echo "flavor=preview" >> "$GITHUB_OUTPUT" ;;
+              nightly)  echo "flavor=nightly" >> "$GITHUB_OUTPUT" ;;
+              v*)       echo "flavor=stable" >> "$GITHUB_OUTPUT" ;;
+              *)        echo "flavor=stable" >> "$GITHUB_OUTPUT" ;;
+            esac
+            echo "ref=$REF" >> "$GITHUB_OUTPUT"
           else
             FLAVOR="${{ inputs.flavor || 'stable' }}"
             echo "flavor=$FLAVOR" >> "$GITHUB_OUTPUT"
@@ -129,8 +140,15 @@ jobs:
 
               elif stripped == "defaultConfig {":
                   block, i = read_block(lines, i)
-                  if "productFlavors {" not in "".join(block):
-                      ind = indent_of(block[0])
+                  out.extend(block)
+
+              elif stripped == "android {":
+                  out.append(line)
+                  i += 1
+                  ind = indent_of(line)
+                  if "flavorDimensions" not in "".join(lines):
+                      out.append(f"{' '*(ind+4)}flavorDimensions \"default\"\n")
+                  if "productFlavors {" not in "".join(lines):
                       flavors = (
                           f"{' '*(ind+4)}productFlavors {{\n"
                           f"{' '*(ind+8)}stable {{\n"
@@ -150,15 +168,7 @@ jobs:
                           f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+4)}}}\n"
                       )
-                      block.insert(-1, flavors)
-                  out.extend(block)
-
-              elif stripped == "android {":
-                  out.append(line)
-                  i += 1
-                  ind = indent_of(line)
-                  if "flavorDimensions" not in "".join(lines):
-                      out.append(f"{' '*(ind+4)}flavorDimensions \"default\"\n")
+                      out.append(flavors)
                   if "splits {" not in "".join(lines):
                       splits = (
                           f"{' '*(ind+4)}splits {{\n"
@@ -246,22 +256,68 @@ jobs:
           retention-days: 14
 
       - name: Create GitHub Release and upload APKs
-        if: startsWith(github.ref, 'refs/tags/')
+        if: steps.resolve.outputs.flavor == 'stable' || steps.resolve.outputs.flavor == 'preview'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           FLAVOR: ${{ steps.resolve.outputs.flavor }}
         run: |
           set -euo pipefail
 
-          TAG="${{ github.ref_name }}"
+          VERSION=$(node -p "require('./app.json').expo.version")
+
+          # Flavor-specific tags so stable and preview don't collide
+          if [ "$FLAVOR" = "preview" ]; then
+            TAG="v${VERSION}-preview"
+            PRERELEASE_FLAG="--prerelease=true"
+          else
+            TAG="v${VERSION}"
+            PRERELEASE_FLAG="--prerelease=false"
+          fi
+
           APK_DIR="android/app/build/outputs/apk/${FLAVOR}/release"
 
-          gh release create "$TAG" \
-            --title "$TAG" \
-            --generate-notes \
-            --draft=false \
-            --prerelease=false
+          # Skip if this version was already released
+          if gh release view "$TAG" &>/dev/null; then
+            echo "Release $TAG already exists, skipping"
+            exit 0
+          fi
 
-          for apk in "$APK_DIR"/*.apk; do
-            gh release upload "$TAG" "$apk" --clobber
-          done
+          # --- Build release notes (hybrid: manual + auto-generated) ---
+          NOTES_FILE=$(mktemp)
+          trap "rm -f $NOTES_FILE" EXIT
+
+          if [ -f RELEASE_NOTES.md ]; then
+            # Strip HTML comments and the h1 heading, keep the rest
+            sed '/^<!-- /d;/^# Release Notes$/d' RELEASE_NOTES.md > "$NOTES_FILE"
+          fi
+
+          # Append auto-generated notes from GitHub (commits since last release)
+          AUTO_NOTES=$(gh api "repos/${{ github.repository }}/releases/generate-notes" \
+            -f tag_name="$TAG" \
+            -q .body 2>/dev/null || echo "")
+
+          if [ -n "$AUTO_NOTES" ]; then
+            {
+              echo ""
+              echo "---"
+              echo ""
+              echo "$AUTO_NOTES"
+            } >> "$NOTES_FILE"
+          fi
+
+          # Create the release with the combined notes file
+          if [ -s "$NOTES_FILE" ]; then
+            gh release create "$TAG" \
+              --title "Curium ${TAG}" \
+              --notes-file "$NOTES_FILE" \
+              --draft=false \
+              $PRERELEASE_FLAG \
+              "$APK_DIR"/*.apk
+          else
+            gh release create "$TAG" \
+              --title "Curium ${TAG}" \
+              --generate-notes \
+              --draft=false \
+              $PRERELEASE_FLAG \
+              "$APK_DIR"/*.apk
+          fi

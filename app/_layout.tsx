@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
-import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -12,12 +11,15 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
-import { ThemeProvider } from "@/context/ThemeContext";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { OverlayProvider, OverlayHost } from "@/components/ui/Overlay";
 import { CustomSplash } from "@/components/ui/CustomSplash";
 
-SplashScreen.preventAutoHideAsync();
+function ThemedStatusBar() {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? "light" : "dark"} />;
+}
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -57,7 +59,7 @@ export default function RootLayout() {
             <ThemeProvider>
               <ToastProvider>
                 <SafeAreaProvider>
-                  <StatusBar style="auto" />
+                  <ThemedStatusBar />
                   <Stack
                     screenOptions={{
                       headerShown: false,

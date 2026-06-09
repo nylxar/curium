@@ -120,13 +120,7 @@ function Row({
   colors: any;
 }) {
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.row,
-        pressed && { backgroundColor: colors.surfaceOffset },
-      ]}
-      onPress={onPress}
-    >
+    <Pressable style={() => [styles.row]} onPress={onPress}>
       <View
         style={[
           styles.rowIcon,
@@ -282,6 +276,7 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: Spacing.lg,
           paddingBottom: insets.bottom + Spacing.xxxl,
@@ -478,15 +473,6 @@ export default function SettingsScreen() {
           colors={colors}
           onPress={() => router.push("/about")}
         />
-
-        {/* Version card */}
-        <View style={S.versionBox}>
-          <Text style={S.versionTitle}>Curium</Text>
-          <Text style={S.versionSub}>v1.0.0 · Privacy-first QR generator</Text>
-          <Text style={S.versionSub}>
-            Built with Expo · No trackers · Fully offline
-          </Text>
-        </View>
       </ScrollView>
     </View>
   );
