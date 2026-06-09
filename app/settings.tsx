@@ -121,10 +121,7 @@ function Row({
 }) {
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.row,
-        pressed && { backgroundColor: colors.surfaceOffset },
-      ]}
+      style={() => [styles.row]}
       onPress={onPress}
     >
       <View
@@ -282,6 +279,7 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: Spacing.lg,
           paddingBottom: insets.bottom + Spacing.xxxl,

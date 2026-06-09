@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
-import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -16,8 +15,6 @@ import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { OverlayProvider, OverlayHost } from "@/components/ui/Overlay";
 import { CustomSplash } from "@/components/ui/CustomSplash";
-
-SplashScreen.preventAutoHideAsync();
 
 function ThemedStatusBar() {
   const { isDark } = useTheme();
