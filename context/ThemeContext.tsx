@@ -5,9 +5,16 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
   ReactNode,
 } from "react";
-import { useColorScheme } from "react-native";
+import { StyleSheet, useColorScheme } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DarkColors, LightColors, AppTheme } from "@/constants/theme";
 import { defaultQRStyle, QRStyle } from "@/types/qr";
@@ -123,9 +130,38 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [theme, colors, isDark, setTheme, qrFg, qrBg, setQRColors, defaultQRStyleForTheme],
   );
 
+  // ─── Smooth theme transition ──────────────────────────────────────────────
+  // When colors.bg changes, briefly show an overlay at the new background color
+  // and fade it out so the switch feels like a cross-fade rather than a snap.
+  const overlayOpacity = useSharedValue(0);
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value,
+  }));
+  const prevBgRef = useRef(colors.bg);
+
+  useEffect(() => {
+    if (prevBgRef.current !== colors.bg) {
+      prevBgRef.current = colors.bg;
+      overlayOpacity.value = 0;
+      overlayOpacity.value = withTiming(1, {
+        duration: 160,
+        easing: Easing.out(Easing.cubic),
+      }, () => {
+        overlayOpacity.value = withTiming(0, {
+          duration: 200,
+          easing: Easing.in(Easing.cubic),
+        });
+      });
+    }
+  }, [colors.bg]);
+
   return (
     <ThemeContext.Provider value={value}>
       {children}
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }, overlayStyle]}
+      />
     </ThemeContext.Provider>
   );
 }

@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "curium",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
@@ -41,7 +41,7 @@
         "expo-camera",
         {
           "cameraPermission": "Curium uses the camera to scan QR codes.",
-          "microphonePermission": "Curium does not use the microphone.",
+          "microphonePermission": false,
           "recordAudioAndroid": false
         }
       ],
