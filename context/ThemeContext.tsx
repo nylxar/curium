@@ -131,17 +131,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   // ─── Smooth theme transition ──────────────────────────────────────────────
-  // When colors.bg changes, briefly show an overlay at the new background color
-  // and fade it out so the switch feels like a cross-fade rather than a snap.
+  // When the theme *setting* changes (light/dark/system/dynamic via Settings),
+  // briefly show an overlay at the new background color and fade it out so the
+  // switch feels like a cross-fade rather than a snap.  We track `theme`
+  // instead of `colors.bg` so the animation does NOT fire on every QR-palette
+  // shuffle in dynamic mode.
   const overlayOpacity = useSharedValue(0);
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: overlayOpacity.value,
   }));
-  const prevBgRef = useRef(colors.bg);
+  const prevThemeRef = useRef(theme);
 
   useEffect(() => {
-    if (prevBgRef.current !== colors.bg) {
-      prevBgRef.current = colors.bg;
+    if (prevThemeRef.current !== theme) {
+      prevThemeRef.current = theme;
       overlayOpacity.value = 0;
       overlayOpacity.value = withTiming(1, {
         duration: 160,
@@ -153,7 +156,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         });
       });
     }
-  }, [colors.bg]);
+  }, [theme]);
 
   return (
     <ThemeContext.Provider value={value}>

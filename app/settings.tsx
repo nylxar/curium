@@ -479,14 +479,14 @@ export default function SettingsScreen() {
           onPress={() => router.push("/about")}
         />
 
-        {/* Version card */}
+        {/* Version card
         <View style={S.versionBox}>
           <Text style={S.versionTitle}>Curium</Text>
           <Text style={S.versionSub}>v1.0.0 · Privacy-first QR generator</Text>
           <Text style={S.versionSub}>
             Built with Expo · No trackers · Fully offline
           </Text>
-        </View>
+        </View> */}
       </ScrollView>
     </View>
   );
