@@ -18,6 +18,7 @@ on:
     branches:
       - master
       - preview
+      - nightly
   schedule:
     - cron: "0 3 * * *"
 
@@ -263,7 +264,16 @@ jobs:
           set -euo pipefail
 
           VERSION=$(node -p "require('./app.json').expo.version")
-          TAG="v${VERSION}"
+
+          # Flavor-specific tags so stable and preview don't collide
+          if [ "$FLAVOR" = "preview" ]; then
+            TAG="v${VERSION}-preview"
+            PRERELEASE_FLAG="--prerelease=true"
+          else
+            TAG="v${VERSION}"
+            PRERELEASE_FLAG="--prerelease=false"
+          fi
+
           APK_DIR="android/app/build/outputs/apk/${FLAVOR}/release"
 
           # Skip if this version was already released
@@ -301,13 +311,13 @@ jobs:
               --title "Curium ${TAG}" \
               --notes-file "$NOTES_FILE" \
               --draft=false \
-              --prerelease=false \
+              $PRERELEASE_FLAG \
               "$APK_DIR"/*.apk
           else
             gh release create "$TAG" \
               --title "Curium ${TAG}" \
               --generate-notes \
               --draft=false \
-              --prerelease=false \
+              $PRERELEASE_FLAG \
               "$APK_DIR"/*.apk
           fi
