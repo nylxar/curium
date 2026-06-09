@@ -214,13 +214,18 @@ export default function HistoryScreen() {
   const firstLoad = useRef(true);
   useFocusEffect(
     useCallback(() => {
+      let aborted = false;
       loadHistory().then((data) => {
+        if (aborted) return;
         setItems(data);
         if (firstLoad.current) {
           firstLoad.current = false;
           setLoading(false);
         }
       });
+      return () => {
+        aborted = true;
+      };
     }, []),
   );
 
