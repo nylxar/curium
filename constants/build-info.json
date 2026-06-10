@@ -1,9 +1,9 @@
 {
-  "commit": "072eab694ee2e6a1beb0c7c2bab61c3e256299bb",
-  "shortCommit": "072eab6",
+  "commit": "069a0837f88c3d238f94941acc831aab11604f58",
+  "shortCommit": "069a083",
   "branch": "nightly",
-  "commitDate": "2026-06-09 00:13:26 +0530",
-  "commitMessage": "up0013060926",
+  "commitDate": "2026-06-10 22:28:05 +0300",
+  "commitMessage": "up2228061026",
   "isDirty": true,
-  "buildDate": "2026-06-08T19:17:18.776Z"
+  "buildDate": "2026-06-10T19:33:45.064Z"
 }
