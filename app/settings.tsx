@@ -47,12 +47,6 @@ function SectionTitle({
       >
         {children}
       </Text>
-      <View
-        style={[
-          styles.sectionUnderline,
-          { backgroundColor: colors.textMuted + "55" },
-        ]}
-      />
     </View>
   );
 }
@@ -120,7 +114,7 @@ function Row({
   colors: any;
 }) {
   return (
-    <Pressable style={() => [styles.row]} onPress={onPress}>
+    <Pressable style={styles.row} onPress={onPress}>
       <View
         style={[
           styles.rowIcon,
@@ -401,49 +395,6 @@ export default function SettingsScreen() {
             />
           }
         />
-
-        {/* Privacy
-        <SectionTitle colors={colors}>Privacy</SectionTitle>
-        <Row
-          icon="shield-checkmark-outline"
-          label="Offline Only"
-          sub="No internet requests, ever"
-          colors={colors}
-          right={
-            <Ionicons
-              name="checkmark-circle"
-              size={20}
-              color={colors.success}
-            />
-          }
-        />
-        <Row
-          icon="eye-off-outline"
-          label="No Tracking"
-          sub="Zero analytics, zero telemetry"
-          colors={colors}
-          right={
-            <Ionicons
-              name="checkmark-circle"
-              size={20}
-              color={colors.success}
-            />
-          }
-        />
-        <Row
-          icon="lock-closed-outline"
-          label="Local Storage Only"
-          sub="All data stays on your device"
-          colors={colors}
-          right={
-            <Ionicons
-              name="checkmark-circle"
-              size={20}
-              color={colors.success}
-            />
-          }
-        />
-        */}
 
         {/* Data */}
         <SectionTitle colors={colors}>Data</SectionTitle>
