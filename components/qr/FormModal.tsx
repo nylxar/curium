@@ -430,7 +430,7 @@ export function FormModal({
           </Text>
         </TouchableOpacity>
       </View>
-      <View style={{ gap: Spacing.sm }}>{renderFields()}</View>
+      <View style={{ gap: Spacing.sm, marginTop: Spacing.md }}>{renderFields()}</View>
     </AnimatedSheet>
   );
 }
