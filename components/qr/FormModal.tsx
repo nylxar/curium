@@ -107,7 +107,7 @@ function Field({
         autoCapitalize="none"
         autoCorrect={false}
         textAlignVertical={multiline ? "top" : "center"}
-        selectionColor={colors.primary}
+        selectionColor={colors.primary + "60"}
       />
     </View>
   );

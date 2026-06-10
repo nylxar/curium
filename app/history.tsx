@@ -398,7 +398,7 @@ export default function HistoryScreen() {
             placeholderTextColor={colors.textFaint}
             value={query}
             onChangeText={setQuery}
-            selectionColor={colors.primary}
+            selectionColor={colors.primary + "60"}
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => setQuery("")}>

@@ -121,7 +121,7 @@ export function ExpandableField({
             textAlignVertical={multiline ? "top" : "center"}
             keyboardType={keyboardType}
             secureTextEntry={secureTextEntry}
-            selectionColor={colors.primary}
+            selectionColor={colors.primary + "60"}
             autoCapitalize="none"
             autoCorrect={false}
           />
