@@ -122,6 +122,7 @@ function Field({
         placeholderTextColor={colors.textFaint}
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
+        selectionColor={colors.primary}
         multiline={multiline}
         autoCapitalize="none"
         autoCorrect={false}

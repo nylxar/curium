@@ -93,18 +93,6 @@ export function OptionRow({
           </Text>
           <View style={styles.right}>
             {preview ? <View style={styles.preview}>{preview}</View> : null}
-            <View
-              style={[
-                styles.chevronWrap,
-                { backgroundColor: colors.surfaceOffset },
-              ]}
-            >
-              <Ionicons
-                name="chevron-forward"
-                size={14}
-                color={colors.textMuted}
-              />
-            </View>
           </View>
         </View>
       </Pressable>
@@ -165,13 +153,6 @@ export function OptionRow({
           </Pressable>
         </View>
 
-        <View
-          style={[
-            styles.sheetAccent,
-            { backgroundColor: tintColor + "50" },
-          ]}
-        />
-
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
@@ -217,18 +198,12 @@ const styles = StyleSheet.create({
   preview: {
     alignItems: "flex-end",
   },
-  chevronWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   sheetHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
     paddingTop: Spacing.xs,
+    marginBottom: Spacing.lg,
   },
   sheetIconCircle: {
     width: 40,
@@ -256,14 +231,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: StyleSheet.hairlineWidth,
-  },
-  sheetAccent: {
-    height: 2,
-    borderRadius: 1,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.lg,
-    alignSelf: "flex-start",
-    width: 36,
   },
   scroll: { maxHeight: 500 },
   content: { paddingBottom: Spacing.sm },

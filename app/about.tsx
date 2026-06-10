@@ -23,6 +23,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import buildInfo from "@/constants/build-info.json";
 import { useToast } from "@/components/ui/Toast";
+import { setStringAsync } from "expo-clipboard";
 import AppIcon from "@/assets/icon.png";
 
 interface InfoRowProps {
@@ -148,11 +149,8 @@ export default function AboutScreen() {
   };
 
   const copyCommit = () => {
-    // Lazy import to avoid bundling if not used elsewhere
-    import("expo-clipboard").then(({ setStringAsync }) => {
-      setStringAsync(buildInfo.commit);
-      toast.success("Copied", "Commit hash copied to clipboard.");
-    });
+    setStringAsync(buildInfo.commit);
+    toast.success("Copied", "Commit hash copied to clipboard.");
   };
 
   // Links — adjust to real values when published

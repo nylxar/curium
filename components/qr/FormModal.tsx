@@ -85,14 +85,6 @@ function Field({
   const { colors } = useTheme();
   return (
     <View style={fStyles.wrap}>
-      <Text
-        style={[
-          fStyles.label,
-          { color: colors.textMuted, fontFamily: Fonts.mono },
-        ]}
-      >
-        {label}
-      </Text>
       <TextInput
         style={[
           fStyles.input,
@@ -115,7 +107,7 @@ function Field({
         autoCapitalize="none"
         autoCorrect={false}
         textAlignVertical={multiline ? "top" : "center"}
-        selectionColor={tintColor}
+        selectionColor={colors.primary}
       />
     </View>
   );
