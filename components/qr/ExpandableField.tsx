@@ -88,14 +88,7 @@ export function ExpandableField({
         disableSwipeDown
       >
           <View style={styles.sheetHeader}>
-            <Text
-              style={[
-                styles.sheetTitle,
-                { color: colors.text, fontFamily: Fonts.monoBold },
-              ]}
-            >
-              {label}
-            </Text>
+            <View style={{ flex: 1 }} />
             <TouchableOpacity
               style={[styles.doneBtn, { backgroundColor: tintColor }]}
               onPress={() => setOpen(false)}
@@ -128,6 +121,7 @@ export function ExpandableField({
             textAlignVertical={multiline ? "top" : "center"}
             keyboardType={keyboardType}
             secureTextEntry={secureTextEntry}
+            selectionColor={colors.primary}
             autoCapitalize="none"
             autoCorrect={false}
           />
