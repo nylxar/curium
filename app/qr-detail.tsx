@@ -162,9 +162,15 @@ export default function QRDetailScreen() {
       }
       // Wait for native layout to commit before capture.
       await new Promise<void>((r) => setTimeout(r, 200));
-      const uri = await captureRef(ref, { format: "png", quality: 1, result: "tmpfile" });
+      const tmpUri = await captureRef(ref, { format: "png", quality: 1, result: "tmpfile" });
+      // Rename so the gallery entry shows "curium_qr_*" instead of the
+      // generic tmpfile name from react-native-view-shot.
+      const dest = FileSystemLegacy.documentDirectory + `curium_qr_${Date.now()}.png`;
+      const srcFile = new File(tmpUri);
+      const destFile = new File(dest);
+      await srcFile.copy(destFile);
       const { Asset } = await import("expo-media-library");
-      await Asset.create(uri);
+      await Asset.create(destFile.uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       toast.success("Saved!", "QR saved to your gallery.");
     } catch {

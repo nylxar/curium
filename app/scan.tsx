@@ -5,9 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { Camera, CameraView, useCameraPermissions } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -90,6 +92,7 @@ export default function ScanScreen() {
   const [torch, setTorch] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [galleryLoading, setGalleryLoading] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors, isDark } = useTheme();
@@ -152,6 +155,42 @@ export default function ScanScreen() {
     },
     [scanned],
   );
+
+  const handleGalleryScan = useCallback(async () => {
+    if (galleryLoading) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      toast.info("Permission needed", "Allow photo access to scan from gallery.");
+      return;
+    }
+    const picker = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 1,
+    });
+    if (picker.canceled || !picker.assets?.[0]?.uri) return;
+    setGalleryLoading(true);
+    try {
+      const results = await Camera.scanFromURLAsync(picker.assets[0].uri, [
+        "qr",
+        "ean13",
+        "ean8",
+        "code128",
+        "code39",
+        "pdf417",
+        "aztec",
+        "datamatrix",
+      ]);
+      if (results.length > 0) {
+        onBarcodeScanned({ data: results[0].data });
+      } else {
+        toast.info("No code found", "No QR code or barcode detected in image.");
+      }
+    } catch {
+      toast.info("Scan failed", "Could not read code from image.");
+    } finally {
+      setGalleryLoading(false);
+    }
+  }, [galleryLoading, onBarcodeScanned, toast]);
 
   const handleAction = async (action: "open" | "copy") => {
     if (!result) return;
@@ -279,17 +318,31 @@ export default function ScanScreen() {
           >
             Scan QR / Barcode
           </Text>
-          <TouchableOpacity
-            onPress={() => setTorch((t) => !t)}
-            hitSlop={12}
-            style={styles.topBtn}
-          >
-            <Ionicons
-              name={torch ? "flash" : "flash-outline"}
-              size={22}
-              color={torch ? "#facc15" : "#fff"}
-            />
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", gap: Spacing.xs }}>
+            <TouchableOpacity
+              onPress={handleGalleryScan}
+              hitSlop={12}
+              style={styles.topBtn}
+              disabled={galleryLoading}
+            >
+              {galleryLoading ? (
+                <ActivityIndicator size={20} color="#fff" />
+              ) : (
+                <Ionicons name="images-outline" size={22} color="#fff" />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setTorch((t) => !t)}
+              hitSlop={12}
+              style={styles.topBtn}
+            >
+              <Ionicons
+                name={torch ? "flash" : "flash-outline"}
+                size={22}
+                color={torch ? "#facc15" : "#fff"}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={{ flex: 1 }} />
@@ -374,18 +427,18 @@ export default function ScanScreen() {
               <View
                 style={[
                   styles.resultBadge,
-                  { backgroundColor: "#22c55e" + "20" },
+                  { backgroundColor: colors.primary + "20" },
                 ]}
               >
                 <Ionicons
                   name="checkmark-circle"
                   size={14}
-                  color="#22c55e"
+                  color={colors.primary}
                 />
                 <Text
                   style={[
                     styles.resultBadgeText,
-                    { color: "#22c55e", fontFamily: Fonts.monoBold },
+                    { color: colors.primary, fontFamily: Fonts.monoBold },
                   ]}
                 >
                   SCANNED

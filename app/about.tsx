@@ -188,6 +188,7 @@ export default function AboutScreen() {
       </View>
 
       <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: Spacing.lg,
           paddingBottom: insets.bottom + Spacing.xxxl,
@@ -206,10 +207,6 @@ export default function AboutScreen() {
           <View
             style={[
               styles.logoBox,
-              {
-                backgroundColor: colors.primary + "18",
-                borderColor: colors.primary + "40",
-              },
             ]}
           >
             <Image
@@ -250,14 +247,10 @@ export default function AboutScreen() {
                 },
               ]}
             >
-              <View
-                style={[
-                  styles.badgeDot,
-                  {
-                    backgroundColor:
-                      appVariant === "dev" ? colors.warning : colors.success,
-                  },
-                ]}
+              <Ionicons
+                name={appVariant === "dev" ? "flask-outline" : "checkmark-circle-outline"}
+                size={11}
+                color={appVariant === "dev" ? colors.warning : colors.success}
               />
               <Text
                 style={[
