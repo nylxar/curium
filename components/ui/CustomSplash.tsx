@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { StyleSheet, Image, useColorScheme } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -65,7 +66,7 @@ export function CustomSplash({
     );
   }, []);
 
-  // When fonts are ready, fade out background
+  // When fonts are ready, fade out background and hide native splash
   useEffect(() => {
     if (!ready) return;
     bgOpacity.value = withTiming(
@@ -73,6 +74,7 @@ export function CustomSplash({
       { duration: FADE_OUT_DURATION, easing: Easing.in(Easing.cubic) },
       (finished) => {
         if (finished) {
+          runOnJS(SplashScreen.hideAsync)();
           runOnJS(onHidden)();
         }
       },
