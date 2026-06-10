@@ -1,6 +1,6 @@
 {
   "name": "curium",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "main": "expo-router/entry",
   "scripts": {
     "postinstall": "node scripts/write-build-info.js",
@@ -13,12 +13,10 @@
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@types/qrcode": "^1.5.6",
     "expo": "~56.0.9",
     "expo-camera": "~56.0.7",
     "expo-clipboard": "~56.0.4",
     "expo-constants": "~56.0.17",
-    "expo-dev-client": "~56.0.19",
     "expo-file-system": "~56.0.7",
     "expo-font": "~56.0.5",
     "expo-haptics": "~56.0.3",
@@ -47,7 +45,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "~19.2.16",
+    "expo-dev-client": "~56.0.19",
     "typescript": "~6.0.3"
   },
   "private": true
