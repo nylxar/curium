@@ -1,5 +1,5 @@
 // app/settings.tsx — FULL REPLACEMENT
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { clearHistory } from "@/services/history";
+import { loadSettings, saveSettings, AppSettings } from "@/services/settings";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts, AppTheme } from "@/constants/theme";
 import { useToast } from "@/components/ui/Toast";
@@ -177,6 +178,22 @@ export default function SettingsScreen() {
   const router = useRouter();
   const toast = useToast();
 
+  useEffect(() => {
+    loadSettings().then((s) => {
+      setHaptics(s.haptics);
+      setSoundOnScan(s.soundOnScan);
+      setAutoCopy(s.autoCopy);
+      setKeepScreenOn(s.keepScreenOn);
+    });
+  }, []);
+
+  const update = useCallback(
+    (partial: Partial<AppSettings>) => {
+      saveSettings(partial);
+    },
+    [],
+  );
+
   const S = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.bg },
     header: {
@@ -334,6 +351,7 @@ export default function SettingsScreen() {
               value={haptics}
               onChange={(v) => {
                 setHaptics(v);
+                update({ haptics: v });
                 if (v) Haptics.selectionAsync();
               }}
               activeColor={colors.primary}
@@ -351,6 +369,7 @@ export default function SettingsScreen() {
               value={soundOnScan}
               onChange={(v) => {
                 setSoundOnScan(v);
+                update({ soundOnScan: v });
                 Haptics.selectionAsync();
               }}
               activeColor={colors.primary}
@@ -368,6 +387,7 @@ export default function SettingsScreen() {
               value={keepScreenOn}
               onChange={(v) => {
                 setKeepScreenOn(v);
+                update({ keepScreenOn: v });
                 Haptics.selectionAsync();
               }}
               activeColor={colors.primary}
@@ -388,6 +408,7 @@ export default function SettingsScreen() {
               value={autoCopy}
               onChange={(v) => {
                 setAutoCopy(v);
+                update({ autoCopy: v });
                 Haptics.selectionAsync();
               }}
               activeColor={colors.primary}
