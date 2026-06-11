@@ -119,10 +119,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   // ─── Smooth theme transition ──────────────────────────────────────────────
-  // When the background color actually changes via user action, capture the
-  // OLD color and fade an overlay from it to transparent.  We track
-  // `colors.bg` (not `theme`) so switching e.g. "light" → "system" when
-  // the device is in light mode doesn't trigger a redundant flash.
+  // When the user switches between light/dark/system/dynamic, capture the
+  // OLD background color and fade an overlay from it to transparent.
+  //
+  // QR color changes in dynamic mode must NOT trigger this overlay —
+  // only actual theme switches should.
   //
   // The animation must NOT fire on the initial AsyncStorage restore
   // (default "system" → stored "dark").  To guarantee this, we only
@@ -135,6 +136,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }));
   const prevBgRef = useRef(colors.bg);
   const hasUserInteractedRef = useRef(false);
+  const prevThemeRef = useRef(theme);
+  const prevEffectiveSystemRef = useRef(effectiveSystem);
 
   const setTheme = useCallback((t: AppTheme) => {
     hasUserInteractedRef.current = true;
@@ -143,20 +146,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const themeChanged = prevThemeRef.current !== theme;
+    const systemChanged = prevEffectiveSystemRef.current !== effectiveSystem;
+    prevThemeRef.current = theme;
+    prevEffectiveSystemRef.current = effectiveSystem;
+
     if (!hasUserInteractedRef.current) {
       prevBgRef.current = colors.bg;
       return;
     }
-    if (prevBgRef.current !== colors.bg) {
+
+    if ((themeChanged || systemChanged) && prevBgRef.current !== colors.bg) {
       overlayBg.value = prevBgRef.current;
       overlayOpacity.value = 1;
       overlayOpacity.value = withTiming(0, {
         duration: 260,
         easing: Easing.out(Easing.cubic),
       });
-      prevBgRef.current = colors.bg;
     }
-  }, [colors.bg]);
+    prevBgRef.current = colors.bg;
+  }, [colors.bg, theme, effectiveSystem]);
 
   const value = useMemo<ThemeCtx>(
     () => ({

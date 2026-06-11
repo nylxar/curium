@@ -339,7 +339,7 @@ export default function AboutScreen() {
           <InfoRow
             icon="cube-outline"
             label="Runtime"
-            value={`Expo SDK ${Constants.expoConfig?.sdkVersion ?? "—"}`}
+            value={`Expo SDK ${require("expo/package.json").version}`}
             index={5}
             colors={colors}
           />
