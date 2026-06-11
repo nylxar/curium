@@ -8,7 +8,8 @@
     "android": "node scripts/write-build-info.js && expo start --android",
     "ios": "node scripts/write-build-info.js && expo start --ios",
     "web": "node scripts/write-build-info.js && expo start --web",
-    "build:info": "node scripts/write-build-info.js"
+    "build:info": "node scripts/write-build-info.js",
+    "lint": "expo lint"
   },
   "dependencies": {
     "@expo/metro-runtime": "^56.0.15",
@@ -48,6 +49,8 @@
     "@babel/core": "^7.29.7",
     "@types/qrcode": "^1.5.6",
     "@types/react": "~19.2.16",
+    "eslint": "^10.4.1",
+    "eslint-config-expo": "^56.0.4",
     "expo-dev-client": "~56.0.20",
     "typescript": "~6.0.3"
   },
