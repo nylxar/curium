@@ -154,10 +154,10 @@ export default function AboutScreen() {
   };
 
   // Links — adjust to real values when published
-  const GITHUB_URL = "https://github.com/leviathnan/Curium";
-  const DONATE_URL = "https://github.com/sponsors/leviathnan";
-  const ISSUES_URL = "https://github.com/leviathnan/Curium/issues";
-  const RELEASES_URL = "https://github.com/leviathnan/Curium/releases";
+  const GITHUB_URL = "https://github.com/nylxar/Curium";
+  const DONATE_URL = "https://github.com/sponsors/nylxar";
+  const ISSUES_URL = "https://github.com/nylxar/Curium/issues";
+  const RELEASES_URL = "https://github.com/nylxar/Curium/releases";
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>

@@ -54,9 +54,9 @@ Curium ships three Android build variants that can be installed side-by-side. Ea
 
 | Variant | Application ID | Icon Color | Purpose |
 |---------|---------------|------------|---------|
-| Stable | `com.leviathnan.Curium.stable` | Blue | Production releases |
-| Preview | `com.leviathnan.Curium.preview` | Orange | Pre-release testing |
-| Nightly | `com.leviathnan.Curium.nightly` | Red | Automated daily builds |
+| Stable | `com.nylxar.curium.stable` | Blue | Production releases |
+| Preview | `com.nylxar.curium.preview` | Orange | Pre-release testing |
+| Nightly | `com.nylxar.curium.nightly` | Red | Automated daily builds |
 
 ### Expo Development Client
 
@@ -66,7 +66,7 @@ To build a development APK for local development with the Expo dev client:
 eas build --platform android --profile development
 ```
 
-This produces an APK with the base application ID (`com.leviathnan.Curium`) and includes the Expo development tools.
+This produces an APK with the base application ID (`com.nylxar.curium`) and includes the Expo development tools.
 
 ## CI/CD
 
