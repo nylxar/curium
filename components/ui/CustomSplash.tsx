@@ -8,22 +8,23 @@ import Animated, {
   withDelay,
   Easing,
   runOnJS,
+  interpolateColor,
 } from "react-native-reanimated";
 
 const FADE_IN_DURATION = 400;
 const SCALE_IN_DURATION = 500;
 const FADE_OUT_DURATION = 350;
+const NATIVE_SPLASH_BG = "#0d0d0f";
 const THEMES = {
   light: { bg: "#f5f0e8" },
   dark: { bg: "#0d0d0f" },
 };
 
 /**
- * Custom splash shown while fonts load.  The native splash (icon on #0d0d0f)
- * auto-hides when React mounts, revealing CustomSplash immediately.
- * 1. Fades logo in on mount.
- * 2. When `ready` becomes true, fades out background opacity.
- * 3. Calls `onHidden` so the parent can show the app tree.
+ * Custom splash shown while fonts load.  Starts with the native splash
+ * background color (#0d0d0f) so there is zero visual jump when the
+ * native splash auto-hides.  Once mounted, the background animates to
+ * the theme-appropriate color, then fades out when the app is ready.
  */
 export function CustomSplash({
   ready,
@@ -38,15 +39,21 @@ export function CustomSplash({
   const logoOpacity = useSharedValue(0);
   const logoScale = useSharedValue(0.85);
   const bgOpacity = useSharedValue(1);
+  const bgProgress = useSharedValue(0);
 
   const logoStyle = useAnimatedStyle(() => ({
     opacity: logoOpacity.value,
     transform: [{ scale: logoScale.value }],
   }));
 
-  const bgStyle = useAnimatedStyle(() => ({
-    opacity: bgOpacity.value,
-  }));
+  const bgStyle = useAnimatedStyle(() => {
+    const bg = interpolateColor(
+      bgProgress.value,
+      [0, 1],
+      [NATIVE_SPLASH_BG, theme.bg],
+    );
+    return { opacity: bgOpacity.value, backgroundColor: bg };
+  });
 
   // Logo entrance animation
   useEffect(() => {
@@ -63,6 +70,11 @@ export function CustomSplash({
         duration: SCALE_IN_DURATION,
         easing: Easing.out(Easing.cubic),
       }),
+    );
+    // Animate bg from native splash color to theme color
+    bgProgress.value = withDelay(
+      200,
+      withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) }),
     );
   }, []);
 
@@ -84,7 +96,7 @@ export function CustomSplash({
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.container, { backgroundColor: theme.bg }, bgStyle]}
+      style={[styles.container, bgStyle]}
     >
       <Animated.View style={logoStyle}>
         <Image

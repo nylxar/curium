@@ -54,8 +54,8 @@ export default function RootLayout() {
   }, [fontsReady]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
+      <View style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
         {/* App tree — always rendered so it's fully laid out behind the splash */}
         <Animated.View style={[{ flex: 1 }, appStyle]}>
           <OverlayProvider>
