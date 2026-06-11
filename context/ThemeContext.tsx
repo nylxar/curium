@@ -16,7 +16,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DarkColors, LightColors, AppTheme } from "@/constants/theme";
+import { DarkColors, LightColors, AmoledColors, AppTheme } from "@/constants/theme";
 import { defaultQRStyle, QRStyle } from "@/types/qr";
 
 interface ThemeCtx {
@@ -28,6 +28,9 @@ interface ThemeCtx {
   qrBg: string;
   setQRColors: (fg: string, bg: string) => void;
   defaultQRStyleForTheme: QRStyle;
+  pureDark: boolean;
+  setPureDark: (v: boolean) => void;
+  ready: boolean;
 }
 
 const ThemeContext = createContext<ThemeCtx>({
@@ -39,6 +42,9 @@ const ThemeContext = createContext<ThemeCtx>({
   qrBg: "#fafaf9",
   setQRColors: () => {},
   defaultQRStyleForTheme: defaultQRStyle(false),
+  pureDark: false,
+  setPureDark: () => {},
+  ready: false,
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -61,19 +67,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<AppTheme>("system");
   const [qrFg, setQrFg] = useState("#1c1917");
   const [qrBg, setQrBg] = useState("#fafaf9");
+  const [pureDark, setPureDarkState] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     AsyncStorage.multiGet([
       "curium_theme",
       "curium_qr_fg",
       "curium_qr_bg",
+      "curium_pure_dark",
     ]).then((pairs) => {
       const t = pairs[0][1];
       const fg = pairs[1][1];
       const bg = pairs[2][1];
+      const pd = pairs[3][1];
       if (t) setThemeState(t as AppTheme);
       if (fg) setQrFg(fg);
       if (bg) setQrBg(bg);
+      if (pd === "true") setPureDarkState(true);
+      setReady(true);
     });
   }, []);
 
@@ -103,15 +115,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         primaryBg: qrFg + "22",
       };
     }
-    const isDark =
-      theme === "dark" || (theme === "system" && effectiveSystem === "dark");
-    return isDark ? DarkColors : LightColors;
-  }, [theme, effectiveSystem, qrFg, qrBg]);
+    const resolvedDark =
+      theme === "dark" ||
+      (theme === "system" && effectiveSystem === "dark");
+    if (resolvedDark && pureDark) return AmoledColors;
+    return resolvedDark ? DarkColors : LightColors;
+  }, [theme, effectiveSystem, qrFg, qrBg, pureDark]);
 
   const isDark =
     theme === "dynamic"
       ? isColorDark(qrBg)
-      : theme === "dark" || (theme === "system" && effectiveSystem === "dark");
+      : theme === "dark" ||
+        (theme === "system" && effectiveSystem === "dark");
 
   const defaultQRStyleForTheme = useMemo(
     () => defaultQRStyle(isDark),
@@ -143,6 +158,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     hasUserInteractedRef.current = true;
     setThemeState(t);
     AsyncStorage.setItem("curium_theme", t);
+  }, []);
+
+  const setPureDark = useCallback((v: boolean) => {
+    hasUserInteractedRef.current = true;
+    setPureDarkState(v);
+    AsyncStorage.setItem("curium_pure_dark", v ? "true" : "false");
   }, []);
 
   useEffect(() => {
@@ -177,6 +198,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       qrBg,
       setQRColors,
       defaultQRStyleForTheme,
+      pureDark,
+      setPureDark,
+      ready,
     }),
     [
       theme,
@@ -187,6 +211,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       qrBg,
       setQRColors,
       defaultQRStyleForTheme,
+      pureDark,
+      setPureDark,
+      ready,
     ],
   );
 

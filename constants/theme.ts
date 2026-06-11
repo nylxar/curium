@@ -47,6 +47,16 @@ export const DarkColors = {
   warning: "#f5c46a",
 };
 
+// AMOLED theme: true black (#000) for OLED screens.  Same paper text and
+// accents as DarkColors — only the background differs.
+export const AmoledColors: typeof DarkColors = {
+  ...DarkColors,
+  bg: "#000000",
+  surface: "#0a0a0a",
+  surfaceOffset: "#141414",
+  border: "#1e1e1e",
+};
+
 // Light theme: paper (warm cream) canvas with ink (near-black) text and
 // accents.  Primary is near-black so CTAs, toggles, and active borders
 // read as ink rather than a saturated blue.  Same paper-notebook feel as

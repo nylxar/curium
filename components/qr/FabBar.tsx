@@ -335,7 +335,6 @@ const styles = StyleSheet.create({
   btnLabel: {
     fontSize: FontSize.xs,
     fontFamily: Fonts.monoMedium,
-    fontWeight: "600",
     letterSpacing: 0.2,
   },
 
