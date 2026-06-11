@@ -1,6 +1,7 @@
 allowBuilds:
   dtrace-provider: set this to true or false
   msgpackr-extract: true
+  unrs-resolver: set this to true or false
 minimumReleaseAge: 0
 minimumReleaseAgeExclude:
   - '@expo/cli@56.1.12'

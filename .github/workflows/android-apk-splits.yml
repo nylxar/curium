@@ -84,9 +84,6 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Pillow for icon generation
-        run: pip install Pillow
-
       - name: Expo prebuild
         run: pnpm exec expo prebuild --platform android --clean --non-interactive
 
@@ -202,38 +199,6 @@ jobs:
 
           path.write_text("".join(out), encoding="utf-8")
           print("build.gradle patched successfully")
-
-          # --- Generate variant icons ---
-          icon_src = Path("assets/android-icon-foreground.png")
-          if icon_src.exists():
-              try:
-                  from PIL import Image
-
-                  variants = {
-                      "stable":  (0, 128, 255),
-                      "preview": (255, 153, 0),
-                      "nightly": (255, 0, 0),
-                  }
-                  fg = Image.open(icon_src).convert("RGBA")
-
-                  for name, (cr, cg, cb) in variants.items():
-                      bg = Image.new("RGBA", fg.size, (cr, cg, cb, 255))
-                      composited = Image.alpha_composite(bg, fg)
-
-                      for density, folder in [("mdpi", "mipmap-mdpi"), ("hdpi", "mipmap-hdpi"),
-                                               ("xhdpi", "mipmap-xhdpi"), ("xxhdpi", "mipmap-xxhdpi"),
-                                               ("xxxhdpi", "mipmap-xxxhdpi")]:
-                          scale = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}[density]
-                          out_dir = Path(f"android/app/src/{name}/res/{folder}")
-                          out_dir.mkdir(parents=True, exist_ok=True)
-                          resized = composited.resize((scale, scale), Image.LANCZOS)
-                          resized.save(out_dir / "ic_launcher.png")
-                          resized.save(out_dir / "ic_launcher_round.png")
-                  print("Variant icons generated")
-              except ImportError:
-                  print("WARNING: Pillow not available, skipping icon generation")
-          else:
-              print("WARNING: No foreground icon found, skipping icon generation")
           PY
 
       - uses: gradle/actions/setup-gradle@v6
@@ -305,6 +270,10 @@ jobs:
             } >> "$NOTES_FILE"
           fi
 
+          # Create source code archive
+          SOURCE_ZIP="curium-source-${TAG}.zip"
+          git archive --format=zip --output="$SOURCE_ZIP" HEAD
+
           # Create the release with the combined notes file
           if [ -s "$NOTES_FILE" ]; then
             gh release create "$TAG" \
@@ -312,12 +281,14 @@ jobs:
               --notes-file "$NOTES_FILE" \
               --draft=false \
               $PRERELEASE_FLAG \
-              "$APK_DIR"/*.apk
+              "$APK_DIR"/*.apk \
+              "$SOURCE_ZIP"
           else
             gh release create "$TAG" \
               --title "Curium ${TAG}" \
               --generate-notes \
               --draft=false \
               $PRERELEASE_FLAG \
-              "$APK_DIR"/*.apk
+              "$APK_DIR"/*.apk \
+              "$SOURCE_ZIP"
           fi
