@@ -485,7 +485,7 @@ export default function CreateScreen() {
   // Initial QR style follows the theme: paper/ink in light mode,
   // paper-dark/ink (inverted) in dark mode.  Users can still override
   // via the Color palette and that override persists in qrStyle state.
-  const { setQRColors, defaultQRStyleForTheme } = useTheme();
+  const { setQRColors, defaultQRStyleForTheme, theme } = useTheme();
   const [qrStyle, setQrStyle] = useState<QRStyle>(defaultQRStyleForTheme);
   const [activeSheet, setActiveSheet] = useState<SheetId>(null);
   const qrRef = useRef<View>(null);
@@ -785,13 +785,17 @@ export default function CreateScreen() {
     if (screenBgTarget !== prevScreenBg.current) {
       const old = prevScreenBg.current;
       prevScreenBg.current = screenBgTarget;
-      screenBg.value = old;
-      screenBg.value = withTiming(screenBgTarget, {
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-      });
+      if (theme === "dynamic") {
+        screenBg.value = screenBgTarget;
+      } else {
+        screenBg.value = old;
+        screenBg.value = withTiming(screenBgTarget, {
+          duration: 420,
+          easing: Easing.out(Easing.cubic),
+        });
+      }
     }
-  }, [screenBgTarget]);
+  }, [screenBgTarget, theme]);
   const screenBgStyle = useAnimatedStyle(() => ({
     backgroundColor: screenBg.value,
   }));

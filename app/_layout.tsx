@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { View } from "react-native";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
@@ -9,7 +9,6 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { OverlayProvider, OverlayHost } from "@/components/ui/Overlay";
-import { CustomSplash } from "@/components/ui/CustomSplash";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,13 +36,22 @@ export default function RootLayout() {
   });
   const fontsReady = !!(loaded || error);
 
-  const [splashHidden, setSplashHidden] = useState(false);
+  function SplashReady() {
+    const { ready } = useTheme();
+    useEffect(() => {
+      if (fontsReady && ready) {
+        SplashScreen.hideAsync();
+      }
+    }, [fontsReady, ready]);
+    return null;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
       <View style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
         <OverlayProvider>
           <ThemeProvider>
+            <SplashReady />
             <ThemedBackground>
               <ToastProvider>
                 <SafeAreaProvider>
@@ -98,12 +106,6 @@ export default function RootLayout() {
             </ThemedBackground>
           </ThemeProvider>
         </OverlayProvider>
-        {!splashHidden && (
-          <CustomSplash
-            ready={fontsReady}
-            onHidden={() => setSplashHidden(true)}
-          />
-        )}
       </View>
     </GestureHandlerRootView>
   );

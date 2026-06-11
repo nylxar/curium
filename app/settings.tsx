@@ -169,7 +169,7 @@ function Row({
 }
 
 export default function SettingsScreen() {
-  const { colors, theme, setTheme } = useTheme();
+  const { colors, theme, setTheme, pureDark, setPureDark } = useTheme();
   const [haptics, setHaptics] = useState(true);
   const [soundOnScan, setSoundOnScan] = useState(false);
   const [autoCopy, setAutoCopy] = useState(false);
@@ -337,6 +337,30 @@ export default function SettingsScreen() {
               App colors match your QR theme. Change it on the Create screen.
             </Text>
           </View>
+        )}
+
+        {/* Enhancement */}
+        {(theme === "dark" || theme === "system" || theme === "dynamic") && (
+          <>
+            <SectionTitle colors={colors}>Enhancement</SectionTitle>
+            <Row
+              icon="ellipse-outline"
+              label="Pure Black"
+              sub="True black background for OLED screens"
+              colors={colors}
+              right={
+                <ModernSwitch
+                  value={pureDark}
+                  onChange={(v) => {
+                    setPureDark(v);
+                    Haptics.selectionAsync();
+                  }}
+                  activeColor={colors.primary}
+                  inactiveColor={colors.surfaceOffset}
+                />
+              }
+            />
+          </>
         )}
 
         {/* Interaction */}
