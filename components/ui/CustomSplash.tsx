@@ -14,7 +14,7 @@ import Animated, {
 const FADE_IN_DURATION = 400;
 const SCALE_IN_DURATION = 500;
 const FADE_OUT_DURATION = 350;
-const NATIVE_SPLASH_BG = "#0d0d0f";
+const NATIVE_SPLASH_BG = "#f5f0e8";
 const THEMES = {
   light: { bg: "#f5f0e8" },
   dark: { bg: "#0d0d0f" },
