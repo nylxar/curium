@@ -1,9 +1,4 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Asset, requestPermissionsAsync } from "expo-media-library";
 import { File } from "expo-file-system";
 import * as FileSystemLegacy from "expo-file-system/legacy";
@@ -54,10 +49,15 @@ export function ExportSheet({
       }
       // Wait for native layout to commit before capture.
       await new Promise<void>((r) => setTimeout(r, 200));
-      const tmpUri = await captureRef(qrRef, { format: "png", quality: 1, result: "tmpfile" });
+      const tmpUri = await captureRef(qrRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+      });
       // Rename so the gallery entry shows "curium_qr_*" instead of the
       // generic tmpfile name from react-native-view-shot.
-      const dest = FileSystemLegacy.documentDirectory + `curium_qr_${Date.now()}.png`;
+      const dest =
+        FileSystemLegacy.documentDirectory + `curium_qr_${Date.now()}.png`;
       const srcFile = new File(tmpUri);
       const destFile = new File(dest);
       await srcFile.copy(destFile);
@@ -95,9 +95,14 @@ export function ExportSheet({
     try {
       // Wait for native layout to commit before capture.
       await new Promise<void>((r) => setTimeout(r, 200));
-      const tmpUri = await captureRef(qrRef, { format: "png", quality: 1, result: "tmpfile" });
+      const tmpUri = await captureRef(qrRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+      });
       // Copy to persistent directory — tmpfile URIs don't survive Android activity restarts.
-      const dest = FileSystemLegacy.documentDirectory + `curium_qr_${Date.now()}.png`;
+      const dest =
+        FileSystemLegacy.documentDirectory + `curium_qr_${Date.now()}.png`;
       const srcFile = new File(tmpUri);
       const destFile = new File(dest);
       await srcFile.copy(destFile);
@@ -149,7 +154,7 @@ export function ExportSheet({
       visible={visible}
       onClose={onClose}
       title="Export QR"
-      subtitle="Save or share your QR"
+      subtitle=""
       iconName="share-outline"
       tintColor={tintColor}
       bgColor={bgColor}
@@ -197,6 +202,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   text: { flex: 1 },
-  label: { fontSize: FontSize.base, fontFamily: Fonts.monoMedium, fontWeight: "600" },
+  label: {
+    fontSize: FontSize.base,
+    fontFamily: Fonts.monoMedium,
+    fontWeight: "600",
+  },
   sub: { fontSize: FontSize.xs, fontFamily: Fonts.mono, marginTop: 2 },
 });
