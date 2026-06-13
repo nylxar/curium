@@ -64,6 +64,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ steps.resolve.outputs.ref }}
+          fetch-depth: 0
           persist-credentials: false
 
       - uses: pnpm/action-setup@v6
@@ -270,9 +271,11 @@ jobs:
             } >> "$NOTES_FILE"
           fi
 
-          # Create source code archive
+          # Create source code archives
           SOURCE_ZIP="curium-source-${TAG}.zip"
+          SOURCE_TGZ="curium-source-${TAG}.tar.gz"
           git archive --format=zip --output="$SOURCE_ZIP" HEAD
+          git archive --format=tar.gz --output="$SOURCE_TGZ" HEAD
 
           # Create the release with the combined notes file
           if [ -s "$NOTES_FILE" ]; then
@@ -282,7 +285,8 @@ jobs:
               --draft=false \
               $PRERELEASE_FLAG \
               "$APK_DIR"/*.apk \
-              "$SOURCE_ZIP"
+              "$SOURCE_ZIP" \
+              "$SOURCE_TGZ"
           else
             gh release create "$TAG" \
               --title "Curium ${TAG}" \
@@ -290,5 +294,6 @@ jobs:
               --draft=false \
               $PRERELEASE_FLAG \
               "$APK_DIR"/*.apk \
-              "$SOURCE_ZIP"
+              "$SOURCE_ZIP" \
+              "$SOURCE_TGZ"
           fi
