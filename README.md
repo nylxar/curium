@@ -1,54 +1,49 @@
 <p align="center">
-  <img src="assets/icon.png" alt="Curium" width="120" />
+  <img src="assets/icon.png" alt="Curium" width="100" />
 </p>
 
 <h1 align="center">Curium</h1>
 
 <p align="center">
-  A modern, feature-rich, privacy-first QR customizer, generator, and scanner.<br/>
-  No analytics. No network. Just your QR codes.
+  Privacy-first QR customizer for Android.<br/>
+  No analytics. No network. Just your codes.
 </p>
 
 <p align="center">
-  <a href="https://github.com/nylxar/curium/releases">
-    <img src="https://img.shields.io/github/v/release/nylxar/curium?style=flat-square&color=blue" alt="Latest Release" />
-  </a>
-  <img src="https://img.shields.io/github/license/nylxar/curium?style=flat-square" alt="License" />
-  <img src="https://img.shields.io/badge/platform-Android%206.0%2B-brightgreen?style=flat-square" alt="Platform" />
+  <img src="https://badgen.net/github/release/nylxar/curium?labelColor=111&color=555" alt="Latest Release" />
+  <img src="https://badgen.net/badge/platform/Android%206%2B/111?labelColor=111&color=555" alt="Platform" />
+  <img src="https://badgen.net/badge/license/GPL--3.0/111?labelColor=111&color=555" alt="License" />
+  <img src="https://badgen.net/badge/SDK/56/111?labelColor=111&color=555" alt="SDK" />
 </p>
 
 ---
 
-## Screenshots
+### Screenshots
 
-<p align="center">
-  <img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208451/Frame_1_vfw5ud.png" alt="Generator" width="240" />
-  &nbsp;&nbsp;
-  <img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208452/Frame_3_ik9zya.png" alt="Scanner" width="240" />
-  &nbsp;&nbsp;
-  <img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208460/Frame_2_qcdvcj.png" alt="Dynamic Theme" width="240" />
-  <img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208457/Frame_5_l7ofud.png" alt="Dynamic Theme" width="240" />
-  <img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208458/Frame_4_xmond3.png" alt="Dynamic Theme" width="240" />
-  <img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208462/Frame_6_zxb0kt.png" alt="Dynamic Theme" width="240" />
-  <img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208463/Frame_7_lsttw9.png" alt="Dynamic Theme" width="240" />
-</p>
+<table>
+  <tr>
+    <td><img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208451/Frame_1_vfw5ud.png" alt="Generator" width="100%" /></td>
+    <td><img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208460/Frame_2_qcdvcj.png" alt="Customizer" width="100%" /></td>
+    <td><img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208457/Frame_5_l7ofud.png" alt="Save" width="100%" /></td>
+  </tr>
+  <tr>
+    <td><img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208458/Frame_4_xmond3.png" alt="Setup" width="100%" /></td>
+    <td><img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208462/Frame_6_zxb0kt.png" alt="About" width="100%" /></td>
+    <td><img src="https://res.cloudinary.com/dge9abfkx/image/upload/v1781208463/Frame_7_lsttw9.png" alt="Scan" width="100%" /></td>
+  </tr>
+</table>
 
 ---
-
-## Download
 
 <p align="center">
   <a href="https://github.com/nylxar/curium/releases/latest">
-    <img src="https://img.shields.io/badge/download-preview-orange?style=for-the-badge&logo=android" alt="Download Preview" />
+    <img src="https://badgen.net/github/release/nylxar/curium?label=download&labelColor=111&color=555&logo=android" alt="Download" />
   </a>
+  &nbsp;
+  <img src="https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Fnylxar%2Fcurium%2Freleases%2Flatest&label=downloads&icon=download&color=%23a370f7&message=&style=flat&tz=Europe%2FHelsinki" alt="Downloads" />
 </p>
 
-<p align="center">
-  <img src="https://api.visitorbadge.io/api/visitors?path=nylxar%2Fcurium%2Fdownloads&style=flat&countColor=%23374151&labelColor=%23111827" alt="Downloads" />
-</p>
-
-<!-- Download tracker: visitorbadge.io counts unique visitors to this badge.
-     Replace with your preferred tracker (e.g. hitcounter, shorturl, etc.) -->
+> **Preview builds** may feel rough or unpolished and may contain bugs. They are intended for early testing and feedback. For stable use, wait for a release tagged `v*` without a pre-release label.
 
 ---
 
@@ -155,9 +150,9 @@ The GitHub Actions workflow builds release APKs with ABI splits (`armeabi-v7a`, 
 | Trigger | Flavor | Release |
 |---------|--------|---------|
 | Push tag `v*` | stable | Yes |
-| Push to `preview` | preview | Yes |
-| Push to `nightly` | nightly | No |
+| Push to `preview` (code changes only) | preview | Yes |
 | Daily cron (3 AM UTC) | nightly | No |
+| Manual dispatch | selectable | No |
 
 ---
 
