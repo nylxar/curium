@@ -154,10 +154,10 @@ export default function AboutScreen() {
   };
 
   // Links — adjust to real values when published
-  const GITHUB_URL = "https://github.com/nylxar/Curium";
+  const GITHUB_URL = "https://github.com/nylxar/curium";
   const DONATE_URL = "https://github.com/sponsors/nylxar";
-  const ISSUES_URL = "https://github.com/nylxar/Curium/issues";
-  const RELEASES_URL = "https://github.com/nylxar/Curium/releases";
+  const ISSUES_URL = "https://github.com/nylxar/curium/issues";
+  const RELEASES_URL = "https://github.com/nylxar/curium/releases";
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -202,11 +202,7 @@ export default function AboutScreen() {
             },
           ]}
         >
-          <View
-            style={[
-              styles.logoBox,
-            ]}
-          >
+          <View style={[styles.logoBox]}>
             <Image
               source={AppIcon}
               style={styles.logoImage}
@@ -227,7 +223,7 @@ export default function AboutScreen() {
               { color: colors.textMuted, fontFamily: Fonts.mono },
             ]}
           >
-            Privacy-first QR customizer
+            Generate | Customize | Scan | Share
           </Text>
           <View style={styles.badgeRow}>
             <View
@@ -255,10 +251,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View
-              style={[
-                styles.badge,
-                { backgroundColor: colors.primary + "12" },
-              ]}
+              style={[styles.badge, { backgroundColor: colors.primary + "12" }]}
             >
               <Text
                 style={[
