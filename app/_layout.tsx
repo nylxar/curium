@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -16,9 +17,19 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { OverlayProvider, OverlayHost } from "@/components/ui/Overlay";
 import { CustomSplash } from "@/components/ui/CustomSplash";
 
+SplashScreen.preventAutoHideAsync();
+SplashScreen.setOptions({ fade: false, duration: 0 });
+
 function ThemedStatusBar() {
   const { isDark } = useTheme();
   return <StatusBar style={isDark ? "light" : "dark"} />;
+}
+
+function ThemedBackground({ children }: { children: React.ReactNode }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>{children}</View>
+  );
 }
 
 export default function RootLayout() {
@@ -38,9 +49,14 @@ export default function RootLayout() {
 
   const [splashHidden, setSplashHidden] = useState(false);
 
-  // Start app fade-in the instant fonts are ready — same moment the splash
-  // begins its fade-out.  Both animations run in parallel so there is no
-  // frame where the root View background is visible between them.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      SplashScreen.hideAsync();
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   useEffect(() => {
     if (fontsReady) {
       appOp.value = withTiming(1, {
@@ -51,55 +67,54 @@ export default function RootLayout() {
   }, [fontsReady]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={{ flex: 1 }}>
-        {/* App tree — always rendered so it's fully laid out behind the splash */}
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
+      <View style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
         <Animated.View style={[{ flex: 1 }, appStyle]}>
           <OverlayProvider>
             <ThemeProvider>
-              <ToastProvider>
-                <SafeAreaProvider>
-                  <ThemedStatusBar />
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      animation: "none",
-                    }}
-                  >
-                    <Stack.Screen name="index" options={{ animation: "none" }} />
-                    <Stack.Screen
-                      name="scan"
-                      options={{
-                        animation: "slide_from_bottom",
-                        animationDuration: 280,
-                        presentation: "modal",
+              <ThemedBackground>
+                <ToastProvider>
+                  <SafeAreaProvider>
+                    <ThemedStatusBar />
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        animation: "none",
                       }}
-                    />
-                    <Stack.Screen
-                      name="history"
-                      options={{ animation: "simple_push", animationDuration: 200 }}
-                    />
-                    <Stack.Screen
-                      name="settings"
-                      options={{ animation: "simple_push", animationDuration: 160 }}
-                    />
-                    <Stack.Screen
-                      name="qr-detail"
-                      options={{ animation: "simple_push", animationDuration: 200 }}
-                    />
-                    <Stack.Screen
-                      name="about"
-                      options={{ animation: "simple_push", animationDuration: 200 }}
-                    />
-                  </Stack>
-                </SafeAreaProvider>
-                <OverlayHost />
-              </ToastProvider>
+                    >
+                      <Stack.Screen name="index" options={{ animation: "none" }} />
+                      <Stack.Screen
+                        name="scan"
+                        options={{
+                          animation: "slide_from_bottom",
+                          animationDuration: 280,
+                          presentation: "modal",
+                        }}
+                      />
+                      <Stack.Screen
+                        name="history"
+                        options={{ animation: "simple_push", animationDuration: 200 }}
+                      />
+                      <Stack.Screen
+                        name="settings"
+                        options={{ animation: "simple_push", animationDuration: 160 }}
+                      />
+                      <Stack.Screen
+                        name="qr-detail"
+                        options={{ animation: "simple_push", animationDuration: 200 }}
+                      />
+                      <Stack.Screen
+                        name="about"
+                        options={{ animation: "simple_push", animationDuration: 200 }}
+                      />
+                    </Stack>
+                  </SafeAreaProvider>
+                  <OverlayHost />
+                </ToastProvider>
+              </ThemedBackground>
             </ThemeProvider>
           </OverlayProvider>
         </Animated.View>
-        {/* Splash overlay — custom splash controls its own lifecycle and
-            calls SplashScreen.hideAsync() directly. */}
         {!splashHidden && (
           <CustomSplash
             ready={fontsReady}

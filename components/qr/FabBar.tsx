@@ -168,7 +168,12 @@ function Btn({ icon, label, onPress, primary, disabled }: BtnProps) {
           </View>
         </TouchableOpacity>
       </Animated.View>
-      <Text style={[styles.btnLabel, { color: colors.textMuted }]}>
+      <Text
+        style={[styles.btnLabel, { color: colors.textMuted }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+      >
         {label}
       </Text>
     </View>
@@ -324,7 +329,13 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     paddingHorizontal: Spacing.md,
   },
-  btnWrap: { alignItems: "center", gap: Spacing.xs },
+  btnWrap: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.xs,
+  },
   btnCircle: {
     width: 48,
     height: 48,
@@ -333,10 +344,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   btnLabel: {
+    width: "100%",
     fontSize: FontSize.xs,
+    textAlign: "center",
     fontFamily: Fonts.monoMedium,
-    fontWeight: "600",
     letterSpacing: 0.2,
+    includeFontPadding: false,
   },
 
   // Nav menu sheet rows — iOS-style list with hairline dividers.

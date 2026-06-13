@@ -23,6 +23,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import buildInfo from "@/constants/build-info.json";
 import { useToast } from "@/components/ui/Toast";
+import { setStringAsync } from "expo-clipboard";
 import AppIcon from "@/assets/icon.png";
 
 interface InfoRowProps {
@@ -148,18 +149,15 @@ export default function AboutScreen() {
   };
 
   const copyCommit = () => {
-    // Lazy import to avoid bundling if not used elsewhere
-    import("expo-clipboard").then(({ setStringAsync }) => {
-      setStringAsync(buildInfo.commit);
-      toast.success("Copied", "Commit hash copied to clipboard.");
-    });
+    setStringAsync(buildInfo.commit);
+    toast.success("Copied", "Commit hash copied to clipboard.");
   };
 
   // Links — adjust to real values when published
-  const GITHUB_URL = "https://github.com/leviathnan/Curium";
-  const DONATE_URL = "https://github.com/sponsors/leviathnan";
-  const ISSUES_URL = "https://github.com/leviathnan/Curium/issues";
-  const RELEASES_URL = "https://github.com/leviathnan/Curium/releases";
+  const GITHUB_URL = "https://github.com/nylxar/curium";
+  const DONATE_URL = "https://github.com/sponsors/nylxar";
+  const ISSUES_URL = "https://github.com/nylxar/curium/issues";
+  const RELEASES_URL = "https://github.com/nylxar/curium/releases";
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -188,6 +186,7 @@ export default function AboutScreen() {
       </View>
 
       <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: Spacing.lg,
           paddingBottom: insets.bottom + Spacing.xxxl,
@@ -203,15 +202,7 @@ export default function AboutScreen() {
             },
           ]}
         >
-          <View
-            style={[
-              styles.logoBox,
-              {
-                backgroundColor: colors.primary + "18",
-                borderColor: colors.primary + "40",
-              },
-            ]}
-          >
+          <View style={[styles.logoBox]}>
             <Image
               source={AppIcon}
               style={styles.logoImage}
@@ -232,7 +223,7 @@ export default function AboutScreen() {
               { color: colors.textMuted, fontFamily: Fonts.mono },
             ]}
           >
-            Privacy-first QR customizer
+            Generate | Customize | Scan | Share
           </Text>
           <View style={styles.badgeRow}>
             <View
@@ -241,24 +232,11 @@ export default function AboutScreen() {
                 {
                   backgroundColor:
                     appVariant === "dev"
-                      ? colors.warning + "20"
-                      : colors.success + "20",
-                  borderColor:
-                    appVariant === "dev"
-                      ? colors.warning + "50"
-                      : colors.success + "50",
+                      ? colors.warning + "15"
+                      : colors.success + "15",
                 },
               ]}
             >
-              <View
-                style={[
-                  styles.badgeDot,
-                  {
-                    backgroundColor:
-                      appVariant === "dev" ? colors.warning : colors.success,
-                  },
-                ]}
-              />
               <Text
                 style={[
                   styles.badgeText,
@@ -273,13 +251,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View
-              style={[
-                styles.badge,
-                {
-                  backgroundColor: colors.primary + "18",
-                  borderColor: colors.primary + "40",
-                },
-              ]}
+              style={[styles.badge, { backgroundColor: colors.primary + "12" }]}
             >
               <Text
                 style={[
@@ -348,7 +320,7 @@ export default function AboutScreen() {
           <InfoRow
             icon="cube-outline"
             label="Runtime"
-            value={`Expo SDK ${Constants.expoConfig?.sdkVersion ?? "—"}`}
+            value={`Expo SDK ${require("expo/package.json").version}`}
             index={5}
             colors={colors}
           />
@@ -486,7 +458,7 @@ export default function AboutScreen() {
               { color: colors.textFaint, fontFamily: Fonts.mono },
             ]}
           >
-            Made with care · Open source
+            Made with cats · Open source
           </Text>
           <Text
             style={[
@@ -551,22 +523,13 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
     paddingHorizontal: Spacing.sm + 2,
     paddingVertical: 4,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-  },
-  badgeDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    borderRadius: Radius.sm,
   },
   badgeText: {
     fontSize: 10,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   sectionTitle: {
     fontSize: FontSize.xs,

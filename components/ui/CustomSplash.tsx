@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { StyleSheet, Image, useColorScheme } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,22 +8,26 @@ import Animated, {
   withDelay,
   Easing,
   runOnJS,
+  interpolateColor,
 } from "react-native-reanimated";
 
 const FADE_IN_DURATION = 400;
 const SCALE_IN_DURATION = 500;
 const FADE_OUT_DURATION = 350;
+const NATIVE_SPLASH_BG = {
+  light: "#f5f0e8",
+  dark: "#0d0d0f",
+};
 const THEMES = {
   light: { bg: "#f5f0e8" },
   dark: { bg: "#0d0d0f" },
 };
 
 /**
- * Custom splash shown while fonts load.  The native splash (icon on #0d0d0f)
- * auto-hides when React mounts, revealing CustomSplash immediately.
- * 1. Fades logo in on mount.
- * 2. When `ready` becomes true, fades out background opacity.
- * 3. Calls `onHidden` so the parent can show the app tree.
+ * Custom splash shown while fonts load.  Starts with the native splash
+ * background color (#0d0d0f) so there is zero visual jump when the
+ * native splash auto-hides.  Once mounted, the background animates to
+ * the theme-appropriate color, then fades out when the app is ready.
  */
 export function CustomSplash({
   ready,
@@ -32,20 +37,27 @@ export function CustomSplash({
   onHidden: () => void;
 }) {
   const scheme = useColorScheme();
-  const theme = THEMES[scheme === "dark" ? "dark" : "light"];
+  const mode = scheme === "dark" ? "dark" : "light";
+  const theme = THEMES[mode];
 
   const logoOpacity = useSharedValue(0);
   const logoScale = useSharedValue(0.85);
   const bgOpacity = useSharedValue(1);
+  const bgProgress = useSharedValue(0);
 
   const logoStyle = useAnimatedStyle(() => ({
     opacity: logoOpacity.value,
     transform: [{ scale: logoScale.value }],
   }));
 
-  const bgStyle = useAnimatedStyle(() => ({
-    opacity: bgOpacity.value,
-  }));
+  const bgStyle = useAnimatedStyle(() => {
+    const bg = interpolateColor(
+      bgProgress.value,
+      [0, 1],
+      [NATIVE_SPLASH_BG[mode], theme.bg],
+    );
+    return { opacity: bgOpacity.value, backgroundColor: bg };
+  });
 
   // Logo entrance animation
   useEffect(() => {
@@ -63,9 +75,14 @@ export function CustomSplash({
         easing: Easing.out(Easing.cubic),
       }),
     );
+    // Animate bg from native splash color to theme color
+    bgProgress.value = withDelay(
+      200,
+      withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) }),
+    );
   }, []);
 
-  // When fonts are ready, fade out background
+  // When fonts are ready, fade out background and hide native splash
   useEffect(() => {
     if (!ready) return;
     bgOpacity.value = withTiming(
@@ -73,6 +90,7 @@ export function CustomSplash({
       { duration: FADE_OUT_DURATION, easing: Easing.in(Easing.cubic) },
       (finished) => {
         if (finished) {
+          runOnJS(SplashScreen.hideAsync)();
           runOnJS(onHidden)();
         }
       },
@@ -82,7 +100,7 @@ export function CustomSplash({
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.container, { backgroundColor: theme.bg }, bgStyle]}
+      style={[styles.container, bgStyle]}
     >
       <Animated.View style={logoStyle}>
         <Image

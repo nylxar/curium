@@ -85,14 +85,6 @@ function Field({
   const { colors } = useTheme();
   return (
     <View style={fStyles.wrap}>
-      <Text
-        style={[
-          fStyles.label,
-          { color: colors.textMuted, fontFamily: Fonts.mono },
-        ]}
-      >
-        {label}
-      </Text>
       <TextInput
         style={[
           fStyles.input,
@@ -115,7 +107,7 @@ function Field({
         autoCapitalize="none"
         autoCorrect={false}
         textAlignVertical={multiline ? "top" : "center"}
-        selectionColor={tintColor}
+        selectionColor={colors.primary + "60"}
       />
     </View>
   );
@@ -187,7 +179,7 @@ export function FormModal({
             value={forms.phone.phone}
             tintColor={tintColor}
             onChange={(v) => onUpdateForm("phone", { phone: v })}
-            placeholder="+91 00000 00000"
+            placeholder="+1 (234) 567-8901"
             keyboardType="phone-pad"
             autoFocus
           />
@@ -233,7 +225,7 @@ export function FormModal({
               value={forms.sms.phone}
               tintColor={tintColor}
               onChange={(v) => onUpdateForm("sms", { ...forms.sms, phone: v })}
-              placeholder="+91 00000 00000"
+              placeholder="+1 (234) 567-8901"
               keyboardType="phone-pad"
               autoFocus
             />
@@ -338,7 +330,7 @@ export function FormModal({
               onChange={(v) =>
                 onUpdateForm("contact", { ...forms.contact, phone: v })
               }
-              placeholder="+91 00000 00000"
+              placeholder="+1 (234) 567-8901"
               keyboardType="phone-pad"
             />
             <Field
@@ -433,14 +425,12 @@ export function FormModal({
           style={[mStyles.doneBtn, { backgroundColor: tintColor }]}
           activeOpacity={0.7}
         >
-          <Text
-            style={[mStyles.doneBtnText, { fontFamily: Fonts.monoBold }]}
-          >
+          <Text style={[mStyles.doneBtnText, { fontFamily: Fonts.monoBold }]}>
             Done
           </Text>
         </TouchableOpacity>
       </View>
-      <View style={{ gap: Spacing.sm }}>{renderFields()}</View>
+      <View style={{ gap: Spacing.sm, marginTop: Spacing.md }}>{renderFields()}</View>
     </AnimatedSheet>
   );
 }
