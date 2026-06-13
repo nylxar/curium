@@ -11,8 +11,8 @@
 
 <p align="center">
   <img src="https://badgen.net/github/release/nylxar/curium?labelColor=111&color=555" alt="Latest Release" />
-  <img src="https://badgen.net/badge/platform/Android%206%2B/111?labelColor=111&color=555" alt="Platform" />
-  <img src="https://badgen.net/badge/license/GPL--3.0/111?labelColor=111&color=555" alt="License" />
+  <img src="https://badgen.net/badge/platform/Android%207%2B/111?labelColor=111&color=555" alt="Platform" />
+  <img src="https://badgen.net/badge/license/GPL-3.0/111?labelColor=111&color=555" alt="License" />
   <img src="https://badgen.net/badge/SDK/56/111?labelColor=111&color=555" alt="SDK" />
 </p>
 
