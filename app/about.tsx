@@ -458,7 +458,7 @@ export default function AboutScreen() {
               { color: colors.textFaint, fontFamily: Fonts.mono },
             ]}
           >
-            Made with care · Open source
+            Made with cats · Open source
           </Text>
           <Text
             style={[
