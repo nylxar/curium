@@ -281,22 +281,16 @@ export default function QRDetailScreen() {
         />
       </View>
 
-      {/* Type pill */}
+      {/* Type label */}
       <View
         style={[
-          styles.typePill,
-          {
-            backgroundColor: colors.primary + "18",
-            borderColor: colors.primary + "40",
-          },
+          styles.typeLabel,
+          { backgroundColor: colors.primary + "12" },
         ]}
       >
-        <View
-          style={[styles.typeDot, { backgroundColor: colors.primary }]}
-        />
         <Text
           style={[
-            styles.typeText,
+            styles.typeLabelText,
             { color: colors.primary, fontFamily: Fonts.monoBold },
           ]}
         >
@@ -532,24 +526,15 @@ const styles = StyleSheet.create({
     // inner QRCanvas corners exactly (see QRCanvas's `cornerR`).
     overflow: "hidden",
   },
-  typePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
+  typeLabel: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
-    borderRadius: Radius.full,
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.sm,
     marginTop: Spacing.sm,
   },
-  typeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  typeText: {
-    fontSize: FontSize.xs,
-    letterSpacing: 1.5,
+  typeLabelText: {
+    fontSize: 10,
+    letterSpacing: 1.8,
   },
   valueCard: {
     width: "100%",

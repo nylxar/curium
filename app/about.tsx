@@ -236,20 +236,11 @@ export default function AboutScreen() {
                 {
                   backgroundColor:
                     appVariant === "dev"
-                      ? colors.warning + "20"
-                      : colors.success + "20",
-                  borderColor:
-                    appVariant === "dev"
-                      ? colors.warning + "50"
-                      : colors.success + "50",
+                      ? colors.warning + "15"
+                      : colors.success + "15",
                 },
               ]}
             >
-              <Ionicons
-                name={appVariant === "dev" ? "flask-outline" : "checkmark-circle-outline"}
-                size={11}
-                color={appVariant === "dev" ? colors.warning : colors.success}
-              />
               <Text
                 style={[
                   styles.badgeText,
@@ -266,10 +257,7 @@ export default function AboutScreen() {
             <View
               style={[
                 styles.badge,
-                {
-                  backgroundColor: colors.primary + "18",
-                  borderColor: colors.primary + "40",
-                },
+                { backgroundColor: colors.primary + "12" },
               ]}
             >
               <Text
@@ -542,22 +530,13 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
     paddingHorizontal: Spacing.sm + 2,
     paddingVertical: 4,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-  },
-  badgeDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    borderRadius: Radius.sm,
   },
   badgeText: {
     fontSize: 10,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   sectionTitle: {
     fontSize: FontSize.xs,
