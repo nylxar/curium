@@ -16,8 +16,6 @@ interface Props {
   onClose: () => void;
   title: string;
   subtitle?: string;
-  tintColor: string;
-  bgColor: string;
   iconName?: keyof typeof Ionicons.glyphMap;
   children: ReactNode;
 }
@@ -27,8 +25,6 @@ export function OptionSheet({
   onClose,
   title,
   subtitle,
-  tintColor,
-  bgColor,
   iconName,
   children,
 }: Props) {
@@ -37,16 +33,15 @@ export function OptionSheet({
     <AnimatedSheet
       visible={visible}
       onClose={onClose}
-      bgColor={bgColor}
+      bgColor={colors.surface}
       borderColor={colors.border}
     >
-      {/* Header — drag handle + icon + title + close */}
       <View style={s.header}>
         <View
-          style={[s.iconCircle, { backgroundColor: tintColor + "18" }]}
+          style={[s.iconCircle, { backgroundColor: colors.primary + "18" }]}
         >
           {iconName && (
-            <Ionicons name={iconName} size={18} color={tintColor} />
+            <Ionicons name={iconName} size={18} color={colors.primary} />
           )}
         </View>
         <View style={s.titles}>
@@ -88,14 +83,6 @@ export function OptionSheet({
         </Pressable>
       </View>
 
-      {/* Accent line */}
-      <View
-        style={[
-          s.accent,
-          { backgroundColor: tintColor + "50" },
-        ]}
-      />
-
       <View style={s.body}>{children}</View>
     </AnimatedSheet>
   );
@@ -134,14 +121,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: StyleSheet.hairlineWidth,
-  },
-  accent: {
-    height: 2,
-    borderRadius: 1,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.lg,
-    alignSelf: "flex-start",
-    width: 36,
   },
   body: {
     gap: Spacing.md,
