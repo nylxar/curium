@@ -14,7 +14,10 @@ import Animated, {
 const FADE_IN_DURATION = 400;
 const SCALE_IN_DURATION = 500;
 const FADE_OUT_DURATION = 350;
-const NATIVE_SPLASH_BG = "#f5f0e8";
+const NATIVE_SPLASH_BG = {
+  light: "#f5f0e8",
+  dark: "#0d0d0f",
+};
 const THEMES = {
   light: { bg: "#f5f0e8" },
   dark: { bg: "#0d0d0f" },
@@ -34,7 +37,8 @@ export function CustomSplash({
   onHidden: () => void;
 }) {
   const scheme = useColorScheme();
-  const theme = THEMES[scheme === "dark" ? "dark" : "light"];
+  const mode = scheme === "dark" ? "dark" : "light";
+  const theme = THEMES[mode];
 
   const logoOpacity = useSharedValue(0);
   const logoScale = useSharedValue(0.85);
@@ -50,7 +54,7 @@ export function CustomSplash({
     const bg = interpolateColor(
       bgProgress.value,
       [0, 1],
-      [NATIVE_SPLASH_BG, theme.bg],
+      [NATIVE_SPLASH_BG[mode], theme.bg],
     );
     return { opacity: bgOpacity.value, backgroundColor: bg };
   });

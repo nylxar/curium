@@ -25,6 +25,13 @@ function ThemedStatusBar() {
   return <StatusBar style={isDark ? "light" : "dark"} />;
 }
 
+function ThemedBackground({ children }: { children: React.ReactNode }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>{children}</View>
+  );
+}
+
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     "IBMPlexMono-Text": require("../assets/fonts/IBMPlexMono-Text.otf"),
@@ -60,49 +67,51 @@ export default function RootLayout() {
   }, [fontsReady]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
+      <View style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
         <Animated.View style={[{ flex: 1 }, appStyle]}>
           <OverlayProvider>
             <ThemeProvider>
-              <ToastProvider>
-                <SafeAreaProvider>
-                  <ThemedStatusBar />
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      animation: "none",
-                    }}
-                  >
-                    <Stack.Screen name="index" options={{ animation: "none" }} />
-                    <Stack.Screen
-                      name="scan"
-                      options={{
-                        animation: "slide_from_bottom",
-                        animationDuration: 280,
-                        presentation: "modal",
+              <ThemedBackground>
+                <ToastProvider>
+                  <SafeAreaProvider>
+                    <ThemedStatusBar />
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        animation: "none",
                       }}
-                    />
-                    <Stack.Screen
-                      name="history"
-                      options={{ animation: "simple_push", animationDuration: 200 }}
-                    />
-                    <Stack.Screen
-                      name="settings"
-                      options={{ animation: "simple_push", animationDuration: 160 }}
-                    />
-                    <Stack.Screen
-                      name="qr-detail"
-                      options={{ animation: "simple_push", animationDuration: 200 }}
-                    />
-                    <Stack.Screen
-                      name="about"
-                      options={{ animation: "simple_push", animationDuration: 200 }}
-                    />
-                  </Stack>
-                </SafeAreaProvider>
-                <OverlayHost />
-              </ToastProvider>
+                    >
+                      <Stack.Screen name="index" options={{ animation: "none" }} />
+                      <Stack.Screen
+                        name="scan"
+                        options={{
+                          animation: "slide_from_bottom",
+                          animationDuration: 280,
+                          presentation: "modal",
+                        }}
+                      />
+                      <Stack.Screen
+                        name="history"
+                        options={{ animation: "simple_push", animationDuration: 200 }}
+                      />
+                      <Stack.Screen
+                        name="settings"
+                        options={{ animation: "simple_push", animationDuration: 160 }}
+                      />
+                      <Stack.Screen
+                        name="qr-detail"
+                        options={{ animation: "simple_push", animationDuration: 200 }}
+                      />
+                      <Stack.Screen
+                        name="about"
+                        options={{ animation: "simple_push", animationDuration: 200 }}
+                      />
+                    </Stack>
+                  </SafeAreaProvider>
+                  <OverlayHost />
+                </ToastProvider>
+              </ThemedBackground>
             </ThemeProvider>
           </OverlayProvider>
         </Animated.View>
