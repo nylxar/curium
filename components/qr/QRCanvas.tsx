@@ -141,18 +141,15 @@ function star5Path(cx: number, cy: number, R: number): string {
   return nStarPath(cx, cy, R, 5);
 }
 function heartPath(cx: number, cy: number, R: number): string {
-  // Classic heart, fits inside a circle of radius R centered at (cx,cy).
-  // Built from two semicircles on top and two angled lines to a point.
-  const r = R * 0.55; // top lobes radius
-  const w = R * 0.95; // half-width at top
-  const top = cy - R * 0.15;
+  const hw = R * 0.92;
+  const hh = R * 0.55;
+  const dip = cy - R * 0.18;
   return (
-    `M${cx},${cy + R * 0.85}` +
-    // right side up to top-right lobe
-    `C${cx + w},${cy + R * 0.1} ${cx + w},${top - r * 0.4} ${cx + w * 0.5},${top - r * 0.4}` +
-    `A${r},${r} 0 0 0 ${cx - w * 0.5},${top - r * 0.4}` +
-    // left side down to point
-    `C${cx - w},${top - r * 0.4} ${cx - w},${cy + R * 0.1} ${cx},${cy + R * 0.85}Z`
+    `M ${cx} ${cy + R}` +
+    ` C ${cx - hw * 0.2} ${cy + R * 0.45} ${cx - hw} ${dip + hh * 0.1} ${cx - hw} ${dip - hh * 0.4}` +
+    ` C ${cx - hw} ${dip - hh} ${cx} ${dip - hh} ${cx} ${dip}` +
+    ` C ${cx} ${dip - hh} ${cx + hw} ${dip - hh} ${cx + hw} ${dip - hh * 0.4}` +
+    ` C ${cx + hw} ${dip + hh * 0.1} ${cx + hw * 0.2} ${cy + R * 0.45} ${cx} ${cy + R} Z`
   );
 }
 function trianglePath(cx: number, cy: number, R: number): string {

@@ -327,16 +327,10 @@ const PIXEL_SHAPES: QRStyle["pixelShape"][] = [
   "heart",
   "sparkle",
 ];
-// Note: FRAME_STYLES, gradient, and qrCorners are intentionally not in
-// the shuffle pool — see handleShuffle for the rationale.  Their
-// selectors (FrameSelector, GradientPicker, CornerSelector) still
-// offer the full lists.
-const LOGO_BACKGROUNDS: QRStyle["logoStyle"]["background"][] = [
-  "none",
-  "circle",
-  "rounded",
-  "square",
-];
+// Note: FRAME_STYLES, gradient, qrCorners, and logoStyle are intentionally
+// not in the shuffle pool — see handleShuffle for the rationale.  Their
+// selectors (FrameSelector, GradientPicker, CornerSelector, LogoStyleSelector)
+// still offer the full lists.
 
 const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
   { id: "url", label: "URL", icon: "link-outline" },
@@ -491,7 +485,7 @@ export default function CreateScreen() {
   // Initial QR style follows the theme: paper/ink in light mode,
   // paper-dark/ink (inverted) in dark mode.  Users can still override
   // via the Color palette and that override persists in qrStyle state.
-  const { setQRColors, defaultQRStyleForTheme } = useTheme();
+  const { setQRColors, defaultQRStyleForTheme, theme } = useTheme();
   const [qrStyle, setQrStyle] = useState<QRStyle>(defaultQRStyleForTheme);
   const [activeSheet, setActiveSheet] = useState<SheetId>(null);
   const qrRef = useRef<View>(null);
@@ -608,8 +602,6 @@ export default function CreateScreen() {
     // with each other or with the palette, and shuffling them feels
     // jarring.  The user can still change them manually via their
     // respective option rows.
-    const logoBg = LOGO_BACKGROUNDS[Math.floor(Math.random() * LOGO_BACKGROUNDS.length)];
-
     setQrStyle((p) => ({
       ...p,
       colorId: r.id,
@@ -619,10 +611,6 @@ export default function CreateScreen() {
       eyeShape: eye,
       pupilShape: pupil,
       pixelShape: pixel,
-      logoStyle: {
-        ...p.logoStyle,
-        background: logoBg,
-      },
     }));
     setQRColors(r.fg, r.bg);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -797,13 +785,17 @@ export default function CreateScreen() {
     if (screenBgTarget !== prevScreenBg.current) {
       const old = prevScreenBg.current;
       prevScreenBg.current = screenBgTarget;
-      screenBg.value = old;
-      screenBg.value = withTiming(screenBgTarget, {
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-      });
+      if (theme === "dynamic") {
+        screenBg.value = screenBgTarget;
+      } else {
+        screenBg.value = old;
+        screenBg.value = withTiming(screenBgTarget, {
+          duration: 420,
+          easing: Easing.out(Easing.cubic),
+        });
+      }
     }
-  }, [screenBgTarget]);
+  }, [screenBgTarget, theme]);
   const screenBgStyle = useAnimatedStyle(() => ({
     backgroundColor: screenBg.value,
   }));
@@ -1131,33 +1123,31 @@ export default function CreateScreen() {
             />
           </OptionRow>
 
-          {qrStyle.logoUri && (
-            <OptionRow
-              label="Logo Style"
-              iconName="aperture-outline"
-              tintColor={tint}
-              bgColor={colors.surface}
-              sheetOpen={activeSheet === "logoStyle"}
-              onOpen={() => openSheet("logoStyle")}
-              onClose={closeSheet}
-              preview={
-                <Ionicons
-                  name="shapes-outline"
-                  size={15}
-                  color={tint + "90"}
-                />
-              }
-            >
-              <LogoStyleSelector
-                value={qrStyle.logoStyle}
-                fgColor={tint}
-                bgColor={colors.surface}
-                onChange={(s) => {
-                  setQrStyle((p) => ({ ...p, logoStyle: s }));
-                }}
+          <OptionRow
+            label="Logo Style"
+            iconName="aperture-outline"
+            tintColor={tint}
+            bgColor={colors.surface}
+            sheetOpen={activeSheet === "logoStyle"}
+            onOpen={() => openSheet("logoStyle")}
+            onClose={closeSheet}
+            preview={
+              <Ionicons
+                name="shapes-outline"
+                size={15}
+                color={tint + "90"}
               />
-            </OptionRow>
-          )}
+            }
+          >
+            <LogoStyleSelector
+              value={qrStyle.logoStyle}
+              fgColor={tint}
+              bgColor={colors.surface}
+              onChange={(s) => {
+                setQrStyle((p) => ({ ...p, logoStyle: s }));
+              }}
+            />
+          </OptionRow>
 
           <OptionRow
             label="Error Correction"
@@ -1243,8 +1233,6 @@ export default function CreateScreen() {
           onClose={() => setExportOpen(false)}
           qrRef={qrRef}
           qrValue={qrValue}
-          tintColor={tint}
-          bgColor={qrStyle.bgColor}
         />
         <FormModal
           visible={formModalOpen}

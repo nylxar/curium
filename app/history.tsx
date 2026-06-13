@@ -16,7 +16,12 @@ import Animated, {
   withRepeat,
   withSequence,
   Easing,
+  runOnJS,
 } from "react-native-reanimated";
+import {
+  Gesture,
+  GestureDetector,
+} from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -105,10 +110,16 @@ function AnimatedHistoryCard({
 }) {
   const translateY = useSharedValue(12);
   const opacity = useSharedValue(0);
+  const translateX = useSharedValue(0);
+  const isDeleting = useSharedValue(false);
 
   const animStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
+    transform: [{ translateY: translateY.value }, { translateX: translateX.value }],
     opacity: opacity.value,
+  }));
+
+  const deleteBgStyle = useAnimatedStyle(() => ({
+    opacity: translateX.value < -40 ? 1 : 0,
   }));
 
   // Staggered entrance — runs once on mount, not on every focus
@@ -123,6 +134,57 @@ function AnimatedHistoryCard({
     );
   }, [index]);
 
+  const triggerDelete = useCallback(() => {
+    "worklet";
+    if (isDeleting.value) return;
+    isDeleting.value = true;
+    translateX.value = withTiming(
+      -400,
+      { duration: 260, easing: Easing.in(Easing.cubic) },
+      () => {
+        runOnJS(onDelete)();
+      },
+    );
+  }, [onDelete]);
+
+  const pan = Gesture.Pan()
+    .activeOffsetX([-30, 30])
+    .onUpdate((e) => {
+      if (isDeleting.value) return;
+      translateX.value = Math.min(0, e.translationX);
+    })
+    .onEnd((e) => {
+      if (isDeleting.value) return;
+      if (e.translationX < -80 || e.velocityX < -500) {
+        translateX.value = withTiming(-80, {
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+        });
+      } else {
+        translateX.value = withTiming(0, {
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+        });
+      }
+    });
+
+  const singleTap = Gesture.Tap()
+    .maxDuration(250)
+    .onEnd(() => {
+      "worklet";
+      // If card is swiped open, snap back instead of navigating
+      if (translateX.value < -10) {
+        translateX.value = withTiming(0, {
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+        });
+      } else {
+        runOnJS(onSelect)();
+      }
+    });
+
+  const composed = Gesture.Simultaneous(pan, singleTap);
+
   const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
     url: "link-outline",
     text: "text-outline",
@@ -135,67 +197,75 @@ function AnimatedHistoryCard({
   };
 
   return (
-    <Animated.View style={animStyle}>
-      <TouchableOpacity
-        style={[
-          styles.card,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-        ]}
-        onPress={onSelect}
-        activeOpacity={0.6}
-      >
-        <View style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}>
-          <Ionicons
-            name={TYPE_ICONS[item.type] ?? "qr-code-outline"}
-            size={22}
-            color={colors.primary}
-          />
-        </View>
+    <View style={styles.swipeWrap}>
+      {/* Delete background — revealed when card swiped left */}
+      <Animated.View style={[styles.deleteBg, deleteBgStyle]}>
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            triggerDelete();
+          }}
+          activeOpacity={0.7}
+          style={styles.deleteBtnInner}
+        >
+          <Ionicons name="trash-outline" size={18} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
 
-        <View style={styles.info}>
-          <View style={styles.row}>
-            <View style={[styles.badge, { backgroundColor: colors.surfaceOffset }]}>
+      <GestureDetector gesture={composed}>
+        <Animated.View style={animStyle}>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <View style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}>
+              <Ionicons
+                name={TYPE_ICONS[item.type] ?? "qr-code-outline"}
+                size={22}
+                color={colors.primary}
+              />
+            </View>
+
+            <View style={styles.info}>
+              <View style={styles.row}>
+                <View style={[styles.badge, { backgroundColor: colors.surfaceOffset }]}>
+                  <Text
+                    style={[
+                      styles.badgeText,
+                      { color: colors.primary, fontFamily: Fonts.monoBold },
+                    ]}
+                  >
+                    {item.type.toUpperCase()}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.date,
+                    { color: colors.textFaint, fontFamily: Fonts.mono },
+                  ]}
+                >
+                  {new Date(item.createdAt).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </Text>
+              </View>
               <Text
                 style={[
-                  styles.badgeText,
-                  { color: colors.primary, fontFamily: Fonts.monoBold },
+                  styles.value,
+                  { color: colors.text, fontFamily: Fonts.mono },
                 ]}
+                numberOfLines={2}
               >
-                {item.type.toUpperCase()}
+                {item.value}
               </Text>
             </View>
-            <Text
-              style={[
-                styles.date,
-                { color: colors.textFaint, fontFamily: Fonts.mono },
-              ]}
-            >
-              {new Date(item.createdAt).toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "short",
-              })}
-            </Text>
           </View>
-          <Text
-            style={[
-              styles.value,
-              { color: colors.text, fontFamily: Fonts.mono },
-            ]}
-            numberOfLines={2}
-          >
-            {item.value}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={onDelete}
-          hitSlop={12}
-          style={styles.del}
-        >
-          <Ionicons name="trash-outline" size={16} color={colors.error} />
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </Animated.View>
+        </Animated.View>
+      </GestureDetector>
+    </View>
   );
 }
 
@@ -214,13 +284,18 @@ export default function HistoryScreen() {
   const firstLoad = useRef(true);
   useFocusEffect(
     useCallback(() => {
+      let aborted = false;
       loadHistory().then((data) => {
+        if (aborted) return;
         setItems(data);
         if (firstLoad.current) {
           firstLoad.current = false;
           setLoading(false);
         }
       });
+      return () => {
+        aborted = true;
+      };
     }, []),
   );
 
@@ -323,6 +398,7 @@ export default function HistoryScreen() {
             placeholderTextColor={colors.textFaint}
             value={query}
             onChangeText={setQuery}
+            selectionColor={colors.primary + "60"}
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => setQuery("")}>
@@ -445,7 +521,27 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: FontSize.xs },
   date: { fontSize: FontSize.xs },
   value: { fontSize: FontSize.sm, lineHeight: 18 },
-  del: { padding: Spacing.xs },
+  swipeWrap: {
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: Radius.lg,
+  },
+  deleteBg: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "#dc2626",
+    borderRadius: Radius.lg,
+    alignItems: "flex-end",
+    justifyContent: "center",
+    paddingRight: Spacing.lg,
+  },
+  deleteBtnInner: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.25)",
+  },
   skelLine: { height: 10, borderRadius: 4 },
   empty: {
     flex: 1,

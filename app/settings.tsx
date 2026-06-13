@@ -1,5 +1,5 @@
 // app/settings.tsx — FULL REPLACEMENT
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { clearHistory } from "@/services/history";
+import { loadSettings, saveSettings, AppSettings } from "@/services/settings";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts, AppTheme } from "@/constants/theme";
 import { useToast } from "@/components/ui/Toast";
@@ -47,12 +48,6 @@ function SectionTitle({
       >
         {children}
       </Text>
-      <View
-        style={[
-          styles.sectionUnderline,
-          { backgroundColor: colors.textMuted + "55" },
-        ]}
-      />
     </View>
   );
 }
@@ -120,13 +115,7 @@ function Row({
   colors: any;
 }) {
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.row,
-        pressed && { backgroundColor: colors.surfaceOffset },
-      ]}
-      onPress={onPress}
-    >
+    <Pressable style={styles.row} onPress={onPress}>
       <View
         style={[
           styles.rowIcon,
@@ -180,7 +169,7 @@ function Row({
 }
 
 export default function SettingsScreen() {
-  const { colors, theme, setTheme } = useTheme();
+  const { colors, theme, setTheme, pureDark, setPureDark } = useTheme();
   const [haptics, setHaptics] = useState(true);
   const [soundOnScan, setSoundOnScan] = useState(false);
   const [autoCopy, setAutoCopy] = useState(false);
@@ -188,6 +177,22 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const toast = useToast();
+
+  useEffect(() => {
+    loadSettings().then((s) => {
+      setHaptics(s.haptics);
+      setSoundOnScan(s.soundOnScan);
+      setAutoCopy(s.autoCopy);
+      setKeepScreenOn(s.keepScreenOn);
+    });
+  }, []);
+
+  const update = useCallback(
+    (partial: Partial<AppSettings>) => {
+      saveSettings(partial);
+    },
+    [],
+  );
 
   const S = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.bg },
@@ -282,6 +287,7 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: Spacing.lg,
           paddingBottom: insets.bottom + Spacing.xxxl,
@@ -333,6 +339,30 @@ export default function SettingsScreen() {
           </View>
         )}
 
+        {/* Enhancement */}
+        {(theme === "dark" || theme === "system" || theme === "dynamic") && (
+          <>
+            <SectionTitle colors={colors}>Enhancement</SectionTitle>
+            <Row
+              icon="ellipse-outline"
+              label="Pure Black"
+              sub="True black background for OLED screens"
+              colors={colors}
+              right={
+                <ModernSwitch
+                  value={pureDark}
+                  onChange={(v) => {
+                    setPureDark(v);
+                    Haptics.selectionAsync();
+                  }}
+                  activeColor={colors.primary}
+                  inactiveColor={colors.surfaceOffset}
+                />
+              }
+            />
+          </>
+        )}
+
         {/* Interaction */}
         <SectionTitle colors={colors}>Interaction</SectionTitle>
         <Row
@@ -345,6 +375,7 @@ export default function SettingsScreen() {
               value={haptics}
               onChange={(v) => {
                 setHaptics(v);
+                update({ haptics: v });
                 if (v) Haptics.selectionAsync();
               }}
               activeColor={colors.primary}
@@ -362,6 +393,7 @@ export default function SettingsScreen() {
               value={soundOnScan}
               onChange={(v) => {
                 setSoundOnScan(v);
+                update({ soundOnScan: v });
                 Haptics.selectionAsync();
               }}
               activeColor={colors.primary}
@@ -379,6 +411,7 @@ export default function SettingsScreen() {
               value={keepScreenOn}
               onChange={(v) => {
                 setKeepScreenOn(v);
+                update({ keepScreenOn: v });
                 Haptics.selectionAsync();
               }}
               activeColor={colors.primary}
@@ -399,6 +432,7 @@ export default function SettingsScreen() {
               value={autoCopy}
               onChange={(v) => {
                 setAutoCopy(v);
+                update({ autoCopy: v });
                 Haptics.selectionAsync();
               }}
               activeColor={colors.primary}
@@ -406,49 +440,6 @@ export default function SettingsScreen() {
             />
           }
         />
-
-        {/* Privacy
-        <SectionTitle colors={colors}>Privacy</SectionTitle>
-        <Row
-          icon="shield-checkmark-outline"
-          label="Offline Only"
-          sub="No internet requests, ever"
-          colors={colors}
-          right={
-            <Ionicons
-              name="checkmark-circle"
-              size={20}
-              color={colors.success}
-            />
-          }
-        />
-        <Row
-          icon="eye-off-outline"
-          label="No Tracking"
-          sub="Zero analytics, zero telemetry"
-          colors={colors}
-          right={
-            <Ionicons
-              name="checkmark-circle"
-              size={20}
-              color={colors.success}
-            />
-          }
-        />
-        <Row
-          icon="lock-closed-outline"
-          label="Local Storage Only"
-          sub="All data stays on your device"
-          colors={colors}
-          right={
-            <Ionicons
-              name="checkmark-circle"
-              size={20}
-              color={colors.success}
-            />
-          }
-        />
-        */}
 
         {/* Data */}
         <SectionTitle colors={colors}>Data</SectionTitle>
@@ -478,15 +469,6 @@ export default function SettingsScreen() {
           colors={colors}
           onPress={() => router.push("/about")}
         />
-
-        {/* Version card */}
-        <View style={S.versionBox}>
-          <Text style={S.versionTitle}>Curium</Text>
-          <Text style={S.versionSub}>v1.0.0 · Privacy-first QR generator</Text>
-          <Text style={S.versionSub}>
-            Built with Expo · No trackers · Fully offline
-          </Text>
-        </View>
       </ScrollView>
     </View>
   );

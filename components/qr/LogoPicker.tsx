@@ -1,11 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -115,14 +109,15 @@ function LogoSizeControl({
     <View style={styles.sizeControl}>
       <GestureDetector gesture={Gesture.Race(pan, tap)}>
         <View
-          style={[
-            styles.sizeTrack,
-            { backgroundColor: colors.surfaceOffset },
-          ]}
+          style={[styles.sizeTrack, { backgroundColor: colors.surfaceOffset }]}
           onLayout={(e) => (trackWidthSV.value = e.nativeEvent.layout.width)}
         >
           <Animated.View
-            style={[styles.sizeFill, { backgroundColor: colors.primary }, fillStyle]}
+            style={[
+              styles.sizeFill,
+              { backgroundColor: colors.primary },
+              fillStyle,
+            ]}
           />
           <Animated.View
             style={[
@@ -136,9 +131,7 @@ function LogoSizeControl({
           />
         </View>
       </GestureDetector>
-      <Text
-        style={[styles.sizeLabel, { color: colors.textMuted }]}
-      >
+      <Text style={[styles.sizeLabel, { color: colors.textMuted }]}>
         {displaySize}%
       </Text>
     </View>
@@ -185,62 +178,69 @@ export function LogoPicker({
 
   return (
     <View>
-      <Text
-        style={[styles.sectionTitle, { color: colors.textMuted }]}
-      >
-        Logo (optional)
-      </Text>
-      <View style={styles.row}>
-        {logoUri ? (
-          <View
-            style={[
-              styles.logoPreview,
-              { borderColor: colors.border },
-            ]}
-          >
+      {logoUri ? (
+        <View style={styles.activeRow}>
+          <View style={[styles.logoPreview, { borderColor: colors.border }]}>
             <Image source={{ uri: logoUri }} style={styles.logoImage} />
+          </View>
+          <View style={styles.actionBtns}>
             <TouchableOpacity
-              style={styles.removeBtn}
-              onPress={remove}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={[
+                styles.actionBtn,
+                {
+                  backgroundColor: colors.surfaceOffset,
+                  borderColor: colors.border,
+                },
+              ]}
+              onPress={pick}
+              activeOpacity={0.75}
             >
-              <Ionicons
-                name="close-circle"
-                size={20}
-                color={colors.error}
-              />
+              <Ionicons name="refresh-outline" size={16} color={colors.text} />
+              <Text style={[styles.actionLabel, { color: colors.text }]}>
+                Replace
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.actionBtn,
+                {
+                  backgroundColor: colors.surfaceOffset,
+                  borderColor: colors.error + "40",
+                },
+              ]}
+              onPress={remove}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="trash-outline" size={16} color={colors.error} />
+              <Text style={[styles.actionLabel, { color: colors.error }]}>
+                Remove
+              </Text>
             </TouchableOpacity>
           </View>
-        ) : null}
-        <TouchableOpacity
-          style={[
-            styles.pickBtn,
-            {
-              backgroundColor: colors.surfaceOffset,
-              borderColor: colors.border,
-            },
-          ]}
-          onPress={pick}
-          activeOpacity={0.75}
-        >
-          <Ionicons
-            name={logoUri ? "refresh-outline" : "image-outline"}
-            size={18}
-            color={colors.text}
-          />
-          <Text style={[styles.pickLabel, { color: colors.text }]}>
-            {logoUri ? "Change" : "Pick Logo"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      ) : (
+        <View style={styles.row}>
+          <TouchableOpacity
+            style={[
+              styles.pickBtn,
+              {
+                backgroundColor: colors.surfaceOffset,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={pick}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="image-outline" size={18} color={colors.text} />
+            <Text style={[styles.pickLabel, { color: colors.text }]}>
+              Pick Logo
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {logoUri && onSizeChange && (
         <View style={styles.sizeRow}>
-          <Ionicons
-            name="resize-outline"
-            size={14}
-            color={colors.textMuted}
-          />
+          <Ionicons name="resize-outline" size={14} color={colors.textMuted} />
           <LogoSizeControl
             size={logoSize}
             onSizeChange={handleSizeChange}
@@ -279,7 +279,30 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: Radius.sm,
   },
-  removeBtn: { position: "absolute", top: -6, right: -6 },
+  activeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.base,
+  },
+  actionBtns: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    flex: 1,
+  },
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  actionLabel: {
+    fontSize: FontSize.sm,
+    fontFamily: Fonts.monoMedium,
+  },
   pickBtn: {
     flexDirection: "row",
     alignItems: "center",

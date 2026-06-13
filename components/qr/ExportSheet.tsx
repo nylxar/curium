@@ -1,9 +1,4 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Asset, requestPermissionsAsync } from "expo-media-library";
 import { File } from "expo-file-system";
 import * as FileSystemLegacy from "expo-file-system/legacy";
@@ -14,6 +9,7 @@ import { captureRef } from "react-native-view-shot";
 import { Ionicons } from "@expo/vector-icons";
 import { OptionSheet } from "./OptionSheet";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
+import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/ui/Toast";
 
 interface ExportAction {
@@ -28,19 +24,12 @@ interface Props {
   onClose: () => void;
   qrRef: React.RefObject<View | null>;
   qrValue: string;
-  tintColor: string;
-  bgColor: string;
 }
 
-export function ExportSheet({
-  visible,
-  onClose,
-  qrRef,
-  qrValue,
-  tintColor,
-  bgColor,
-}: Props) {
+export function ExportSheet({ visible, onClose, qrRef, qrValue }: Props) {
+  const { colors } = useTheme();
   const toast = useToast();
+
   const saveToGallery = async () => {
     if (!qrRef.current) return;
     try {
@@ -52,10 +41,18 @@ export function ExportSheet({
         );
         return;
       }
-      // Wait for native layout to commit before capture.
       await new Promise<void>((r) => setTimeout(r, 200));
-      const uri = await captureRef(qrRef, { format: "png", quality: 1, result: "tmpfile" });
-      await Asset.create(uri);
+      const tmpUri = await captureRef(qrRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+      });
+      const dest =
+        FileSystemLegacy.documentDirectory + `curium_qr_${Date.now()}.png`;
+      const srcFile = new File(tmpUri);
+      const destFile = new File(dest);
+      await srcFile.copy(destFile);
+      await Asset.create(destFile.uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       toast.success("Saved!", "QR saved to your gallery.");
       onClose();
@@ -68,8 +65,8 @@ export function ExportSheet({
   const saveAsSVG = async () => {
     try {
       const filename = `curium_qr_${Date.now()}.txt`;
-      const uri = FileSystemLegacy.cacheDirectory + filename; // get URI from legacy
-      const file = new File(uri); // create File from URI
+      const uri = FileSystemLegacy.cacheDirectory + filename;
+      const file = new File(uri);
       await file.write(qrValue);
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(file.uri, {
@@ -79,7 +76,7 @@ export function ExportSheet({
       }
       onClose();
     } catch (e) {
-      console.error("Export error:", e); // now you'll see the real error
+      console.error("Export error:", e);
       toast.error("Error", "Could not export file.");
     }
   };
@@ -87,11 +84,14 @@ export function ExportSheet({
   const shareImage = async () => {
     if (!qrRef.current) return;
     try {
-      // Wait for native layout to commit before capture.
       await new Promise<void>((r) => setTimeout(r, 200));
-      const tmpUri = await captureRef(qrRef, { format: "png", quality: 1, result: "tmpfile" });
-      // Copy to persistent directory — tmpfile URIs don't survive Android activity restarts.
-      const dest = FileSystemLegacy.documentDirectory + `curium_qr_${Date.now()}.png`;
+      const tmpUri = await captureRef(qrRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+      });
+      const dest =
+        FileSystemLegacy.documentDirectory + `curium_qr_${Date.now()}.png`;
       const srcFile = new File(tmpUri);
       const destFile = new File(dest);
       await srcFile.copy(destFile);
@@ -143,32 +143,29 @@ export function ExportSheet({
       visible={visible}
       onClose={onClose}
       title="Export QR"
-      subtitle="Save or share your QR"
       iconName="share-outline"
-      tintColor={tintColor}
-      bgColor={bgColor}
     >
       {ACTIONS.map((action, i) => (
         <TouchableOpacity
           key={i}
-          style={[styles.row, { borderColor: tintColor + "20" }]}
+          style={[styles.row, { borderBottomColor: colors.border }]}
           onPress={action.onPress}
           activeOpacity={0.7}
         >
           <View
-            style={[styles.iconWrap, { backgroundColor: tintColor + "18" }]}
+            style={[styles.iconWrap, { backgroundColor: colors.primary + "18" }]}
           >
-            <Ionicons name={action.icon} size={20} color={tintColor} />
+            <Ionicons name={action.icon} size={20} color={colors.primary} />
           </View>
           <View style={styles.text}>
-            <Text style={[styles.label, { color: tintColor }]}>
+            <Text style={[styles.label, { color: colors.text }]}>
               {action.label}
             </Text>
-            <Text style={[styles.sub, { color: tintColor + "70" }]}>
+            <Text style={[styles.sub, { color: colors.textMuted }]}>
               {action.sub}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={tintColor + "40"} />
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
         </TouchableOpacity>
       ))}
     </OptionSheet>
@@ -191,6 +188,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   text: { flex: 1 },
-  label: { fontSize: FontSize.base, fontFamily: Fonts.monoMedium, fontWeight: "600" },
+  label: {
+    fontSize: FontSize.base,
+    fontFamily: Fonts.monoMedium,
+    fontWeight: "600",
+  },
   sub: { fontSize: FontSize.xs, fontFamily: Fonts.mono, marginTop: 2 },
 });

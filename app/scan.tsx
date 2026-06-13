@@ -5,9 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { Camera, CameraView, useCameraPermissions } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -90,22 +92,24 @@ export default function ScanScreen() {
   const [torch, setTorch] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [galleryLoading, setGalleryLoading] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const toast = useToast();
 
-  // Laser sweep
-  const laserY = useSharedValue(0);
+  // Corner breathing animation
+  const breathe = useSharedValue(0.4);
   useEffect(() => {
-    laserY.value = withRepeat(
-      withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+    if (scanned) return;
+    breathe.value = withRepeat(
+      withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
       -1,
       true,
     );
-  }, []);
-  const laserStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: laserY.value * 220 }],
+  }, [scanned]);
+  const breatheStyle = useAnimatedStyle(() => ({
+    opacity: scanned ? 1 : breathe.value,
   }));
 
   // Result panel slide-in
@@ -126,23 +130,6 @@ export default function ScanScreen() {
     transform: [{ translateY: (1 - panelProgress.value) * 40 }],
   }));
 
-  // Success flash when a QR is detected
-  const flash = useSharedValue(0);
-  useEffect(() => {
-    if (scanned) {
-      flash.value = 0;
-      flash.value = withTiming(1, {
-        duration: 120,
-        easing: Easing.out(Easing.quad),
-      });
-      flash.value = withDelay(
-        200,
-        withTiming(0, { duration: 240, easing: Easing.in(Easing.cubic) }),
-      );
-    }
-  }, [scanned]);
-  const flashStyle = useAnimatedStyle(() => ({ opacity: flash.value }));
-
   const onBarcodeScanned = useCallback(
     ({ data }: { data: string }) => {
       if (scanned) return;
@@ -152,6 +139,42 @@ export default function ScanScreen() {
     },
     [scanned],
   );
+
+  const handleGalleryScan = useCallback(async () => {
+    if (galleryLoading) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      toast.info("Permission needed", "Allow photo access to scan from gallery.");
+      return;
+    }
+    const picker = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 1,
+    });
+    if (picker.canceled || !picker.assets?.[0]?.uri) return;
+    setGalleryLoading(true);
+    try {
+      const results = await Camera.scanFromURLAsync(picker.assets[0].uri, [
+        "qr",
+        "ean13",
+        "ean8",
+        "code128",
+        "code39",
+        "pdf417",
+        "aztec",
+        "datamatrix",
+      ]);
+      if (results.length > 0) {
+        onBarcodeScanned({ data: results[0].data });
+      } else {
+        toast.info("No code found", "No QR code or barcode detected in image.");
+      }
+    } catch {
+      toast.info("Scan failed", "Could not read code from image.");
+    } finally {
+      setGalleryLoading(false);
+    }
+  }, [galleryLoading, onBarcodeScanned, toast]);
 
   const handleAction = async (action: "open" | "copy") => {
     if (!result) return;
@@ -279,17 +302,31 @@ export default function ScanScreen() {
           >
             Scan QR / Barcode
           </Text>
-          <TouchableOpacity
-            onPress={() => setTorch((t) => !t)}
-            hitSlop={12}
-            style={styles.topBtn}
-          >
-            <Ionicons
-              name={torch ? "flash" : "flash-outline"}
-              size={22}
-              color={torch ? "#facc15" : "#fff"}
-            />
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", gap: Spacing.xs }}>
+            <TouchableOpacity
+              onPress={handleGalleryScan}
+              hitSlop={12}
+              style={styles.topBtn}
+              disabled={galleryLoading}
+            >
+              {galleryLoading ? (
+                <ActivityIndicator size={20} color="#fff" />
+              ) : (
+                <Ionicons name="images-outline" size={22} color="#fff" />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setTorch((t) => !t)}
+              hitSlop={12}
+              style={styles.topBtn}
+            >
+              <Ionicons
+                name={torch ? "flash" : "flash-outline"}
+                size={22}
+                color={torch ? "#facc15" : "#fff"}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={{ flex: 1 }} />
@@ -313,25 +350,16 @@ export default function ScanScreen() {
                 borderRightWidth: 3,
               },
             ].map((c, i) => (
-              <View
+              <Animated.View
                 key={i}
                 style={[
                   styles.corner,
                   c,
-                  { borderColor: scanned ? "#22c55e" : "#fff" },
+                  { borderColor: scanned ? colors.primary : "#fff" },
+                  !scanned && breatheStyle,
                 ]}
               />
             ))}
-            {!scanned && <Animated.View style={[styles.laser, laserStyle]} />}
-            {/* Success flash — momentary green wash when scanned */}
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.frameFlash,
-                { backgroundColor: "#22c55e" },
-                flashStyle,
-              ]}
-            />
           </View>
           {/* Hint pill — always shows the instruction; the "Scanned"
               indicator lives in the result panel below.  We don't duplicate
@@ -374,18 +402,18 @@ export default function ScanScreen() {
               <View
                 style={[
                   styles.resultBadge,
-                  { backgroundColor: "#22c55e" + "20" },
+                  { backgroundColor: colors.primary + "20" },
                 ]}
               >
                 <Ionicons
                   name="checkmark-circle"
                   size={14}
-                  color="#22c55e"
+                  color={colors.primary}
                 />
                 <Text
                   style={[
                     styles.resultBadgeText,
-                    { color: "#22c55e", fontFamily: Fonts.monoBold },
+                    { color: colors.primary, fontFamily: Fonts.monoBold },
                   ]}
                 >
                   SCANNED
@@ -574,25 +602,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
   },
   corner: { position: "absolute", width: 26, height: 26, borderRadius: 4 },
-  laser: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: "#22c55e",
-    shadowColor: "#22c55e",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  frameFlash: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
   hintPill: {
     flexDirection: "row",
     alignItems: "center",

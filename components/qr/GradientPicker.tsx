@@ -21,6 +21,7 @@ import * as Haptics from "expo-haptics";
 import { GradientConfig } from "@/types/qr";
 import { ColorPicker } from "./ColorPicker";
 import { useState } from "react";
+import { ModernSwitch } from "@/components/ui/ModernSwitch";
 
 interface Props {
   value: GradientConfig;
@@ -48,32 +49,18 @@ export function GradientPicker({
   return (
     <View style={styles.wrap}>
       {/* Toggle */}
-      <TouchableOpacity
-        onPress={() => {
-          Haptics.selectionAsync();
-          onChange({ ...value, enabled: !value.enabled });
-        }}
-        style={[
-          styles.toggle,
-          {
-            backgroundColor: value.enabled
-              ? fgColor + "18"
-              : bgColor + "08",
-            borderColor: value.enabled ? fgColor : fgColor + "20",
-          },
-        ]}
-        activeOpacity={0.7}
-      >
-        <View
-          style={[
-            styles.toggleDot,
-            { backgroundColor: value.enabled ? fgColor : fgColor + "30" },
-          ]}
+      <View style={styles.toggleRow}>
+        <Text style={[styles.toggleLabel, { color: fgColor }]}>Gradient</Text>
+        <ModernSwitch
+          value={value.enabled}
+          onChange={(v) => {
+            Haptics.selectionAsync();
+            onChange({ ...value, enabled: v });
+          }}
+          activeColor={fgColor}
+          inactiveColor={fgColor + "30"}
         />
-        <Text style={[styles.toggleLabel, { color: fgColor }]}>
-          {value.enabled ? "Gradient on" : "Gradient off"}
-        </Text>
-      </TouchableOpacity>
+      </View>
 
       {value.enabled && (
         <>
@@ -256,16 +243,11 @@ function ColorWell({
 
 const styles = StyleSheet.create({
   wrap: { gap: Spacing.sm },
-  toggle: {
+  toggleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    justifyContent: "space-between",
   },
-  toggleDot: { width: 8, height: 8, borderRadius: 4 },
   toggleLabel: {
     fontSize: FontSize.sm,
     fontFamily: Fonts.monoMedium,

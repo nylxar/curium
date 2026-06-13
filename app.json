@@ -2,11 +2,11 @@
   "expo": {
     "name": "Curium",
     "slug": "Curium",
-    "version": "0.0.3",
+    "version": "0.5.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "curium",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
@@ -18,11 +18,10 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.leviathnan.Curium",
+      "package": "com.nylxar.curium",
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.READ_MEDIA_IMAGES"
       ]
     },
     "web": {
@@ -34,17 +33,21 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-icon.png",
-          "imageWidth": 200,
+          "image": "./assets/icon.png",
+          "imageWidth": 120,
           "resizeMode": "contain",
-          "backgroundColor": "#0a0a0a"
+          "backgroundColor": "#f5f0e8",
+          "dark": {
+            "image": "./assets/icon.png",
+            "backgroundColor": "#0d0d0f"
+          }
         }
       ],
       [
         "expo-camera",
         {
           "cameraPermission": "Curium uses the camera to scan QR codes.",
-          "microphonePermission": "Curium does not use the microphone.",
+          "microphonePermission": false,
           "recordAudioAndroid": false
         }
       ],
@@ -56,7 +59,14 @@
           "granularPermissions": ["photo"]
         }
       ],
-      "expo-sharing"
+      [
+        "expo-image-picker",
+        {
+          "microphonePermission": false
+        }
+      ],
+      "expo-sharing",
+      "./plugins/remove-mic-permission.js"
     ],
     "extra": {
       "router": {},

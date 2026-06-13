@@ -5,11 +5,18 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
   ReactNode,
 } from "react";
-import { useColorScheme } from "react-native";
+import { Appearance, StyleSheet, useColorScheme } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DarkColors, LightColors, AppTheme } from "@/constants/theme";
+import { DarkColors, LightColors, AmoledColors, AppTheme } from "@/constants/theme";
 import { defaultQRStyle, QRStyle } from "@/types/qr";
 
 interface ThemeCtx {
@@ -20,10 +27,10 @@ interface ThemeCtx {
   qrFg: string;
   qrBg: string;
   setQRColors: (fg: string, bg: string) => void;
-  /** The QR style that matches the current theme (light → paper default,
-   *  dark → paper-dark default).  Use this as the initial value of any
-   *  `useState<QRStyle>(...)` that should respect the user's theme. */
   defaultQRStyleForTheme: QRStyle;
+  pureDark: boolean;
+  setPureDark: (v: boolean) => void;
+  ready: boolean;
 }
 
 const ThemeContext = createContext<ThemeCtx>({
@@ -35,35 +42,51 @@ const ThemeContext = createContext<ThemeCtx>({
   qrBg: "#fafaf9",
   setQRColors: () => {},
   defaultQRStyleForTheme: defaultQRStyle(false),
+  pureDark: false,
+  setPureDark: () => {},
+  ready: false,
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const system = useColorScheme();
-  // Default to "system" so the app follows device dark/light mode without
-  // waiting for AsyncStorage.  Users can pin to light, dark, or dynamic
-  // from Settings.
+  const [initialSystem] = useState(() => Appearance.getColorScheme());
+  const resolvedSystem = system ?? initialSystem;
+
+  // Ensure live updates when the device theme changes while the app is
+  // running.  useColorScheme() updates on some platforms but not all —
+  // Appearance.addChangeListener covers the gaps.
+  const [liveSystem, setLiveSystem] = useState(resolvedSystem);
+  useEffect(() => {
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      if (colorScheme) setLiveSystem(colorScheme);
+    });
+    return () => sub.remove();
+  }, []);
+  const effectiveSystem = liveSystem;
+
   const [theme, setThemeState] = useState<AppTheme>("system");
   const [qrFg, setQrFg] = useState("#1c1917");
   const [qrBg, setQrBg] = useState("#fafaf9");
+  const [pureDark, setPureDarkState] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     AsyncStorage.multiGet([
       "curium_theme",
       "curium_qr_fg",
       "curium_qr_bg",
+      "curium_pure_dark",
     ]).then((pairs) => {
       const t = pairs[0][1];
       const fg = pairs[1][1];
       const bg = pairs[2][1];
+      const pd = pairs[3][1];
       if (t) setThemeState(t as AppTheme);
       if (fg) setQrFg(fg);
       if (bg) setQrBg(bg);
+      if (pd === "true") setPureDarkState(true);
+      setReady(true);
     });
-  }, []);
-
-  const setTheme = useCallback((t: AppTheme) => {
-    setThemeState(t);
-    AsyncStorage.setItem("curium_theme", t);
   }, []);
 
   const setQRColors = useCallback((fg: string, bg: string) => {
@@ -77,8 +100,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const colors = useMemo(() => {
     if (theme === "dynamic") {
-      // Build entire palette from QR colors
-      // qrBg = background, qrFg = text/accent
       const isQrDark = isColorDark(qrBg);
       const base = isQrDark ? DarkColors : LightColors;
       return {
@@ -94,20 +115,78 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         primaryBg: qrFg + "22",
       };
     }
-    const isDark =
-      theme === "dark" || (theme === "system" && system === "dark");
-    return isDark ? DarkColors : LightColors;
-  }, [theme, system, qrFg, qrBg]);
+    const resolvedDark =
+      theme === "dark" ||
+      (theme === "system" && effectiveSystem === "dark");
+    if (resolvedDark && pureDark) return AmoledColors;
+    return resolvedDark ? DarkColors : LightColors;
+  }, [theme, effectiveSystem, qrFg, qrBg, pureDark]);
 
   const isDark =
     theme === "dynamic"
       ? isColorDark(qrBg)
-      : theme === "dark" || (theme === "system" && system === "dark");
+      : theme === "dark" ||
+        (theme === "system" && effectiveSystem === "dark");
 
   const defaultQRStyleForTheme = useMemo(
     () => defaultQRStyle(isDark),
     [isDark],
   );
+
+  // ─── Smooth theme transition ──────────────────────────────────────────────
+  // When the user switches between light/dark/system/dynamic, capture the
+  // OLD background color and fade an overlay from it to transparent.
+  //
+  // QR color changes in dynamic mode must NOT trigger this overlay —
+  // only actual theme switches should.
+  //
+  // The animation must NOT fire on the initial AsyncStorage restore
+  // (default "system" → stored "dark").  To guarantee this, we only
+  // animate after the user has explicitly called `setTheme` at least once.
+  const overlayOpacity = useSharedValue(0);
+  const overlayBg = useSharedValue(LightColors.bg);
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value,
+    backgroundColor: overlayBg.value,
+  }));
+  const prevBgRef = useRef(colors.bg);
+  const hasUserInteractedRef = useRef(false);
+  const prevThemeRef = useRef(theme);
+  const prevEffectiveSystemRef = useRef(effectiveSystem);
+
+  const setTheme = useCallback((t: AppTheme) => {
+    hasUserInteractedRef.current = true;
+    setThemeState(t);
+    AsyncStorage.setItem("curium_theme", t);
+  }, []);
+
+  const setPureDark = useCallback((v: boolean) => {
+    hasUserInteractedRef.current = true;
+    setPureDarkState(v);
+    AsyncStorage.setItem("curium_pure_dark", v ? "true" : "false");
+  }, []);
+
+  useEffect(() => {
+    const themeChanged = prevThemeRef.current !== theme;
+    const systemChanged = prevEffectiveSystemRef.current !== effectiveSystem;
+    prevThemeRef.current = theme;
+    prevEffectiveSystemRef.current = effectiveSystem;
+
+    if (!hasUserInteractedRef.current) {
+      prevBgRef.current = colors.bg;
+      return;
+    }
+
+    if ((themeChanged || systemChanged) && prevBgRef.current !== colors.bg) {
+      overlayBg.value = prevBgRef.current;
+      overlayOpacity.value = 1;
+      overlayOpacity.value = withTiming(0, {
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
+    prevBgRef.current = colors.bg;
+  }, [colors.bg, theme, effectiveSystem]);
 
   const value = useMemo<ThemeCtx>(
     () => ({
@@ -119,13 +198,32 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       qrBg,
       setQRColors,
       defaultQRStyleForTheme,
+      pureDark,
+      setPureDark,
+      ready,
     }),
-    [theme, colors, isDark, setTheme, qrFg, qrBg, setQRColors, defaultQRStyleForTheme],
+    [
+      theme,
+      colors,
+      isDark,
+      setTheme,
+      qrFg,
+      qrBg,
+      setQRColors,
+      defaultQRStyleForTheme,
+      pureDark,
+      setPureDark,
+      ready,
+    ],
   );
 
   return (
     <ThemeContext.Provider value={value}>
       {children}
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, overlayStyle]}
+      />
     </ThemeContext.Provider>
   );
 }
@@ -138,7 +236,6 @@ function isColorDark(hex: string): boolean {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  // Perceived luminance
   return 0.299 * r + 0.587 * g + 0.114 * b < 128;
 }
 

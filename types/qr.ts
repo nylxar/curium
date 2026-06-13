@@ -164,8 +164,8 @@ export const DEFAULT_QR_STYLE: QRStyle = {
   logoStyle: {
     background: "rounded",
     padding: 0,
-    border: true,
-    shadow: true,
+    border: false,
+    shadow: false,
   },
   ecl: "M",
 };
@@ -193,8 +193,8 @@ export const DEFAULT_QR_STYLE_DARK: QRStyle = {
   logoStyle: {
     background: "rounded",
     padding: 0,
-    border: true,
-    shadow: true,
+    border: false,
+    shadow: false,
   },
   ecl: "M",
 };

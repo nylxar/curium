@@ -402,30 +402,33 @@ function ConfirmDialog({
 }) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const pendingConfirmRef = useRef(false);
 
   const opacity = useSharedValue(0);
-  const cardY = useSharedValue(24);
+  const cardY = useSharedValue(16);
   const cardOpacity = useSharedValue(0);
 
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 140 });
+    opacity.value = withTiming(1, { duration: 100 });
     cardY.value = withTiming(0, {
-      duration: 220,
+      duration: 150,
       easing: Easing.out(Easing.cubic),
     });
-    cardOpacity.value = withTiming(1, { duration: 180 });
+    cardOpacity.value = withTiming(1, { duration: 120 });
   }, []);
 
   const handleClose = (run: boolean) => {
-    opacity.value = withTiming(0, { duration: 140 }, (f) => {
-      if (f) runOnJS(onDismiss)();
+    pendingConfirmRef.current = run;
+    opacity.value = withTiming(0, { duration: 100 }, (f) => {
+      if (f) {
+        if (pendingConfirmRef.current) {
+          runOnJS(entry.onConfirm)();
+        }
+        runOnJS(onDismiss)();
+      }
     });
-    cardY.value = withTiming(12, { duration: 160, easing: Easing.in(Easing.cubic) });
-    cardOpacity.value = withTiming(0, { duration: 140 });
-    if (run) {
-      // Defer the confirm action slightly so the animation can start
-      setTimeout(() => entry.onConfirm(), 60);
-    }
+    cardY.value = withTiming(8, { duration: 120, easing: Easing.in(Easing.cubic) });
+    cardOpacity.value = withTiming(0, { duration: 100 });
   };
 
   const backdropStyle = useAnimatedStyle(() => ({
@@ -434,6 +437,9 @@ function ConfirmDialog({
   const cardStyle = useAnimatedStyle(() => ({
     opacity: cardOpacity.value,
     transform: [{ translateY: cardY.value }],
+  }));
+  const actionsStyle = useAnimatedStyle(() => ({
+    opacity: cardOpacity.value,
   }));
 
   const accent = entry.danger ? colors.error : colors.primary;
@@ -500,7 +506,7 @@ function ConfirmDialog({
               {entry.message}
             </Text>
           ) : null}
-          <View style={styles.confirmActions}>
+          <Animated.View style={[styles.confirmActions, actionsStyle]}>
             <Pressable
               onPress={() => handleClose(false)}
               style={({ pressed }) => [
@@ -508,7 +514,7 @@ function ConfirmDialog({
                 {
                   backgroundColor: pressed
                     ? colors.surfaceOffset
-                    : colors.bg,
+                    : colors.surface,
                   borderColor: colors.border,
                 },
               ]}
@@ -547,7 +553,7 @@ function ConfirmDialog({
                 {entry.confirmLabel}
               </Text>
             </Pressable>
-          </View>
+          </Animated.View>
         </Animated.View>
       </View>
     </View>
