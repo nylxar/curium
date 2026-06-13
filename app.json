@@ -2,7 +2,7 @@
   "expo": {
     "name": "Curium",
     "slug": "Curium",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "curium",
@@ -34,9 +34,13 @@
         "expo-splash-screen",
         {
           "image": "./assets/icon.png",
-          "imageWidth": 200,
+          "imageWidth": 120,
           "resizeMode": "contain",
-          "backgroundColor": "#f5f0e8"
+          "backgroundColor": "#f5f0e8",
+          "dark": {
+            "image": "./assets/icon.png",
+            "backgroundColor": "#0d0d0f"
+          }
         }
       ],
       [
