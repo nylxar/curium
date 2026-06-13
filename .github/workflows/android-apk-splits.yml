@@ -18,7 +18,11 @@ on:
     branches:
       - master
       - preview
-      - nightly
+    paths-ignore:
+      - "*.md"
+      - "docs/**"
+      - ".gitignore"
+      - "LICENSE"
   schedule:
     - cron: "0 3 * * *"
 
