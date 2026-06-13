@@ -60,8 +60,8 @@ export default function RootLayout() {
   }, [fontsReady]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
-      <View style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
         <Animated.View style={[{ flex: 1 }, appStyle]}>
           <OverlayProvider>
             <ThemeProvider>

@@ -1233,8 +1233,6 @@ export default function CreateScreen() {
           onClose={() => setExportOpen(false)}
           qrRef={qrRef}
           qrValue={qrValue}
-          tintColor={tint}
-          bgColor={qrStyle.bgColor}
         />
         <FormModal
           visible={formModalOpen}
