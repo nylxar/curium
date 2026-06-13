@@ -98,17 +98,18 @@ export default function ScanScreen() {
   const { colors, isDark } = useTheme();
   const toast = useToast();
 
-  // Laser sweep
-  const laserY = useSharedValue(0);
+  // Corner breathing animation
+  const breathe = useSharedValue(0.4);
   useEffect(() => {
-    laserY.value = withRepeat(
-      withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+    if (scanned) return;
+    breathe.value = withRepeat(
+      withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
       -1,
       true,
     );
-  }, []);
-  const laserStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: laserY.value * 220 }],
+  }, [scanned]);
+  const breatheStyle = useAnimatedStyle(() => ({
+    opacity: scanned ? 1 : breathe.value,
   }));
 
   // Result panel slide-in
@@ -128,23 +129,6 @@ export default function ScanScreen() {
     opacity: panelProgress.value,
     transform: [{ translateY: (1 - panelProgress.value) * 40 }],
   }));
-
-  // Success flash when a QR is detected
-  const flash = useSharedValue(0);
-  useEffect(() => {
-    if (scanned) {
-      flash.value = 0;
-      flash.value = withTiming(1, {
-        duration: 120,
-        easing: Easing.out(Easing.quad),
-      });
-      flash.value = withDelay(
-        200,
-        withTiming(0, { duration: 240, easing: Easing.in(Easing.cubic) }),
-      );
-    }
-  }, [scanned]);
-  const flashStyle = useAnimatedStyle(() => ({ opacity: flash.value }));
 
   const onBarcodeScanned = useCallback(
     ({ data }: { data: string }) => {
@@ -366,25 +350,16 @@ export default function ScanScreen() {
                 borderRightWidth: 3,
               },
             ].map((c, i) => (
-              <View
+              <Animated.View
                 key={i}
                 style={[
                   styles.corner,
                   c,
-                  { borderColor: scanned ? "#22c55e" : "#fff" },
+                  { borderColor: scanned ? colors.primary : "#fff" },
+                  !scanned && breatheStyle,
                 ]}
               />
             ))}
-            {!scanned && <Animated.View style={[styles.laser, laserStyle]} />}
-            {/* Success flash — momentary green wash when scanned */}
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.frameFlash,
-                { backgroundColor: "#22c55e" },
-                flashStyle,
-              ]}
-            />
           </View>
           {/* Hint pill — always shows the instruction; the "Scanned"
               indicator lives in the result panel below.  We don't duplicate
@@ -627,25 +602,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
   },
   corner: { position: "absolute", width: 26, height: 26, borderRadius: 4 },
-  laser: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: "#22c55e",
-    shadowColor: "#22c55e",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  frameFlash: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
   hintPill: {
     flexDirection: "row",
     alignItems: "center",
