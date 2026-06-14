@@ -34,7 +34,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - 'app/**'
+              - 'components/**'
+              - 'constants/**'
+              - 'context/**'
+              - 'services/**'
+              - 'types/**'
+              - 'plugins/**'
+              - 'scripts/**'
+              - 'assets/**'
+              - 'package.json'
+              - 'app.json'
+              - 'tsconfig.json'
+              - 'babel.config.js'
+              - 'metro.config.js'
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+
   build-apk-splits:
+    needs: check-changes
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
+      needs.check-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -275,12 +308,6 @@ jobs:
             } >> "$NOTES_FILE"
           fi
 
-          # Create source code archives
-          SOURCE_ZIP="curium-source-${TAG}.zip"
-          SOURCE_TGZ="curium-source-${TAG}.tar.gz"
-          git archive --format=zip --output="$SOURCE_ZIP" HEAD
-          git archive --format=tar.gz --output="$SOURCE_TGZ" HEAD
-
           # Create the release with the combined notes file
           if [ -s "$NOTES_FILE" ]; then
             gh release create "$TAG" \
@@ -288,16 +315,12 @@ jobs:
               --notes-file "$NOTES_FILE" \
               --draft=false \
               $PRERELEASE_FLAG \
-              "$APK_DIR"/*.apk \
-              "$SOURCE_ZIP" \
-              "$SOURCE_TGZ"
+              "$APK_DIR"/*.apk
           else
             gh release create "$TAG" \
               --title "Curium ${TAG}" \
               --generate-notes \
               --draft=false \
               $PRERELEASE_FLAG \
-              "$APK_DIR"/*.apk \
-              "$SOURCE_ZIP" \
-              "$SOURCE_TGZ"
+              "$APK_DIR"/*.apk
           fi
