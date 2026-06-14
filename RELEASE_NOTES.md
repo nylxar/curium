@@ -1,4 +1,4 @@
-# Release Notes — v0.5.0 (Preview)
+# Release Notes — v0.5.0 (Stable)
 
 ## What's New
 
