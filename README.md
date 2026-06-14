@@ -5,7 +5,7 @@
 <h1 align="center">Curium</h1>
 
 <p align="center">
-  Privacy-first QR customizer for Android.<br/>
+  Modern, privacy-first QR customizer.<br/>
   No analytics. No network. Just your codes.
 </p>
 
@@ -40,7 +40,7 @@
     <img src="https://badgen.net/github/release/nylxar/curium?label=download&labelColor=111&color=555&logo=android" alt="Download" />
   </a>
   &nbsp;
-  <img src="https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Fnylxar%2Fcurium%2Freleases%2Flatest&label=downloads&icon=download&color=%23a370f7&message=&style=flat&tz=Europe%2FHelsinki" alt="Downloads" />
+  <img src="https://api.visitorbadge.io/api/visitors?path=nylxar%2Fcurium&label=downloads&style=flat&countColor=%23555&labelColor=%23111" alt="Downloads" />
 </p>
 
 > **Preview builds** may feel rough or unpolished and may contain bugs. They are intended for early testing and feedback. For stable use, wait for a release tagged `v*` without a pre-release label.
@@ -105,7 +105,7 @@
 
 | Variant | Application ID | Purpose |
 |---------|---------------|---------|
-| **Stable** | `com.nylxar.curium` | Production releases |
+| **Stable** | `com.nylxar.curium.stable` | Production releases |
 | **Preview** | `com.nylxar.curium.preview` | Pre-release testing |
 | **Nightly** | `com.nylxar.curium.nightly` | Automated daily builds |
 
@@ -137,9 +137,13 @@ pnpm android
 
 ### Build Release APK
 
-```bash
-eas build --platform android --profile production
-```
+Releases are built automatically via GitHub Actions. To trigger a build:
+
+- **Stable**: Push to `master` or create a `v*` tag
+- **Preview**: Push to `preview`
+- **Manual**: Go to Actions → Android APK Splits → Run workflow
+
+Or download the latest APK directly from [Releases](https://github.com/nylxar/curium/releases).
 
 ---
 
@@ -149,6 +153,7 @@ The GitHub Actions workflow builds release APKs with ABI splits (`armeabi-v7a`, 
 
 | Trigger | Flavor | Release |
 |---------|--------|---------|
+| Push to `master` (code changes only) | stable | Yes |
 | Push tag `v*` | stable | Yes |
 | Push to `preview` (code changes only) | preview | Yes |
 | Daily cron (3 AM UTC) | nightly | No |
