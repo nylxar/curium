@@ -18,6 +18,7 @@ import Animated, {
 } from "react-native-reanimated";
 import {
   QRStyle,
+  ECL,
   EyeShape,
   PupilShape,
   PixelShape,
@@ -509,9 +510,19 @@ export function QRCanvas({
 }: Props) {
   const isEmpty = !value || !value.trim();
 
+  // When a logo is overlaid, auto-bump ECL to H (30% recovery) if the
+  // user's chosen level is lower.  This prevents unscannable QR codes
+  // where the logo obscures data modules that only have M/Q redundancy.
+  const ECL_ORDER: ECL[] = ["L", "M", "Q", "H"];
+  const effectiveEcl = useMemo(() => {
+    if (!logoUri) return qrStyle.ecl;
+    const idx = ECL_ORDER.indexOf(qrStyle.ecl);
+    return ECL_ORDER[Math.max(idx, 3)]; // 3 = "H"
+  }, [logoUri, qrStyle.ecl]);
+
   const matrix = useMemo(
-    () => (isEmpty ? null : getMatrix(value, qrStyle.ecl)),
-    [value, qrStyle.ecl, isEmpty],
+    () => (isEmpty ? null : getMatrix(value, effectiveEcl)),
+    [value, effectiveEcl, isEmpty],
   );
 
   // ── Colors snap on commit (no cross-fade on the QR itself) ──

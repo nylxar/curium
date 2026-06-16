@@ -53,11 +53,11 @@
 - **8 payload types** — URL, text, Wi-Fi, email, phone, SMS, contact, location
 - **Pixel styles** — square, dots, rounded, extra-rounded, diamond
 - **Eye styles** — square, rounded, circle
-- **Error correction** — L, M, Q, H
 - **Corner radius** — sharp → pill (5 levels)
 - **Logo overlay** — pick from gallery, resize, reposition by drag
 - **Logo background** — rounded, circle, or none
 - **Logo border & shadow** — toggle independently
+- **Error correction** — L, M, Q, H; auto-bumped to H when a logo is applied so center logos always scan
 - **Randomize** — shuffle all colors and styles instantly
 - **Live preview** — updates as you edit
 
