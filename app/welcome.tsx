@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Linking,
   Image,
 } from "react-native";
 import Animated, {
@@ -20,9 +19,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const DONATE_URL = "https://github.com/sponsors/nylxar";
-const GITHUB_URL = "https://github.com/nylxar/curium";
 
 export default function WelcomeScreen() {
   const { colors } = useTheme();
@@ -73,8 +69,7 @@ export default function WelcomeScreen() {
 
   const handleSupport = async () => {
     await AsyncStorage.setItem("curium_onboarded", "true");
-    Linking.openURL(DONATE_URL);
-    router.replace("/");
+    router.replace("/support");
   };
 
   return (
