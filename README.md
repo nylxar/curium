@@ -85,6 +85,23 @@
 - **Copy content** — clipboard
 - **Export data** — text file
 
+### What's Shipped
+
+- [x] QR generator with deep customization
+- [x] Logo overlay with auto error correction
+- [x] Camera + gallery scanner
+- [x] Dynamic and AMOLED themes
+- [x] Offline-first, zero tracking
+- [x] Welcome and support screens
+
+### What's Coming
+
+- [ ] Experimental: customizable eye size and position
+- [ ] Per-eye independent control
+- [ ] Scan confidence indicator
+- [ ] SVG export
+- [ ] QR templates
+
 ---
 
 ## Tech Stack
