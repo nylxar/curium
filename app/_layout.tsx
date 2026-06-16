@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -43,6 +44,7 @@ export default function RootLayout() {
     "IBMPlexMono-Italic": require("../assets/fonts/IBMPlexMono-Italic.otf"),
   });
   const fontsReady = !!(loaded || error);
+  const router = useRouter();
 
   const appOp = useSharedValue(0);
   const appStyle = useAnimatedStyle(() => ({ opacity: appOp.value }));
@@ -66,6 +68,14 @@ export default function RootLayout() {
     }
   }, [fontsReady]);
 
+  // First-launch welcome redirect
+  useEffect(() => {
+    if (!fontsReady) return;
+    AsyncStorage.getItem("curium_onboarded").then((v) => {
+      if (!v) router.replace("/welcome");
+    });
+  }, [fontsReady]);
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
       <View style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
@@ -83,6 +93,7 @@ export default function RootLayout() {
                       }}
                     >
                       <Stack.Screen name="index" options={{ animation: "none" }} />
+                    <Stack.Screen name="welcome" options={{ animation: "none" }} />
                       <Stack.Screen
                         name="scan"
                         options={{
