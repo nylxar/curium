@@ -465,9 +465,16 @@ export default function SettingsScreen() {
         <Row
           icon="information-circle-outline"
           label="About Curium"
-          sub="Version, build, and more"
+          sub="What we stand for"
           colors={colors}
           onPress={() => router.push("/about")}
+        />
+        <Row
+          icon="build-outline"
+          label="App Info"
+          sub="Version, build, and links"
+          colors={colors}
+          onPress={() => router.push("/info")}
         />
       </ScrollView>
     </View>

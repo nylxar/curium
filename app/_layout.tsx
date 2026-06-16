@@ -94,6 +94,13 @@ export default function RootLayout() {
                     >
                       <Stack.Screen name="index" options={{ animation: "none" }} />
                     <Stack.Screen name="welcome" options={{ animation: "none" }} />
+                    <Stack.Screen
+                      name="support"
+                      options={{
+                        animation: "simple_push",
+                        animationDuration: 200,
+                      }}
+                    />
                       <Stack.Screen
                         name="scan"
                         options={{
@@ -112,6 +119,10 @@ export default function RootLayout() {
                       />
                       <Stack.Screen
                         name="qr-detail"
+                        options={{ animation: "simple_push", animationDuration: 200 }}
+                      />
+                      <Stack.Screen
+                        name="info"
                         options={{ animation: "simple_push", animationDuration: 200 }}
                       />
                       <Stack.Screen
