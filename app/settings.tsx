@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -68,15 +67,16 @@ function ThemeBtn({
   label: string;
 }) {
   return (
-    <TouchableOpacity
-      style={[
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
         styles.themeBtn,
         {
           backgroundColor: active ? colors.primary + "22" : colors.surface,
           borderColor: active ? colors.primary : colors.border,
+          opacity: pressed ? 0.85 : 1,
         },
       ]}
-      onPress={onPress}
     >
       <Ionicons
         name={icon}
@@ -91,7 +91,7 @@ function ThemeBtn({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -284,9 +284,9 @@ export default function SettingsScreen() {
   return (
     <View style={S.screen}>
       <View style={S.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={S.title}>Settings</Text>
         <View style={{ width: 24 }} />
       </View>

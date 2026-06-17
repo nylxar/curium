@@ -134,65 +134,66 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   // ─── Smooth theme transition ──────────────────────────────────────────────
-  // When the user switches between light/dark/system/dynamic, capture the
-  // OLD background color and fade an overlay from it to transparent.
-  //
-  // QR color changes in dynamic mode must NOT trigger this overlay —
-  // only actual theme switches should.
-  //
-  // The animation must NOT fire on the initial AsyncStorage restore
-  // (default "system" → stored "dark").  To guarantee this, we only
-  // animate after the user has explicitly called `setTheme` at least once.
+  // Keep the old theme visible for two frames so the overlay can paint
+  // before React commits the new colors.
   const overlayOpacity = useSharedValue(0);
   const overlayBg = useSharedValue(LightColors.bg);
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: overlayOpacity.value,
     backgroundColor: overlayBg.value,
   }));
-  const prevBgRef = useRef(colors.bg);
   const hasUserInteractedRef = useRef(false);
-  const prevThemeRef = useRef(theme);
-  const prevEffectiveSystemRef = useRef(effectiveSystem);
 
   const setTheme = useCallback((t: AppTheme) => {
     hasUserInteractedRef.current = true;
-    setThemeState(t);
     AsyncStorage.setItem("curium_theme", t);
-  }, []);
+    // Capture old bg BEFORE any state change.
+    const oldBg = colors.bg;
+    overlayBg.value = oldBg;
+    overlayOpacity.value = 1;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setThemeState(t);
+        overlayOpacity.value = withTiming(0, {
+          duration: 260,
+          easing: Easing.out(Easing.cubic),
+        });
+      });
+    });
+  }, [colors.bg]);
 
   const setPureDark = useCallback((v: boolean) => {
     hasUserInteractedRef.current = true;
-    setPureDarkState(v);
     AsyncStorage.setItem("curium_pure_dark", v ? "true" : "false");
-  }, []);
-
-  useEffect(() => {
-    const themeChanged = prevThemeRef.current !== theme;
-    const systemChanged = prevEffectiveSystemRef.current !== effectiveSystem;
-    prevThemeRef.current = theme;
-    prevEffectiveSystemRef.current = effectiveSystem;
-
-    if (!hasUserInteractedRef.current) {
-      prevBgRef.current = colors.bg;
-      return;
+    const oldBg = colors.bg;
+    let newBg: string;
+    if (theme === "dynamic") {
+      const isQrDark = isColorDark(qrBg);
+      newBg = qrBg;
+      const base = isQrDark ? DarkColors : LightColors;
+      newBg = qrBg;
+    } else {
+      const resolvedDark =
+        theme === "dark" ||
+        (theme === "system" && effectiveSystem === "dark");
+      if (v) {
+        newBg = AmoledColors.bg;
+      } else {
+        newBg = resolvedDark ? DarkColors.bg : LightColors.bg;
+      }
     }
-
-    if ((themeChanged || systemChanged) && prevBgRef.current !== colors.bg) {
-      overlayBg.value = prevBgRef.current;
-      // Reset to fully opaque first, then animate to transparent.
-      // Setting value=1 and withTiming(0) in the same frame can cause
-      // the animation to start from 0 instead of 1 (the assignment is
-      // batched and the withTiming overwrites it).  Resetting to 0 first
-      // guarantees the next frame starts at 1 before the fade begins.
-      overlayOpacity.value = 0;
-      overlayOpacity.value = withTiming(1, { duration: 0 });
-      overlayOpacity.value = withTiming(0, {
-        duration: 300,
-        easing: Easing.out(Easing.cubic),
+    overlayBg.value = oldBg;
+    overlayOpacity.value = 1;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setPureDarkState(v);
+        overlayOpacity.value = withTiming(0, {
+          duration: 260,
+          easing: Easing.out(Easing.cubic),
+        });
       });
-    }
-    prevBgRef.current = colors.bg;
-  }, [colors.bg, theme, effectiveSystem]);
+    });
+  }, [colors.bg, theme, effectiveSystem, qrBg]);
 
   const value = useMemo<ThemeCtx>(
     () => ({
