@@ -187,12 +187,9 @@ export default function SettingsScreen() {
     });
   }, []);
 
-  const update = useCallback(
-    (partial: Partial<AppSettings>) => {
-      saveSettings(partial);
-    },
-    [],
-  );
+  const update = useCallback((partial: Partial<AppSettings>) => {
+    saveSettings(partial);
+  }, []);
 
   const S = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.bg },
@@ -463,18 +460,17 @@ export default function SettingsScreen() {
         {/* App */}
         <SectionTitle colors={colors}>App</SectionTitle>
         <Row
-          icon="information-circle-outline"
-          label="About Curium"
-          sub="What we stand for"
-          colors={colors}
-          onPress={() => router.push("/about")}
-        />
-        <Row
           icon="build-outline"
           label="App Info"
           sub="Version, build, and links"
           colors={colors}
           onPress={() => router.push("/info")}
+        />
+        <Row
+          icon="information-circle-outline"
+          label="About Curium"
+          colors={colors}
+          onPress={() => router.push("/about")}
         />
       </ScrollView>
     </View>
