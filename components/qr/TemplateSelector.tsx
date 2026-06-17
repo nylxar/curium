@@ -96,7 +96,6 @@ export function TemplateSelector({ currentStyle, onLoad }: Props) {
           />
           <TouchableOpacity
             style={[styles.saveBtn, { backgroundColor: colors.primary }]}
-            activeOpacity={0.6}
             onPress={handleSave}
           >
             <Text style={[styles.saveBtnText, { color: colors.bg }]}>Save</Text>

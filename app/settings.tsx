@@ -103,6 +103,7 @@ function Row({
   onPress,
   danger,
   iconBg,
+  last,
   colors,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
@@ -112,10 +113,17 @@ function Row({
   onPress?: () => void;
   danger?: boolean;
   iconBg?: string;
+  last?: boolean;
   colors: any;
 }) {
   return (
-    <Pressable style={styles.row} onPress={onPress}>
+    <Pressable
+      style={[
+        styles.row,
+        last && { borderBottomWidth: 0, paddingBottom: Spacing.md + 1 },
+      ]}
+      onPress={onPress}
+    >
       <View
         style={[
           styles.rowIcon,
@@ -345,6 +353,7 @@ export default function SettingsScreen() {
               label="Pure Black"
               sub="True black background for OLED screens"
               colors={colors}
+              last
               right={
                 <ModernSwitch
                   value={pureDark}
@@ -403,6 +412,7 @@ export default function SettingsScreen() {
           label="Keep Screen On"
           sub="Prevent screen from sleeping"
           colors={colors}
+          last
           right={
             <ModernSwitch
               value={keepScreenOn}
@@ -424,6 +434,7 @@ export default function SettingsScreen() {
           label="Auto-copy on Generate"
           sub="Copy QR content when you create one"
           colors={colors}
+          last
           right={
             <ModernSwitch
               value={autoCopy}
@@ -446,6 +457,7 @@ export default function SettingsScreen() {
           sub="Delete all saved QR codes"
           danger
           colors={colors}
+          last
           onPress={() =>
             toast.confirm(
               "Clear History",
@@ -470,6 +482,7 @@ export default function SettingsScreen() {
           icon="information-circle-outline"
           label="About Curium"
           colors={colors}
+          last
           onPress={() => router.push("/about")}
         />
       </ScrollView>
