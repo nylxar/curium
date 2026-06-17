@@ -32,16 +32,17 @@ interface InfoRowProps {
   value: string;
   index: number;
   colors: any;
+  last?: boolean;
 }
 
-function InfoRow({ icon, label, value, index, colors }: InfoRowProps) {
+function InfoRow({ icon, label, value, index, colors, last }: InfoRowProps) {
   const opacity = useSharedValue(0);
   useEffect(() => {
     opacity.value = withDelay(index * 40, withTiming(1, { duration: 280 }));
   }, []);
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
-    <Animated.View style={[styles.infoRow, animStyle]}>
+    <Animated.View style={[styles.infoRow, animStyle, last && { borderBottomWidth: 0, paddingBottom: Spacing.md + 1 }]}>
       <View
         style={[styles.infoIcon, { backgroundColor: colors.primary + "18" }]}
       >
@@ -75,6 +76,7 @@ interface ActionRowProps {
   onPress: () => void;
   tintColor: string;
   index: number;
+  last?: boolean;
 }
 
 function ActionRow({
@@ -84,6 +86,7 @@ function ActionRow({
   onPress,
   tintColor,
   index,
+  last,
 }: ActionRowProps) {
   const opacity = useSharedValue(0);
   useEffect(() => {
@@ -93,7 +96,7 @@ function ActionRow({
   return (
     <Animated.View style={animStyle}>
       <TouchableOpacity
-        style={styles.actionRow}
+        style={[styles.actionRow, last && { borderBottomWidth: 0, paddingBottom: Spacing.md + 1 }]}
         activeOpacity={0.6}
         onPress={onPress}
       >
@@ -321,6 +324,7 @@ export default function AboutScreen() {
             value={`Expo SDK ${require("expo/package.json").version}`}
             index={5}
             colors={colors}
+            last
           />
 
           <TouchableOpacity
@@ -399,6 +403,7 @@ export default function AboutScreen() {
             onPress={() => openLink(X_URL, "X")}
             tintColor={colors.primary}
             index={0}
+            last
           />
         </View>
 

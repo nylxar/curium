@@ -257,7 +257,7 @@ export default function AboutScreen() {
             ]}
           >
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark" size={16} color={colors.success} />
+              <Ionicons name="checkmark" size={16} color={colors.text} />
               <Text
                 style={[
                   styles.pointText,
@@ -268,7 +268,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark" size={16} color={colors.success} />
+              <Ionicons name="checkmark" size={16} color={colors.text} />
               <Text
                 style={[
                   styles.pointText,
@@ -279,7 +279,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark" size={16} color={colors.success} />
+              <Ionicons name="checkmark" size={16} color={colors.text} />
               <Text
                 style={[
                   styles.pointText,
@@ -290,7 +290,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark" size={16} color={colors.success} />
+              <Ionicons name="checkmark" size={16} color={colors.text} />
               <Text
                 style={[
                   styles.pointText,
@@ -301,7 +301,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark" size={16} color={colors.success} />
+              <Ionicons name="checkmark" size={16} color={colors.text} />
               <Text
                 style={[
                   styles.pointText,
