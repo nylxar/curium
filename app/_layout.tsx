@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { View } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
@@ -17,6 +17,8 @@ import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { OverlayProvider, OverlayHost } from "@/components/ui/Overlay";
 import { CustomSplash } from "@/components/ui/CustomSplash";
+
+const LAST_SEEN_KEY = "curium_last_seen_version";
 
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ fade: false, duration: 0 });
@@ -68,11 +70,24 @@ export default function RootLayout() {
     }
   }, [fontsReady]);
 
-  // First-launch welcome redirect
+  // First-launch welcome redirect + what's-new on update
+  const seenWelcomeRef = useRef(false);
   useEffect(() => {
     if (!fontsReady) return;
     AsyncStorage.getItem("curium_onboarded").then((v) => {
-      if (!v) router.replace("/welcome");
+      if (!v) {
+        seenWelcomeRef.current = true;
+        router.replace("/welcome");
+      } else {
+        // Check if app was updated since last launch
+        const version = require("../app.json").expo.version;
+        AsyncStorage.getItem(LAST_SEEN_KEY).then((lastSeen) => {
+          if (lastSeen !== version && !seenWelcomeRef.current) {
+            seenWelcomeRef.current = true;
+            router.push({ pathname: "/whats-new", params: { forced: "false" } });
+          }
+        });
+      }
     });
   }, [fontsReady]);
 
@@ -127,6 +142,10 @@ export default function RootLayout() {
                       />
                       <Stack.Screen
                         name="about"
+                        options={{ animation: "simple_push", animationDuration: 200 }}
+                      />
+                      <Stack.Screen
+                        name="whats-new"
                         options={{ animation: "simple_push", animationDuration: 200 }}
                       />
                     </Stack>
