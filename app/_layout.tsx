@@ -70,26 +70,42 @@ export default function RootLayout() {
     }
   }, [fontsReady]);
 
-  // First-launch welcome redirect + what's-new on update
+  // First-launch welcome redirect + what's-new on update.
+  // Delayed until splash is fully hidden to prevent crossfade between
+  // CustomSplash and the redirected screen.
   const seenWelcomeRef = useRef(false);
+  const pendingRedirect = useRef<string | null>(null);
   useEffect(() => {
     if (!fontsReady) return;
+    const version = require("../app.json").expo.version;
     AsyncStorage.getItem("curium_onboarded").then((v) => {
       if (!v) {
         seenWelcomeRef.current = true;
-        router.replace("/welcome");
+        AsyncStorage.setItem(LAST_SEEN_KEY, version);
+        pendingRedirect.current = "/welcome";
       } else {
-        // Check if app was updated since last launch
-        const version = require("../app.json").expo.version;
         AsyncStorage.getItem(LAST_SEEN_KEY).then((lastSeen) => {
           if (lastSeen !== version && !seenWelcomeRef.current) {
             seenWelcomeRef.current = true;
-            router.push({ pathname: "/whats-new", params: { forced: "false" } });
+            pendingRedirect.current = "/whats-new?forced=false";
           }
         });
       }
     });
   }, [fontsReady]);
+
+  // Execute pending redirect after splash is fully hidden
+  useEffect(() => {
+    if (splashHidden && pendingRedirect.current) {
+      const target = pendingRedirect.current;
+      pendingRedirect.current = null;
+      if (target === "/welcome") {
+        router.replace("/welcome");
+      } else {
+        router.push({ pathname: "/whats-new", params: { forced: "false" } });
+      }
+    }
+  }, [splashHidden]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
