@@ -179,9 +179,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     if ((themeChanged || systemChanged) && prevBgRef.current !== colors.bg) {
       overlayBg.value = prevBgRef.current;
-      overlayOpacity.value = 1;
+      // Reset to fully opaque first, then animate to transparent.
+      // Setting value=1 and withTiming(0) in the same frame can cause
+      // the animation to start from 0 instead of 1 (the assignment is
+      // batched and the withTiming overwrites it).  Resetting to 0 first
+      // guarantees the next frame starts at 1 before the fade begins.
+      overlayOpacity.value = 0;
+      overlayOpacity.value = withTiming(1, { duration: 0 });
       overlayOpacity.value = withTiming(0, {
-        duration: 260,
+        duration: 300,
         easing: Easing.out(Easing.cubic),
       });
     }
