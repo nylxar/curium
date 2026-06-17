@@ -69,7 +69,7 @@ export default function WelcomeScreen() {
 
   const handleSupport = async () => {
     await AsyncStorage.setItem("curium_onboarded", "true");
-    router.replace("/support");
+    router.push("/support");
   };
 
   return (
