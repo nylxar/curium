@@ -1,5 +1,11 @@
 import { useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -12,12 +18,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
-function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+function FadeIn({
+  children,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+}) {
   const opacity = useSharedValue(0);
   useEffect(() => {
     opacity.value = withDelay(delay, withTiming(1, { duration: 400 }));
   }, []);
-  return <Animated.View style={useAnimatedStyle(() => ({ opacity: opacity.value }))}>{children}</Animated.View>;
+  return (
+    <Animated.View style={useAnimatedStyle(() => ({ opacity: opacity.value }))}>
+      {children}
+    </Animated.View>
+  );
 }
 
 export default function AboutScreen() {
@@ -57,31 +73,8 @@ export default function AboutScreen() {
           paddingBottom: insets.bottom + Spacing.xxxl,
         }}
       >
-        {/* Hero */}
-        <FadeIn delay={0}>
-          <View style={styles.hero}>
-            <Ionicons name="qr-code" size={48} color={colors.primary} />
-            <Text
-              style={[
-                styles.heroTitle,
-                { color: colors.text, fontFamily: Fonts.monoBold },
-              ]}
-            >
-              Curium
-            </Text>
-            <Text
-              style={[
-                styles.heroSub,
-                { color: colors.textMuted, fontFamily: Fonts.mono },
-              ]}
-            >
-              A QR tool that respects you.
-            </Text>
-          </View>
-        </FadeIn>
-
         {/* What is this */}
-        <FadeIn delay={60}>
+        <FadeIn delay={0}>
           <Text
             style={[
               styles.sectionLabel,
@@ -90,15 +83,27 @@ export default function AboutScreen() {
           >
             WHAT IS THIS
           </Text>
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.bodyText, { color: colors.text, fontFamily: Fonts.mono }]}>
-              Curium is a QR code generator, customizer, and scanner. It runs entirely on your device. No servers. No accounts. No cloud. Your QR codes, your data, your rules.
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[
+                styles.bodyText,
+                { color: colors.text, fontFamily: Fonts.mono },
+              ]}
+            >
+              Curium is a QR code generator, customizer, and scanner. It runs
+              entirely on your device. No servers. No accounts. No cloud. Your
+              QR codes, your data, your rules.
             </Text>
           </View>
         </FadeIn>
 
         {/* Why it exists */}
-        <FadeIn delay={120}>
+        <FadeIn delay={60}>
           <Text
             style={[
               styles.sectionLabel,
@@ -107,18 +112,41 @@ export default function AboutScreen() {
           >
             WHY IT EXISTS
           </Text>
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.bodyText, { color: colors.text, fontFamily: Fonts.mono }]}>
-              Every QR code generator on the internet does the same thing: they let you create a code, then they track you, log your data, or serve you ads. Most of them are free because you are the product.
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[
+                styles.bodyText,
+                { color: colors.text, fontFamily: Fonts.mono },
+              ]}
+            >
+              Every QR code generator on the internet does the same thing: they
+              let you create a code, then they track you, log your data, or
+              serve you ads. Most of them are free because you are the product.
             </Text>
-            <Text style={[styles.bodyText, { color: colors.text, fontFamily: Fonts.mono, marginTop: Spacing.md }]}>
-              Curium exists because a QR code is a simple thing. It does not need a server. It does not need your location. It does not need to phone home. It is math — and math works offline.
+            <Text
+              style={[
+                styles.bodyText,
+                {
+                  color: colors.text,
+                  fontFamily: Fonts.mono,
+                  marginTop: Spacing.md,
+                },
+              ]}
+            >
+              Curium exists because a QR code is a simple thing. It does not
+              need a server. It does not need your location. It does not need to
+              phone home. It is math — and math works offline.
             </Text>
           </View>
         </FadeIn>
 
         {/* The problem */}
-        <FadeIn delay={180}>
+        <FadeIn delay={120}>
           <Text
             style={[
               styles.sectionLabel,
@@ -127,42 +155,93 @@ export default function AboutScreen() {
           >
             THE PROBLEM
           </Text>
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.pointRow}>
-              <Ionicons name="warning-outline" size={16} color={colors.error} />
-              <Text style={[styles.pointText, { color: colors.text, fontFamily: Fonts.mono }]}>
+              <Ionicons
+                name="close-circle-outline"
+                size={16}
+                color={colors.error}
+              />
+              <Text
+                style={[
+                  styles.pointText,
+                  { color: colors.text, fontFamily: Fonts.mono },
+                ]}
+              >
                 Most QR tools inject tracking parameters into your codes
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="warning-outline" size={16} color={colors.error} />
-              <Text style={[styles.pointText, { color: colors.text, fontFamily: Fonts.mono }]}>
+              <Ionicons
+                name="close-circle-outline"
+                size={16}
+                color={colors.error}
+              />
+              <Text
+                style={[
+                  styles.pointText,
+                  { color: colors.text, fontFamily: Fonts.mono },
+                ]}
+              >
                 They log every scan — time, location, device, referrer
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="warning-outline" size={16} color={colors.error} />
-              <Text style={[styles.pointText, { color: colors.text, fontFamily: Fonts.mono }]}>
+              <Ionicons
+                name="close-circle-outline"
+                size={16}
+                color={colors.error}
+              />
+              <Text
+                style={[
+                  styles.pointText,
+                  { color: colors.text, fontFamily: Fonts.mono },
+                ]}
+              >
                 They sell this data to advertisers, or worse, leak it
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="warning-outline" size={16} color={colors.error} />
-              <Text style={[styles.pointText, { color: colors.text, fontFamily: Fonts.mono }]}>
+              <Ionicons
+                name="close-circle-outline"
+                size={16}
+                color={colors.error}
+              />
+              <Text
+                style={[
+                  styles.pointText,
+                  { color: colors.text, fontFamily: Fonts.mono },
+                ]}
+              >
                 They lock basic features behind paywalls and subscriptions
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="warning-outline" size={16} color={colors.error} />
-              <Text style={[styles.pointText, { color: colors.text, fontFamily: Fonts.mono }]}>
-                They require accounts for basic features like saving or customizing
+              <Ionicons
+                name="close-circle-outline"
+                size={16}
+                color={colors.error}
+              />
+              <Text
+                style={[
+                  styles.pointText,
+                  { color: colors.text, fontFamily: Fonts.mono },
+                ]}
+              >
+                They require accounts for basic features like saving or
+                customizing
               </Text>
             </View>
           </View>
         </FadeIn>
 
         {/* What Curium does differently */}
-        <FadeIn delay={240}>
+        <FadeIn delay={180}>
           <Text
             style={[
               styles.sectionLabel,
@@ -171,34 +250,64 @@ export default function AboutScreen() {
           >
             WHAT CURIUM DOES DIFFERENTLY
           </Text>
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={[styles.pointText, { color: colors.text, fontFamily: Fonts.mono }]}>
+              <Ionicons name="checkmark" size={16} color={colors.success} />
+              <Text
+                style={[
+                  styles.pointText,
+                  { color: colors.text, fontFamily: Fonts.mono },
+                ]}
+              >
                 Zero network requests — not even a ping
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={[styles.pointText, { color: colors.text, fontFamily: Fonts.mono }]}>
+              <Ionicons name="checkmark" size={16} color={colors.success} />
+              <Text
+                style={[
+                  styles.pointText,
+                  { color: colors.text, fontFamily: Fonts.mono },
+                ]}
+              >
                 No accounts, no sign-ups, no email collection
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={[styles.pointText, { color: colors.text, fontFamily: Fonts.mono }]}>
+              <Ionicons name="checkmark" size={16} color={colors.success} />
+              <Text
+                style={[
+                  styles.pointText,
+                  { color: colors.text, fontFamily: Fonts.mono },
+                ]}
+              >
                 No analytics, no telemetry, no crash reporting
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={[styles.pointText, { color: colors.text, fontFamily: Fonts.mono }]}>
-                Full customization offline — colors, shapes, logos, eyes
+              <Ionicons name="checkmark" size={16} color={colors.success} />
+              <Text
+                style={[
+                  styles.pointText,
+                  { color: colors.text, fontFamily: Fonts.mono },
+                ]}
+              >
+                Full customization offline — colors, shapes, logos, eyes, etc.
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-              <Text style={[styles.pointText, { color: colors.text, fontFamily: Fonts.mono }]}>
+              <Ionicons name="checkmark" size={16} color={colors.success} />
+              <Text
+                style={[
+                  styles.pointText,
+                  { color: colors.text, fontFamily: Fonts.mono },
+                ]}
+              >
                 Open source — anyone can audit the code
               </Text>
             </View>
@@ -206,7 +315,7 @@ export default function AboutScreen() {
         </FadeIn>
 
         {/* Against capitalism */}
-        <FadeIn delay={300}>
+        <FadeIn delay={240}>
           <Text
             style={[
               styles.sectionLabel,
@@ -215,21 +324,56 @@ export default function AboutScreen() {
           >
             AGAINST CAPITALISM FOR SIMPLE THINGS
           </Text>
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.bodyText, { color: colors.text, fontFamily: Fonts.mono }]}>
-              A QR code is a 35-year-old standard. It is public domain math. The idea that companies can charge you for generating a QR code — or worse, track you for doing it — is absurd.
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[
+                styles.bodyText,
+                { color: colors.text, fontFamily: Fonts.mono },
+              ]}
+            >
+              A QR code is a 35-year-old standard. It is public domain math. The
+              idea that companies can charge you for generating a QR code — or
+              worse, track you for doing it — is absurd.
             </Text>
-            <Text style={[styles.bodyText, { color: colors.text, fontFamily: Fonts.mono, marginTop: Spacing.md }]}>
-              Curium rejects the idea that every digital tool must be a SaaS product. Some things should just work. Some things should be free. Some things should respect your privacy by default, not as a premium feature.
+            <Text
+              style={[
+                styles.bodyText,
+                {
+                  color: colors.text,
+                  fontFamily: Fonts.mono,
+                  marginTop: Spacing.md,
+                },
+              ]}
+            >
+              Curium rejects the idea that every digital tool must be a SaaS
+              product. Some things should just work. Some things should be free.
+              Some things should respect your privacy by default, not as a
+              premium feature.
             </Text>
-            <Text style={[styles.bodyText, { color: colors.text, fontFamily: Fonts.mono, marginTop: Spacing.md }]}>
-              We believe the QR code space is oversaturated with tools that exist to harvest data, not to serve users. Curium is the antithesis of that model.
+            <Text
+              style={[
+                styles.bodyText,
+                {
+                  color: colors.text,
+                  fontFamily: Fonts.mono,
+                  marginTop: Spacing.md,
+                },
+              ]}
+            >
+              We believe the QR code space is oversaturated with tools that
+              exist to harvest data, not to serve users. Curium is the
+              antithesis of that model.
             </Text>
           </View>
         </FadeIn>
 
         {/* Making others obsolete */}
-        <FadeIn delay={360}>
+        <FadeIn delay={300}>
           <Text
             style={[
               styles.sectionLabel,
@@ -238,21 +382,56 @@ export default function AboutScreen() {
           >
             MAKING OTHER TOOLS OBSOLETE
           </Text>
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.bodyText, { color: colors.text, fontFamily: Fonts.mono }]}>
-              Most QR tools are web apps. They require an internet connection. They store your designs on their servers. They can disappear at any time, and your saved QR codes go with them.
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[
+                styles.bodyText,
+                { color: colors.text, fontFamily: Fonts.mono },
+              ]}
+            >
+              Most QR tools are web apps. They require an internet connection.
+              They store your designs on their servers. They can disappear at
+              any time, and your saved QR codes go with them.
             </Text>
-            <Text style={[styles.bodyText, { color: colors.text, fontFamily: Fonts.mono, marginTop: Spacing.md }]}>
-              Curium is a native app. It works without internet. Your history, your designs, your settings — they live on your device. No server dependency means no shutdown risk. No account means no lock-in.
+            <Text
+              style={[
+                styles.bodyText,
+                {
+                  color: colors.text,
+                  fontFamily: Fonts.mono,
+                  marginTop: Spacing.md,
+                },
+              ]}
+            >
+              Curium is a native app. It works without internet. Your history,
+              your designs, your settings — they live on your device. No server
+              dependency means no shutdown risk. No account means no lock-in.
             </Text>
-            <Text style={[styles.bodyText, { color: colors.text, fontFamily: Fonts.mono, marginTop: Spacing.md }]}>
-              As Curium adds batch generation, templates, SVG export, and deep customization — features that web tools charge for or lock behind paywalls — the value proposition of every QR SaaS collapses. Why pay monthly for something you can own forever?
+            <Text
+              style={[
+                styles.bodyText,
+                {
+                  color: colors.text,
+                  fontFamily: Fonts.mono,
+                  marginTop: Spacing.md,
+                },
+              ]}
+            >
+              As Curium adds batch generation, templates, SVG export, and deep
+              customization — features that web tools charge for or lock behind
+              paywalls — the value proposition of every QR SaaS collapses. Why
+              pay monthly for something you can own forever?
             </Text>
           </View>
         </FadeIn>
 
         {/* The future */}
-        <FadeIn delay={420}>
+        <FadeIn delay={360}>
           <Text
             style={[
               styles.sectionLabel,
@@ -261,12 +440,34 @@ export default function AboutScreen() {
           >
             THE FUTURE
           </Text>
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.bodyText, { color: colors.text, fontFamily: Fonts.mono }]}>
-              Curium is not just an app. It is a statement. Every feature we ship proves that a tool can be powerful, beautiful, and free — without compromising your privacy.
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[
+                styles.bodyText,
+                { color: colors.text, fontFamily: Fonts.mono },
+              ]}
+            >
+              Curium is not just an app. It is a statement. Every feature we
+              ship proves that a tool can be powerful, beautiful, and free —
+              without compromising your privacy.
             </Text>
-            <Text style={[styles.bodyText, { color: colors.text, fontFamily: Fonts.mono, marginTop: Spacing.md }]}>
-              We are building the definitive QR tool. Not the one that makes the most money. The one that makes all others unnecessary.
+            <Text
+              style={[
+                styles.bodyText,
+                {
+                  color: colors.text,
+                  fontFamily: Fonts.mono,
+                  marginTop: Spacing.md,
+                },
+              ]}
+            >
+              We are building the definitive QR tool. Not the one that makes the
+              most money. The one that makes all others unnecessary.
             </Text>
           </View>
         </FadeIn>

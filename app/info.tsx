@@ -153,11 +153,9 @@ export default function AboutScreen() {
     toast.success("Copied", "Commit hash copied to clipboard.");
   };
 
-  // Links — adjust to real values when published
   const GITHUB_URL = "https://github.com/nylxar/curium";
-  const DONATE_URL = "https://github.com/sponsors/nylxar";
+  const X_URL = "https://x.com/nylxar";
   const ISSUES_URL = "https://github.com/nylxar/curium/issues";
-  const RELEASES_URL = "https://github.com/nylxar/curium/releases";
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -180,7 +178,7 @@ export default function AboutScreen() {
             { color: colors.text, fontFamily: Fonts.monoBold },
           ]}
         >
-          About
+          Info
         </Text>
         <View style={{ width: 24 }} />
       </View>
@@ -376,8 +374,13 @@ export default function AboutScreen() {
           <ActionRow
             icon="megaphone-outline"
             label="Release Notes"
-            sub={RELEASES_URL.replace("https://", "")}
-            onPress={() => openLink(RELEASES_URL, "Releases")}
+            sub="What's new in this version"
+            onPress={() =>
+              router.push({
+                pathname: "/whats-new",
+                params: { forced: "true" },
+              })
+            }
             tintColor={colors.primary}
             index={2}
           />
@@ -388,6 +391,14 @@ export default function AboutScreen() {
             onPress={() => router.push("/support")}
             tintColor={colors.error}
             index={3}
+          />
+          <ActionRow
+            icon="logo-x"
+            label="Follow Nylxar"
+            sub={X_URL.replace("https://", "")}
+            onPress={() => openLink(X_URL, "X")}
+            tintColor={colors.primary}
+            index={0}
           />
         </View>
 
