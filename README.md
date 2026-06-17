@@ -14,6 +14,7 @@
   <img src="https://badgen.net/badge/platform/Android%207%2B/111?labelColor=111&color=555" alt="Platform" />
   <img src="https://badgen.net/badge/license/GPL-3.0/111?labelColor=111&color=555" alt="License" />
   <img src="https://badgen.net/badge/SDK/56/111?labelColor=111&color=555" alt="SDK" />
+  <img src="https://api.visitorbadge.io/api/visitors?path=nylxar%2Fcurium&label=downloads&style=flat&countColor=%23555&labelColor=%23111" alt="Downloads" />
 </p>
 
 ---
@@ -39,11 +40,16 @@
   <a href="https://github.com/nylxar/curium/releases/latest">
     <img src="https://badgen.net/github/release/nylxar/curium?label=download&labelColor=111&color=555&logo=android" alt="Download" />
   </a>
-  &nbsp;
-  <img src="https://api.visitorbadge.io/api/visitors?path=nylxar%2Fcurium&label=downloads&style=flat&countColor=%23555&labelColor=%23111" alt="Downloads" />
 </p>
 
 > **Preview builds** may feel rough or unpolished and may contain bugs. They are intended for early testing and feedback. For stable use, wait for a release tagged `v*` without a pre-release label.
+
+---
+
+### Support Curium 
+[![badge](https://shieldcn.dev/badge/Support-via%20Gumroad-22c55e.svg?font=fira-code&logo=gumroad&color=e5decf)](https://nylxar.gumroad.com/coffee)
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T6O120WGDS)
+[![badge](https://shieldcn.dev/badge/Support-via%20PayPal-22c55e.svg?font=fira-code&logo=ri%3AFaPaypal&color=e5decf)](https://www.paypal.com/ncp/payment/DUAR5EJ7A3RV8)
 
 ---
 
@@ -51,21 +57,32 @@
 
 ### QR Generator
 - **8 payload types** — URL, text, Wi-Fi, email, phone, SMS, contact, location
-- **Pixel styles** — square, dots, rounded, extra-rounded, diamond
-- **Eye styles** — square, rounded, circle
+- **Pixel styles** — square, dots, rounded, extra-rounded, diamond, and more
+- **Eye styles** — square, rounded, circle, and more
 - **Corner radius** — sharp → pill (5 levels)
 - **Logo overlay** — pick from gallery, resize, reposition by drag
 - **Logo background** — rounded, circle, or none
 - **Logo border & shadow** — toggle independently
-- **Error correction** — L, M, Q, H; auto-bumped to H when a logo is applied so center logos always scan
+- **Error correction** — L, M, Q, H; auto-bumped to H when a logo is applied
 - **Randomize** — shuffle all colors and styles instantly
 - **Live preview** — updates as you edit
 
 ### QR Scanner
-- **Camera scan** — QR codes + barcodes (EAN-13, EAN-8, Code 128, Code 39, PDF417, Aztec, Data Matrix)
+- **Camera scan** — QR codes + barcodes (EAN-13, Code 128, PDF417, Aztec, Data Matrix)
 - **Gallery scan** — pick an image, detect code automatically
 - **Torch toggle** — low-light scanning
-- **Scan to customize** — scan any existing QR code, load it into the generator, change colors, style, logo, and export a new version
+- **Scan to customize** — scan any existing QR, load into generator, restyle and export
+
+### Templates
+- **Save styles** — save any QR configuration as a named template
+- **One-tap load** — restore a saved template instantly
+- **Delete** — long-press to remove unwanted templates
+
+### Export
+- **Save PNG** — high quality, saved to gallery
+- **Share PNG** — send via any installed app
+- **Share SVG** — vector format, shared as document (works with WhatsApp, Signal, Telegram, etc.)
+- **Copy content** — clipboard
 
 ### Themes
 - **Light / Dark / System** — follows device preference
@@ -75,32 +92,39 @@
 
 ### History
 - **Auto-save** — every QR you create is stored locally
+- **Detail view** — tap any saved QR to view, share, or delete
 - **Swipe-to-delete** — remove individual entries
 - **Clear all** — with confirmation dialog
 - **Search** — filter by content or type
 
-### Export
-- **Save to gallery** — PNG, high quality
-- **Share** — send via any installed app
-- **Copy content** — clipboard
-- **Export data** — text file
+---
 
-### What's Shipped
+## What's Coming
 
-- [x] QR generator with deep customization
-- [x] Logo overlay with auto error correction
-- [x] Camera + gallery scanner
-- [x] Dynamic and AMOLED themes
-- [x] Offline-first, zero tracking
-- [x] Welcome and support screens
-
-### What's Coming
-
-- [ ] Experimental: customizable eye size and position
-- [ ] Per-eye independent control
-- [ ] Scan confidence indicator
-- [ ] SVG export
-- [ ] QR templates
+- [ ] Batch QR generation — create dozens of QR codes in one session, export as zip
+- [ ] QR-from-image — upload an image, generate a QR that visually matches its color palette
+- [ ] Animated QR — QR that transitions between two states (e.g., normal → brand reveal)
+- [ ] Multi-color regions — different colors per data region, not just monochrome
+- [ ] QR version override — force specific module count for exact sizing
+- [ ] Batch style swap — restyle an entire set of QRs with one template change
+- [ ] Eye size slider (5–9 modules)
+- [ ] Presets: Standard (7), Compact (5), Bold (9)
+- [ ] Gated behind "Experimental" toggle with scan disclaimer
+- [ ] Per-eye size control (each eye independently sized)
+- [ ] Eye position presets (compact, standard, spaced)
+- [ ] Drag-to-reposition eyes within the grid
+- [ ] Scan confidence indicator (visual feedback on scannability)
+- [ ] Pupil size control (independent of outer ring)
+- [ ] Full per-eye customization (size, position, shape independently)
+- [ ] QR-from-image — generate a QR that visually matches an uploaded image
+- [ ] Batch generation — create multiple QR codes at once
+- [ ] QR templates — save and reuse style configurations
+- [ ] Animated QR — QR that transitions between two states
+- [ ] Multi-color QR — different colors per data region
+- [ ] QR version override — force a specific QR version (module count)
+- [ ] Separator style customization — the quiet zone around the QR
+- [ ] Export as SVG vector (not just PNG raster)
+- [ ] QR history tags / folders
 
 ---
 
@@ -111,6 +135,7 @@
 | Framework | Expo SDK 56, React Native 0.85 |
 | Navigation | Expo Router |
 | Animations | React Native Reanimated 4 |
+| Gestures | react-native-gesture-handler |
 | Camera | expo-camera |
 | Storage | AsyncStorage (offline-first) |
 | Language | TypeScript |
@@ -123,8 +148,7 @@
 | Variant | Application ID | Purpose |
 |---------|---------------|---------|
 | **Stable** | `com.nylxar.curium.stable` | Production releases |
-| **Preview** | `com.nylxar.curium.preview` | Pre-release testing |
-| **Nightly** | `com.nylxar.curium.nightly` | Automated daily builds |
+| **Preview** |`com.nylxar.curium.preview`| Preview testing |
 
 ---
 
@@ -154,10 +178,9 @@ pnpm android
 
 ### Build Release APK
 
-Releases are built automatically via GitHub Actions. To trigger a build:
+Releases are built automatically via GitHub Actions when a `v*` tag is pushed.
 
-- **Stable**: Push to `master` or create a `v*` tag
-- **Preview**: Push to `preview`
+- **Stable**: Create a `v*` tag (e.g., `v1.0.0`)
 - **Manual**: Go to Actions → Android APK Splits → Run workflow
 
 Or download the latest APK directly from [Releases](https://github.com/nylxar/curium/releases).
@@ -170,9 +193,7 @@ The GitHub Actions workflow builds release APKs with ABI splits (`armeabi-v7a`, 
 
 | Trigger | Flavor | Release |
 |---------|--------|---------|
-| Push to `master` (code changes only) | stable | Yes |
 | Push tag `v*` | stable | Yes |
-| Push to `preview` (code changes only) | preview | Yes |
 | Daily cron (3 AM UTC) | nightly | No |
 | Manual dispatch | selectable | No |
 
@@ -182,14 +203,15 @@ The GitHub Actions workflow builds release APKs with ABI splits (`armeabi-v7a`, 
 
 ```
 app/                 Expo Router screens
-components/qr/       QR creation, styling, export, navigation
+components/qr/       QR creation, styling, export, templates, navigation
 components/ui/       Shared UI primitives (sheets, toasts, overlays)
-constants/           Theme tokens and QR presets
+constants/           Theme tokens, QR presets, build info, release notes
 context/             Theme provider
-services/            Local history and settings persistence
+services/            Local history, settings, and template persistence
+utils/               SVG export, release notes parser
 types/               QR payload and style types
 plugins/             Expo config plugins
-scripts/             Build info generator
+scripts/             Build info generator, release notes sync
 assets/              Fonts, icons, splash assets
 ```
 
