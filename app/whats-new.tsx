@@ -54,8 +54,9 @@ export default function WhatsNewScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{ forced?: string }>();
+  const params = useLocalSearchParams<{ forced?: string; chain?: string }>();
   const isForced = params.forced === "true";
+  const isChained = params.chain === "true";
 
   const release = useMemo(() => parseReleaseNotes(RELEASE_NOTES_MD), []);
   const appVersion = require("../app.json").expo.version;
@@ -89,7 +90,7 @@ export default function WhatsNewScreen() {
         ]}
       >
         {isForced ? (
-          <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+          <TouchableOpacity onPress={() => isChained ? router.replace("/") : router.back()} hitSlop={12}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         ) : (
@@ -103,7 +104,7 @@ export default function WhatsNewScreen() {
         >
           What's New
         </Text>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+        <TouchableOpacity onPress={() => isChained ? router.replace("/") : router.back()} hitSlop={12}>
           <Text
             style={[
               styles.doneBtn,
