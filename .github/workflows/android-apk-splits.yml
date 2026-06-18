@@ -143,8 +143,8 @@ jobs:
                   out.extend(block)
 
               elif stripped == "android {":
-                  if "archivesBaseName" not in "".join(lines):
-                      out.append(f"archivesBaseName = \"curium\"\n\n")
+                  if "archivesName" not in "".join(lines):
+                      out.append(f"base {{\n    archivesName = \"curium\"\n}}\n\n")
                   out.append(line)
                   i += 1
                   ind = indent_of(line)
