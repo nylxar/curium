@@ -12,7 +12,6 @@ export const RELEASE_NOTES_MD = `# Release Notes — v0.5.4 (Stable)
 - Support screen — Ko-fi, PayPal, and Gumroad links
 - Smooth theme transitions — cross-fade without flash or flicker
 - Logo shadow now off by default for cleaner look
-- Package renamed to \`com.nylxar.curium.stable\`
 
 ## Fixes
 
