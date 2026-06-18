@@ -26,7 +26,12 @@ import {
   LogoStyleConfig,
 } from "@/types/qr";
 
-const QRLib = require("qrcode");
+// Import core directly — the qrcode package's browser/server entry points
+// pull in canvas/png/terminal renderers that depend on Node.js builtins
+// (document, fs, pngjs).  Metro's prod bundle may resolve these differently
+// than dev, causing QRLib.create to throw silently (caught → null → zero
+// matrix → only finder eyes render).  The core has zero Node deps.
+const QRLib = require("qrcode/lib/core/qrcode");
 
 interface Props {
   value: string;
