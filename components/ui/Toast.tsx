@@ -278,10 +278,11 @@ function ToastView({
 const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
-    left: Spacing.base,
-    right: Spacing.base,
-    zIndex: 9999,
+    left: 0,
+    right: 0,
+    zIndex: 999999,
     elevation: 12,
+    paddingHorizontal: Spacing.base,
   },
   card: {
     flexDirection: "row",
@@ -336,7 +337,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: Spacing.base,
-    alignItems: "center",
+    zIndex: 999999,
   },
   confirmCard: {
     width: "100%",

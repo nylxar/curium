@@ -41,4 +41,5 @@ yarn-error.*
 /android
 
 *.keystore
-APP_NOTES.md
+notes.md
+DO_NOT_TOUCH.md

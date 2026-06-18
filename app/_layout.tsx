@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { View } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -16,6 +17,8 @@ import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { OverlayProvider, OverlayHost } from "@/components/ui/Overlay";
 import { CustomSplash } from "@/components/ui/CustomSplash";
+
+const LAST_SEEN_KEY = "curium_last_seen_version";
 
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ fade: false, duration: 0 });
@@ -43,6 +46,7 @@ export default function RootLayout() {
     "IBMPlexMono-Italic": require("../assets/fonts/IBMPlexMono-Italic.otf"),
   });
   const fontsReady = !!(loaded || error);
+  const router = useRouter();
 
   const appOp = useSharedValue(0);
   const appStyle = useAnimatedStyle(() => ({ opacity: appOp.value }));
@@ -66,6 +70,43 @@ export default function RootLayout() {
     }
   }, [fontsReady]);
 
+  // First-launch welcome redirect + what's-new on update.
+  // Delayed until splash is fully hidden to prevent crossfade between
+  // CustomSplash and the redirected screen.
+  const seenWelcomeRef = useRef(false);
+  const pendingRedirect = useRef<string | null>(null);
+  useEffect(() => {
+    if (!fontsReady) return;
+    const version = require("../app.json").expo.version;
+    AsyncStorage.getItem("curium_onboarded").then((v) => {
+      if (!v) {
+        seenWelcomeRef.current = true;
+        AsyncStorage.setItem(LAST_SEEN_KEY, version);
+        pendingRedirect.current = "/welcome";
+      } else {
+        AsyncStorage.getItem(LAST_SEEN_KEY).then((lastSeen) => {
+          if (lastSeen !== version && !seenWelcomeRef.current) {
+            seenWelcomeRef.current = true;
+            pendingRedirect.current = "/whats-new?forced=false";
+          }
+        });
+      }
+    });
+  }, [fontsReady]);
+
+  // Execute pending redirect after splash is fully hidden
+  useEffect(() => {
+    if (splashHidden && pendingRedirect.current) {
+      const target = pendingRedirect.current;
+      pendingRedirect.current = null;
+      if (target === "/welcome") {
+        router.replace("/welcome");
+      } else {
+        router.push({ pathname: "/whats-new", params: { forced: "false" } });
+      }
+    }
+  }, [splashHidden]);
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
       <View style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
@@ -83,6 +124,14 @@ export default function RootLayout() {
                       }}
                     >
                       <Stack.Screen name="index" options={{ animation: "none" }} />
+                    <Stack.Screen name="welcome" options={{ animation: "none" }} />
+                    <Stack.Screen
+                      name="support"
+                      options={{
+                        animation: "simple_push",
+                        animationDuration: 200,
+                      }}
+                    />
                       <Stack.Screen
                         name="scan"
                         options={{
@@ -104,7 +153,15 @@ export default function RootLayout() {
                         options={{ animation: "simple_push", animationDuration: 200 }}
                       />
                       <Stack.Screen
+                        name="info"
+                        options={{ animation: "simple_push", animationDuration: 200 }}
+                      />
+                      <Stack.Screen
                         name="about"
+                        options={{ animation: "simple_push", animationDuration: 200 }}
+                      />
+                      <Stack.Screen
+                        name="whats-new"
                         options={{ animation: "simple_push", animationDuration: 200 }}
                       />
                     </Stack>

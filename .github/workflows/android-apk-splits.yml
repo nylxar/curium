@@ -15,14 +15,8 @@ on:
   push:
     tags:
       - "v*"
-    branches:
-      - master
-      - preview
-    paths-ignore:
-      - "*.md"
-      - "docs/**"
-      - ".gitignore"
-      - "LICENSE"
+    branches-ignore:
+      - "*"
   schedule:
     - cron: "0 3 * * *"
 
@@ -34,40 +28,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-changes:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            code:
-              - 'app/**'
-              - 'components/**'
-              - 'constants/**'
-              - 'context/**'
-              - 'services/**'
-              - 'types/**'
-              - 'plugins/**'
-              - 'scripts/**'
-              - 'assets/**'
-              - 'package.json'
-              - 'app.json'
-              - 'tsconfig.json'
-              - 'babel.config.js'
-              - 'metro.config.js'
-    outputs:
-      code: ${{ steps.filter.outputs.code }}
-
   build-apk-splits:
-    needs: check-changes
     if: |
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
-      needs.check-changes.outputs.code == 'true'
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -178,6 +143,8 @@ jobs:
                   out.extend(block)
 
               elif stripped == "android {":
+                  if "archivesName" not in "".join(lines):
+                      out.append(f"base {{\n    archivesName = \"curium\"\n}}\n\n")
                   out.append(line)
                   i += 1
                   ind = indent_of(line)

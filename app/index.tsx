@@ -48,6 +48,7 @@ import { TypeSelector } from "@/components/qr/TypeSelector";
 import { ColorPicker } from "@/components/qr/ColorPicker";
 import { useToast } from "@/components/ui/Toast";
 import { ExportSheet } from "@/components/qr/ExportSheet";
+import { TemplateSelector } from "@/components/qr/TemplateSelector";
 import {
   URLFormView,
   TextFormView,
@@ -102,6 +103,7 @@ type SheetId =
   | "logo"
   | "logoStyle"
   | "ecl"
+  | "templates"
   | null;
 
 // ─── Constants — module level (NO hooks here) ────────────────────────────────
@@ -948,6 +950,30 @@ export default function CreateScreen() {
           </OptionRow>
 
           <OptionRow
+            label="Templates"
+            iconName="bookmark-outline"
+            tintColor={tint}
+            bgColor={colors.surface}
+            sheetOpen={activeSheet === "templates"}
+            onOpen={() => openSheet("templates")}
+            onClose={closeSheet}
+            preview={
+              <Ionicons name="bookmark-outline" size={15} color={tint + "90"} />
+            }
+          >
+            <TemplateSelector
+              currentStyle={qrStyle}
+              onLoad={(style) => {
+                setQrStyle((p) => ({ ...p, ...style }));
+                if (style.colorId !== "custom") {
+                  setQRColors(style.fgColor, style.bgColor);
+                }
+                closeSheet();
+              }}
+            />
+          </OptionRow>
+
+          <OptionRow
             label="Eye Style"
             iconName="eye-outline"
             tintColor={tint}
@@ -1233,6 +1259,7 @@ export default function CreateScreen() {
           onClose={() => setExportOpen(false)}
           qrRef={qrRef}
           qrValue={qrValue}
+          qrStyle={qrStyle}
         />
         <FormModal
           visible={formModalOpen}
