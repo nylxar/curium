@@ -15,6 +15,8 @@ on:
   push:
     tags:
       - "v*"
+    branches-ignore:
+      - "*"
   schedule:
     - cron: "0 3 * * *"
 
@@ -138,6 +140,9 @@ jobs:
 
               elif stripped == "defaultConfig {":
                   block, i = read_block(lines, i)
+                  if "archivesBaseName" not in "".join(block):
+                      ind = indent_of(block[0])
+                      block.insert(-1, f"{' '*(ind+4)}archivesBaseName = \"curium\"\n")
                   out.extend(block)
 
               elif stripped == "android {":
