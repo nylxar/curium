@@ -104,12 +104,18 @@ jobs:
                           f"{' '*(ind+4)}productFlavors {{\n"
                           f"{' '*(ind+8)}stable {{\n"
                           f"{' '*(ind+12)}dimension \"default\"\n"
+                          f"{' '*(ind+12)}applicationIdSuffix \".stable\"\n"
+                          f"{' '*(ind+12)}versionNameSuffix \"-stable\"\n"
                           f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+8)}preview {{\n"
                           f"{' '*(ind+12)}dimension \"default\"\n"
+                          f"{' '*(ind+12)}applicationIdSuffix \".preview\"\n"
+                          f"{' '*(ind+12)}versionNameSuffix \"-preview\"\n"
                           f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+8)}nightly {{\n"
                           f"{' '*(ind+12)}dimension \"default\"\n"
+                          f"{' '*(ind+12)}applicationIdSuffix \".nightly\"\n"
+                          f"{' '*(ind+12)}versionNameSuffix \"-nightly\"\n"
                           f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+4)}}}\n"
                       )
@@ -141,6 +147,13 @@ jobs:
           FLAVOR: ${{ inputs.flavor }}
         working-directory: android
         run: ./gradlew ":app:assemble${FLAVOR^}Release" -PreactNativeArchitectures=arm64-v8a --build-cache --parallel
+
+      - name: Rename APK with arch suffix
+        run: |
+          APK_DIR="android/app/build/outputs/apk/${{ inputs.flavor }}/release"
+          for f in "$APK_DIR"/*.apk; do
+            mv "$f" "${f%.apk}-arm64-v8a.apk"
+          done
 
       - uses: actions/upload-artifact@v7
         with:
