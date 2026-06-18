@@ -140,12 +140,11 @@ jobs:
 
               elif stripped == "defaultConfig {":
                   block, i = read_block(lines, i)
-                  if "archivesBaseName" not in "".join(block):
-                      ind = indent_of(block[0])
-                      block.insert(-1, f"{' '*(ind+4)}archivesBaseName = \"curium\"\n")
                   out.extend(block)
 
               elif stripped == "android {":
+                  if "archivesBaseName" not in "".join(lines):
+                      out.append(f"archivesBaseName = \"curium\"\n\n")
                   out.append(line)
                   i += 1
                   ind = indent_of(line)
