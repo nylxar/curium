@@ -802,17 +802,6 @@ export function QRCanvas({
           height: innerSize,
           borderRadius: cornerR,
           overflow: "hidden",
-          // When empty, the inner "card" border + shadow disappear so
-          // the placeholder reads as a clean canvas.  The dashed border
-          // inside the placeholder overlay already provides the "input
-          // area" affordance, so we don't need the additional card border.
-          borderWidth: isEmpty ? 0 : 1,
-          borderColor: isEmpty ? "transparent" : "rgba(0,0,0,0.06)",
-          shadowColor: isEmpty ? "transparent" : "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isEmpty ? 0 : 0.08,
-          shadowRadius: 8,
-          elevation: isEmpty ? 0 : 3,
         }}
       >
         <Animated.View

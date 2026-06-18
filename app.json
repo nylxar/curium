@@ -65,8 +65,7 @@
           "microphonePermission": false
         }
       ],
-      "expo-sharing",
-      "./plugins/remove-mic-permission.js"
+      "expo-sharing"
     ],
     "extra": {
       "router": {},
