@@ -19,6 +19,7 @@ import { OverlayProvider, OverlayHost } from "@/components/ui/Overlay";
 import { CustomSplash } from "@/components/ui/CustomSplash";
 
 const LAST_SEEN_KEY = "curium_last_seen_version";
+const UPGRADE_WELCOME_KEY = "curium_upgrade_welcome_seen";
 
 SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ fade: false, duration: 0 });
@@ -70,42 +71,53 @@ export default function RootLayout() {
     }
   }, [fontsReady]);
 
-  // First-launch welcome redirect + what's-new on update.
-  // Delayed until splash is fully hidden to prevent crossfade between
-  // CustomSplash and the redirected screen.
+  // ── Navigation decision + splash gating ──
+  // Navigation happens IMMEDIATELY (behind the opaque splash) so when
+  // CustomSplash fades out the correct screen is already showing.
+  const [navigationReady, setNavigationReady] = useState(false);
   const seenWelcomeRef = useRef(false);
-  const pendingRedirect = useRef<string | null>(null);
+
   useEffect(() => {
     if (!fontsReady) return;
     const version = require("../app.json").expo.version;
-    AsyncStorage.getItem("curium_onboarded").then((v) => {
-      if (!v) {
+
+    AsyncStorage.getItem("curium_onboarded").then((onboarded) => {
+      if (!onboarded) {
+        // Fresh install → welcome, then chain to whats-new
         seenWelcomeRef.current = true;
+        AsyncStorage.setItem("curium_onboarded", "true");
         AsyncStorage.setItem(LAST_SEEN_KEY, version);
-        pendingRedirect.current = "/welcome";
-      } else {
-        AsyncStorage.getItem(LAST_SEEN_KEY).then((lastSeen) => {
-          if (lastSeen !== version && !seenWelcomeRef.current) {
-            seenWelcomeRef.current = true;
-            pendingRedirect.current = "/whats-new?forced=false";
-          }
-        });
+        router.replace({ pathname: "/welcome", params: { chain: "whats-new" } });
+        setNavigationReady(true);
+        return;
       }
+
+      AsyncStorage.getItem(LAST_SEEN_KEY).then((lastSeen) => {
+        if (lastSeen === version || seenWelcomeRef.current) {
+          // Same version or already handled → stay on index
+          setNavigationReady(true);
+          return;
+        }
+
+        // Version changed — first upgrade shows welcome, subsequent show whats-new
+        AsyncStorage.getItem(UPGRADE_WELCOME_KEY).then((upgradeSeen) => {
+          seenWelcomeRef.current = true;
+
+          if (!upgradeSeen) {
+            // First time seeing an upgrade → welcome then whats-new (one-time)
+            AsyncStorage.setItem(LAST_SEEN_KEY, version);
+            AsyncStorage.setItem(UPGRADE_WELCOME_KEY, "true");
+            router.replace({ pathname: "/welcome", params: { chain: "whats-new" } });
+          } else {
+            // Already saw upgrade welcome before → whats-new (LAST_SEEN_KEY
+            // is set by whats-new.tsx itself after the user views it)
+            router.replace({ pathname: "/whats-new", params: { forced: "false" } });
+          }
+          setNavigationReady(true);
+        });
+      });
     });
   }, [fontsReady]);
-
-  // Execute pending redirect after splash is fully hidden
-  useEffect(() => {
-    if (splashHidden && pendingRedirect.current) {
-      const target = pendingRedirect.current;
-      pendingRedirect.current = null;
-      if (target === "/welcome") {
-        router.replace("/welcome");
-      } else {
-        router.push({ pathname: "/whats-new", params: { forced: "false" } });
-      }
-    }
-  }, [splashHidden]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#0d0d0f" }}>
@@ -174,7 +186,7 @@ export default function RootLayout() {
         </Animated.View>
         {!splashHidden && (
           <CustomSplash
-            ready={fontsReady}
+            ready={fontsReady && navigationReady}
             onHidden={() => setSplashHidden(true)}
           />
         )}
