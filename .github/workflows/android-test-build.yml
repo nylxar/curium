@@ -60,7 +60,12 @@ jobs:
       - name: Expo prebuild
         run: pnpm exec expo prebuild --platform android --clean --non-interactive
 
-      - name: Inject flavors and ABI filter
+      - name: Decode release keystore
+        run: |
+          mkdir -p android/app
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+
+      - name: Inject signing, flavors, and ABI filter
         shell: bash
         run: |
           python3 - <<'PY'
@@ -91,7 +96,19 @@ jobs:
               line = lines[i]
               stripped = line.strip()
 
-              if stripped == "android {":
+              if stripped == "signingConfigs {":
+                  block, i = read_block(lines, i)
+                  if "release {" not in "".join(block):
+                      ind = indent_of(block[0])
+                      block.insert(-1, f"{' '*(ind+4)}release {{\n")
+                      block.insert(-1, f"{' '*(ind+8)}storeFile file(\"release.keystore\")\n")
+                      block.insert(-1, f"{' '*(ind+8)}storePassword System.getenv(\"ANDROID_KEYSTORE_PASSWORD\")\n")
+                      block.insert(-1, f"{' '*(ind+8)}keyAlias System.getenv(\"ANDROID_KEY_ALIAS\")\n")
+                      block.insert(-1, f"{' '*(ind+8)}keyPassword System.getenv(\"ANDROID_KEY_PASSWORD\")\n")
+                      block.insert(-1, f"{' '*(ind+4)}}}\n")
+                  out.extend(block)
+
+              elif stripped == "android {":
                   if "archivesName" not in "".join(lines):
                       out.append("base {\n    archivesName = \"curium\"\n}\n\n")
                   out.append(line)
@@ -123,6 +140,9 @@ jobs:
 
               elif stripped == "release {":
                   block, i = read_block(lines, i)
+                  if "signingConfig signingConfigs.release" not in "".join(block):
+                      ind = indent_of(block[0])
+                      block.insert(-1, f"{' '*(ind+4)}signingConfig signingConfigs.release\n")
                   out.extend(block)
 
               elif stripped == "react {":
@@ -144,6 +164,9 @@ jobs:
 
       - name: Build arm64-v8a APK
         env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           FLAVOR: ${{ inputs.flavor }}
         working-directory: android
         run: ./gradlew ":app:assemble${FLAVOR^}Release" -PreactNativeArchitectures=arm64-v8a --build-cache --parallel
