@@ -145,6 +145,6 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: curium-test-${{ inputs.flavor }}-${{ inputs.branch }}-${{ github.run_number }}
-          path: android/app/build/outputs/apk/${{ inputs.flavor }}/release/*-arm64-v8a.apk
+          path: android/app/build/outputs/apk/${{ inputs.flavor }}/release/*.apk
           if-no-files-found: error
           retention-days: 3
