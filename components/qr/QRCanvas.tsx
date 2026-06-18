@@ -1,5 +1,5 @@
 import { useMemo, useLayoutEffect, useRef, useState, useCallback } from "react";
-import { View, StyleSheet, PanResponder, Image } from "react-native";
+import { View, Text, StyleSheet, PanResponder, Image } from "react-native";
 import Svg, {
   Rect,
   Path,
@@ -26,12 +26,7 @@ import {
   LogoStyleConfig,
 } from "@/types/qr";
 
-// Import core directly — the qrcode package's browser/server entry points
-// pull in canvas/png/terminal renderers that depend on Node.js builtins
-// (document, fs, pngjs).  Metro's prod bundle may resolve these differently
-// than dev, causing QRLib.create to throw silently (caught → null → zero
-// matrix → only finder eyes render).  The core has zero Node deps.
-const QRLib = require("qrcode/lib/core/qrcode");
+const QRLib = require("qrcode");
 
 interface Props {
   value: string;
@@ -51,16 +46,21 @@ interface Props {
 }
 
 // ─── Matrix ───────────────────────────────────────────────────────────────────
-function getMatrix(data: string, ecl: string): boolean[][] | null {
+function getMatrix(
+  data: string,
+  ecl: string,
+): { matrix: boolean[][] | null; error: string | null } {
   try {
     const qr = QRLib.create(data, { errorCorrectionLevel: ecl });
     const n = qr.modules.size;
     const m: boolean[][] = Array.from({ length: n }, (_, r) =>
       Array.from({ length: n }, (__, c) => !!qr.modules.get(r, c)),
     );
-    return m;
-  } catch {
-    return null;
+    return { matrix: m, error: null };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[QRCanvas] getMatrix failed:", e);
+    return { matrix: null, error: msg };
   }
 }
 
@@ -525,8 +525,11 @@ export function QRCanvas({
     return ECL_ORDER[Math.max(idx, 3)]; // 3 = "H"
   }, [logoUri, qrStyle.ecl]);
 
-  const matrix = useMemo(
-    () => (isEmpty ? null : getMatrix(value, effectiveEcl)),
+  const { matrix, error: matrixError } = useMemo(
+    () =>
+      isEmpty
+        ? { matrix: null, error: null }
+        : getMatrix(value, effectiveEcl),
     [value, effectiveEcl, isEmpty],
   );
 
@@ -1056,6 +1059,35 @@ export function QRCanvas({
                   }}
                 />
               </View>
+            </View>
+          )}
+          {/* Render error overlay when getMatrix fails */}
+          {matrixError && !isEmpty && (
+            <View
+              pointerEvents="none"
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  backgroundColor: "#ff6b6b",
+                  borderRadius: cornerR,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 12,
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 11,
+                  fontWeight: "600",
+                  textAlign: "center",
+                  fontFamily: "monospace",
+                }}
+                numberOfLines={6}
+              >
+                QR ERROR: {matrixError}
+              </Text>
             </View>
           )}
           {/* Logo drag gesture capture — transparent overlay that captures
