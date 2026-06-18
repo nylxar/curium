@@ -11,6 +11,8 @@ import { OptionSheet } from "./OptionSheet";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/components/ui/Toast";
+import { generateSVG } from "@/utils/svg-export";
+import { QRStyle } from "@/types/qr";
 
 interface ExportAction {
   icon: keyof typeof Ionicons.glyphMap;
@@ -24,9 +26,16 @@ interface Props {
   onClose: () => void;
   qrRef: React.RefObject<View | null>;
   qrValue: string;
+  qrStyle: QRStyle;
 }
 
-export function ExportSheet({ visible, onClose, qrRef, qrValue }: Props) {
+export function ExportSheet({
+  visible,
+  onClose,
+  qrRef,
+  qrValue,
+  qrStyle,
+}: Props) {
   const { colors } = useTheme();
   const toast = useToast();
 
@@ -62,22 +71,28 @@ export function ExportSheet({ visible, onClose, qrRef, qrValue }: Props) {
     }
   };
 
-  const saveAsSVG = async () => {
+  const shareSVG = async () => {
     try {
-      const filename = `curium_qr_${Date.now()}.txt`;
-      const uri = FileSystemLegacy.cacheDirectory + filename;
-      const file = new File(uri);
-      await file.write(qrValue);
+      const svg = generateSVG(qrValue, qrStyle, 1024);
+      if (!svg) {
+        toast.error("Error", "Could not generate SVG.");
+        return;
+      }
+      const filename = `curium_qr_${Date.now()}.svg`;
+      const uri = FileSystemLegacy.documentDirectory + filename;
+      await FileSystemLegacy.writeAsStringAsync(uri, svg);
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(file.uri, {
-          mimeType: "text/plain",
-          dialogTitle: "Export QR Content",
+        await Sharing.shareAsync(uri, {
+          mimeType: "application/octet-stream",
+          dialogTitle: "Share SVG",
         });
+      } else {
+        toast.error("Error", "Sharing is not available.");
       }
       onClose();
     } catch (e) {
-      console.error("Export error:", e);
-      toast.error("Error", "Could not export file.");
+      console.error("Share SVG error:", e);
+      toast.error("Error", "Could not share SVG.");
     }
   };
 
@@ -114,27 +129,21 @@ export function ExportSheet({ visible, onClose, qrRef, qrValue }: Props) {
   const ACTIONS: ExportAction[] = [
     {
       icon: "image-outline",
-      label: "Save to Gallery",
-      sub: "PNG · High quality",
+      label: "Save PNG",
+      sub: "Save to gallery",
       onPress: saveToGallery,
     },
     {
       icon: "share-outline",
-      label: "Share Image",
+      label: "Share PNG",
       sub: "Share via any app",
       onPress: shareImage,
     },
     {
-      icon: "copy-outline",
-      label: "Copy Content",
-      sub: "Copy QR text to clipboard",
-      onPress: copyText,
-    },
-    {
-      icon: "document-text-outline",
-      label: "Export Data",
-      sub: "Save QR content as file",
-      onPress: saveAsSVG,
+      icon: "code-working-outline",
+      label: "Share SVG",
+      sub: "Share vector file",
+      onPress: shareSVG,
     },
   ];
 
@@ -153,7 +162,10 @@ export function ExportSheet({ visible, onClose, qrRef, qrValue }: Props) {
           activeOpacity={0.7}
         >
           <View
-            style={[styles.iconWrap, { backgroundColor: colors.primary + "18" }]}
+            style={[
+              styles.iconWrap,
+              { backgroundColor: colors.primary + "18" },
+            ]}
           >
             <Ionicons name={action.icon} size={20} color={colors.primary} />
           </View>

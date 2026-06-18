@@ -18,6 +18,7 @@ import Animated, {
 } from "react-native-reanimated";
 import {
   QRStyle,
+  ECL,
   EyeShape,
   PupilShape,
   PixelShape,
@@ -509,9 +510,19 @@ export function QRCanvas({
 }: Props) {
   const isEmpty = !value || !value.trim();
 
+  // When a logo is overlaid, auto-bump ECL to H (30% recovery) if the
+  // user's chosen level is lower.  This prevents unscannable QR codes
+  // where the logo obscures data modules that only have M/Q redundancy.
+  const ECL_ORDER: ECL[] = ["L", "M", "Q", "H"];
+  const effectiveEcl = useMemo(() => {
+    if (!logoUri) return qrStyle.ecl;
+    const idx = ECL_ORDER.indexOf(qrStyle.ecl);
+    return ECL_ORDER[Math.max(idx, 3)]; // 3 = "H"
+  }, [logoUri, qrStyle.ecl]);
+
   const matrix = useMemo(
-    () => (isEmpty ? null : getMatrix(value, qrStyle.ecl)),
-    [value, qrStyle.ecl, isEmpty],
+    () => (isEmpty ? null : getMatrix(value, effectiveEcl)),
+    [value, effectiveEcl, isEmpty],
   );
 
   // ── Colors snap on commit (no cross-fade on the QR itself) ──
@@ -547,6 +558,11 @@ export function QRCanvas({
   const gradIdRef = useRef(`qrgrad_${Math.random().toString(36).slice(2, 9)}`);
 
   // ── Generation animation: subtle scale-up + opacity entrance ──
+  // The old double-assignment pattern (value=0; value=withTiming(...))
+  // caused a race condition on production Hermes where both assignments
+  // hit the UI thread simultaneously, leaving genProgress stuck at 0
+  // (55% opacity).  Fixed by removing the redundant reset — the shared
+  // value is already 0 from initialization or the isEmpty branch.
   const genProgress = useSharedValue(skipAnimation ? 1 : 0);
   const localDidGenerate = useRef(false);
   const genStyle = useAnimatedStyle(() => ({
@@ -563,7 +579,6 @@ export function QRCanvas({
     }
     if (!isEmpty && matrix && !localDidGenerate.current) {
       localDidGenerate.current = true;
-      genProgress.value = 0;
       genProgress.value = withTiming(1, {
         duration: 200,
         easing: Easing.out(Easing.cubic),
@@ -791,17 +806,6 @@ export function QRCanvas({
           height: innerSize,
           borderRadius: cornerR,
           overflow: "hidden",
-          // When empty, the inner "card" border + shadow disappear so
-          // the placeholder reads as a clean canvas.  The dashed border
-          // inside the placeholder overlay already provides the "input
-          // area" affordance, so we don't need the additional card border.
-          borderWidth: isEmpty ? 0 : 1,
-          borderColor: isEmpty ? "transparent" : "rgba(0,0,0,0.06)",
-          shadowColor: isEmpty ? "transparent" : "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isEmpty ? 0 : 0.08,
-          shadowRadius: 8,
-          elevation: isEmpty ? 0 : 3,
         }}
       >
         <Animated.View

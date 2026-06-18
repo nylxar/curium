@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -68,15 +67,16 @@ function ThemeBtn({
   label: string;
 }) {
   return (
-    <TouchableOpacity
-      style={[
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
         styles.themeBtn,
         {
           backgroundColor: active ? colors.primary + "22" : colors.surface,
           borderColor: active ? colors.primary : colors.border,
+          opacity: pressed ? 0.85 : 1,
         },
       ]}
-      onPress={onPress}
     >
       <Ionicons
         name={icon}
@@ -91,7 +91,7 @@ function ThemeBtn({
       >
         {label}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -103,6 +103,7 @@ function Row({
   onPress,
   danger,
   iconBg,
+  last,
   colors,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
@@ -112,10 +113,17 @@ function Row({
   onPress?: () => void;
   danger?: boolean;
   iconBg?: string;
+  last?: boolean;
   colors: any;
 }) {
   return (
-    <Pressable style={styles.row} onPress={onPress}>
+    <Pressable
+      style={[
+        styles.row,
+        last && { borderBottomWidth: 0, paddingBottom: Spacing.md + 1 },
+      ]}
+      onPress={onPress}
+    >
       <View
         style={[
           styles.rowIcon,
@@ -187,12 +195,9 @@ export default function SettingsScreen() {
     });
   }, []);
 
-  const update = useCallback(
-    (partial: Partial<AppSettings>) => {
-      saveSettings(partial);
-    },
-    [],
-  );
+  const update = useCallback((partial: Partial<AppSettings>) => {
+    saveSettings(partial);
+  }, []);
 
   const S = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.bg },
@@ -279,9 +284,9 @@ export default function SettingsScreen() {
   return (
     <View style={S.screen}>
       <View style={S.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={S.title}>Settings</Text>
         <View style={{ width: 24 }} />
       </View>
@@ -348,6 +353,7 @@ export default function SettingsScreen() {
               label="Pure Black"
               sub="True black background for OLED screens"
               colors={colors}
+              last
               right={
                 <ModernSwitch
                   value={pureDark}
@@ -406,6 +412,7 @@ export default function SettingsScreen() {
           label="Keep Screen On"
           sub="Prevent screen from sleeping"
           colors={colors}
+          last
           right={
             <ModernSwitch
               value={keepScreenOn}
@@ -427,6 +434,7 @@ export default function SettingsScreen() {
           label="Auto-copy on Generate"
           sub="Copy QR content when you create one"
           colors={colors}
+          last
           right={
             <ModernSwitch
               value={autoCopy}
@@ -449,6 +457,7 @@ export default function SettingsScreen() {
           sub="Delete all saved QR codes"
           danger
           colors={colors}
+          last
           onPress={() =>
             toast.confirm(
               "Clear History",
@@ -463,10 +472,17 @@ export default function SettingsScreen() {
         {/* App */}
         <SectionTitle colors={colors}>App</SectionTitle>
         <Row
+          icon="build-outline"
+          label="App Info"
+          sub="Version, build, and links"
+          colors={colors}
+          onPress={() => router.push("/info")}
+        />
+        <Row
           icon="information-circle-outline"
           label="About Curium"
-          sub="Version, build, and more"
           colors={colors}
+          last
           onPress={() => router.push("/about")}
         />
       </ScrollView>

@@ -1,9 +1,9 @@
 {
-  "commit": "bb666b51f712d27717fa460a85068a64afcbbf1b",
-  "shortCommit": "bb666b5",
+  "commit": "f014e02d5eb32ea2bea1fb6f1328e227efc879a6",
+  "shortCommit": "f014e02",
   "branch": "nightly",
-  "commitDate": "2026-06-11 23:16:38 +0300",
-  "commitMessage": "up2316061126",
+  "commitDate": "2026-06-17 21:14:28 +0300",
+  "commitMessage": "fx2114061726",
   "isDirty": true,
-  "buildDate": "2026-06-12T16:54:09.695Z"
+  "buildDate": "2026-06-17T18:53:04.795Z"
 }

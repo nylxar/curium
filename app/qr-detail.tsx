@@ -31,6 +31,7 @@ import { QRCanvas } from "@/components/qr/QRCanvas";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { useToast } from "@/components/ui/Toast";
+import { generateSVG } from "@/utils/svg-export";
 
 function ActionChip({
   icon,
@@ -74,14 +75,7 @@ function ActionChip({
           },
         ]}
       >
-        <View
-          style={[
-            styles.chipIcon,
-            { backgroundColor: isDanger ? colors.error + "18" : accent + "18" },
-          ]}
-        >
-          <Ionicons name={icon} size={16} color={accent} />
-        </View>
+        <Ionicons name={icon} size={16} color={accent} />
         <Text
           style={[
             styles.chipLabel,
@@ -199,6 +193,31 @@ export default function QRDetailScreen() {
       }
     } catch {
       toast.error("Error", "Could not share.");
+    }
+  }, [current, toast]);
+
+  const handleShareSVG = useCallback(async () => {
+    if (!current) return;
+    try {
+      const svg = generateSVG(current.value, current.qrStyle, 1024);
+      if (!svg) {
+        toast.error("Error", "Could not generate SVG.");
+        return;
+      }
+      const filename = `curium_qr_${Date.now()}.svg`;
+      const uri = FileSystemLegacy.documentDirectory + filename;
+      await FileSystemLegacy.writeAsStringAsync(uri, svg);
+      const Sharing = await import("expo-sharing");
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "application/octet-stream",
+          dialogTitle: "Share SVG",
+        });
+      } else {
+        toast.warning("Unavailable", "Sharing is not available on this device.");
+      }
+    } catch {
+      toast.error("Error", "Could not share SVG.");
     }
   }, [current, toast]);
 
@@ -476,6 +495,12 @@ export default function QRDetailScreen() {
             colors={colors}
           />
           <ActionChip
+            icon="code-working-outline"
+            label="SVG"
+            onPress={handleShareSVG}
+            colors={colors}
+          />
+          <ActionChip
             icon="trash-outline"
             label="Delete"
             onPress={handleDelete}
@@ -597,19 +622,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: Spacing.sm,
-    paddingVertical: Spacing.md,
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm + 2,
     borderRadius: Radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  chipIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   chipLabel: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
   },
 });

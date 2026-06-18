@@ -1,55 +1,6 @@
 allowBuilds:
-  dtrace-provider: set this to true or false
-  msgpackr-extract: true
   unrs-resolver: set this to true or false
-minimumReleaseAge: 0
-minimumReleaseAgeExclude:
-  - '@expo/cli@56.1.12'
-  - '@expo/fingerprint@0.19.3'
-  - '@expo/inline-modules@0.0.10'
-  - '@expo/local-build-cache-provider@56.0.8'
-  - '@expo/metro-config@56.0.13'
-  - '@expo/metro-runtime@56.0.13'
-  - '@expo/prebuild-config@56.0.13'
-  - '@expo/router-server@56.0.12'
-  - babel-preset-expo@56.0.13
-  - expo-asset@56.0.15
-  - expo-constants@56.0.16
-  - expo-dev-client@56.0.16
-  - expo-image-picker@56.0.14
-  - expo-linking@56.0.12
-  - expo-modules-autolinking@56.0.13
-  - expo-modules-core@56.0.13
-  - expo-router@56.2.7
-  - expo-sharing@56.0.14
-  - expo@56.0.5
-  - '@expo/ui@56.0.14'
-  - expo-dev-launcher@56.0.16
-  - expo-dev-menu@56.0.15
-  - '@expo/cli@56.1.14'
-  - '@expo/fingerprint@0.19.4'
-  - '@expo/inline-modules@0.0.11'
-  - '@expo/prebuild-config@56.0.15'
-  - '@expo/router-server@56.0.13'
-  - expo-asset@56.0.16
-  - expo-constants@56.0.17
-  - expo-modules-autolinking@56.0.15
-  - expo-modules-core@56.0.15
-  - expo-modules-jsi@56.0.8
-  - expo-server@56.0.5
-  - expo@56.0.9
-  - '@expo/metro-runtime@56.0.14'
-  - '@react-native-async-storage/async-storage@2.2.0'
-  - expo-clipboard@56.0.4
-  - expo-dev-client@56.0.19
-  - expo-image-picker@56.0.16
-  - expo-router@56.2.9
-  - expo-sharing@56.0.16
-  - react@19.2.3
-  - react-dom@19.2.3
-  - react-native-gesture-handler@2.31.1
-  - react-native-reanimated@4.3.1
-  - react-native-safe-area-context@5.7.0
-  - react-native-svg@15.15.4
-  - react-native-worklets@0.8.3
-nodeLinker: hoisted
+peerDependencyRules:
+  allowedVersions:
+    "eslint-plugin-import>eslint": "^10"
+    "eslint-plugin-react>eslint": "^10"
