@@ -558,6 +558,11 @@ export function QRCanvas({
   const gradIdRef = useRef(`qrgrad_${Math.random().toString(36).slice(2, 9)}`);
 
   // ── Generation animation: subtle scale-up + opacity entrance ──
+  // The old double-assignment pattern (value=0; value=withTiming(...))
+  // caused a race condition on production Hermes where both assignments
+  // hit the UI thread simultaneously, leaving genProgress stuck at 0
+  // (55% opacity).  Fixed by removing the redundant reset — the shared
+  // value is already 0 from initialization or the isEmpty branch.
   const genProgress = useSharedValue(skipAnimation ? 1 : 0);
   const localDidGenerate = useRef(false);
   const genStyle = useAnimatedStyle(() => ({
@@ -574,7 +579,6 @@ export function QRCanvas({
     }
     if (!isEmpty && matrix && !localDidGenerate.current) {
       localDidGenerate.current = true;
-      genProgress.value = 0;
       genProgress.value = withTiming(1, {
         duration: 200,
         easing: Easing.out(Easing.cubic),
