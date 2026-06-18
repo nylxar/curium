@@ -1,3 +1,5 @@
+allowBuilds:
+  unrs-resolver: set this to true or false
 peerDependencyRules:
   allowedVersions:
     "eslint-plugin-import>eslint": "^10"
