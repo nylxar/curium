@@ -16,6 +16,8 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SystemUI from "expo-system-ui";
+import { Platform } from "react-native";
 import { DarkColors, LightColors, AmoledColors, AppTheme } from "@/constants/theme";
 import { defaultQRStyle, QRStyle } from "@/types/qr";
 
@@ -127,6 +129,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       ? isColorDark(qrBg)
       : theme === "dark" ||
         (theme === "system" && effectiveSystem === "dark");
+
+  // Sync Android navigation bar with the current theme. SystemUI sets the
+  // root view background (which bleeds through the transparent nav bar in
+  // edge-to-edge mode).  The nav bar button style (light/dark icons) and
+  // scrim are controlled by the expo-navigation-bar plugin config in
+  // app.json — runtime APIs were removed in SDK 56.
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    SystemUI.setBackgroundColorAsync(colors.bg);
+  }, [colors.bg]);
 
   const defaultQRStyleForTheme = useMemo(
     () => defaultQRStyle(isDark),
