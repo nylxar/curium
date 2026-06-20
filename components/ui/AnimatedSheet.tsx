@@ -18,6 +18,7 @@ import Animated, {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Spacing } from "@/constants/theme";
 import { useOverlay } from "./Overlay";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Props {
   visible: boolean;
@@ -183,6 +184,7 @@ function SheetContent({
   onDismissed,
   children,
 }: SheetContentProps) {
+  const insets = useSafeAreaInsets();
   // Store onDismissed in a ref so the worklet callback doesn't capture
   // React state setters (which can't be serialized for the UI thread).
   const onDismissedRef = useRef(onDismissed);
@@ -325,7 +327,7 @@ function SheetContent({
           style={[
             styles.sheet,
             {
-              paddingBottom: Spacing.md,
+              paddingBottom: insets.bottom + Spacing.md,
               backgroundColor: bgColor,
               borderTopColor: borderColor,
             },
