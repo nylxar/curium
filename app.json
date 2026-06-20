@@ -17,6 +17,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "backgroundColor": "#0d0d0f",
       "predictiveBackGestureEnabled": false,
       "package": "com.nylxar.curium",
       "permissions": [
@@ -65,7 +66,14 @@
           "microphonePermission": false
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-system-ui",
+      [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": true
+        }
+      ]
     ],
     "extra": {
       "router": {},
