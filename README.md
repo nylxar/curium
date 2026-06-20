@@ -47,6 +47,8 @@
 ---
 
 ### Support Curium 
+If Curium saved you from another bloat, spyware, data-hungry, ad-filled QR tool, then consider supporting its development.
+
 [![badge](https://shieldcn.dev/badge/Support-via%20Gumroad-22c55e.svg?font=fira-code&logo=gumroad&color=e5decf)](https://nylxar.gumroad.com/coffee)
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T6O120WGDS)
 [![badge](https://shieldcn.dev/badge/Support-via%20PayPal-22c55e.svg?font=fira-code&logo=ri%3AFaPaypal&color=e5decf)](https://www.paypal.com/ncp/payment/DUAR5EJ7A3RV8)
