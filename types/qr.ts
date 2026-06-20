@@ -25,7 +25,10 @@ export type EyeShape =
   | "hexagon" // regular hexagon
   | "plus" // plus / cross
   | "star" // 5-point star
-  | "octagon"; // regular octagon
+  | "octagon" // regular octagon
+  // ─── Curium signature eyes ──
+  | "petal" // 4-petal flower ring (botanical)
+  | "burst"; // 8-point sun ring (celestial)
 
 // ─── Pupil (inner dot of each eye) shapes ─────────────────────────────────────
 // Pupils are styled independently of the eye ring so a round eye can have
@@ -39,6 +42,8 @@ export type PupilShape =
   | "diamond" // 45° rhombus
   | "star" // 5-point star
   | "heart" // heart
+  | "hexagon" // regular hexagon
+  | "crescent" // crescent moon (evenodd)
   | "none"; // no pupil (transparent hole)
 
 // ─── Pixel (data module) shapes ──────────────────────────────────────────────
@@ -56,7 +61,9 @@ export type PixelShape =
   | "hexagon" // hexagon
   | "plus" // filled plus
   | "heart" // heart
-  | "sparkle"; // 4-point star / sparkle
+  | "sparkle" // 4-point star / sparkle
+  | "chevron" // upward-pointing V
+  | "wave"; // wavy rectangle
 
 export interface PixelConfig {
   pieceSize: number;
@@ -79,6 +86,8 @@ export const PIXEL_CONFIG: Record<PixelShape, PixelConfig> = {
   plus: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.88 },
   heart: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.86 },
   sparkle: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.9 },
+  chevron: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.84 },
+  wave: { pieceSize: 10, pieceBorderRadius: 2, pieceScale: 0.82 },
 };
 
 // ─── Frame / quiet-zone styles ────────────────────────────────────────────────
@@ -238,6 +247,8 @@ export const PIXEL_BORDER_RADIUS: Record<PixelShape, number> = {
   plus: 0,
   heart: 0,
   sparkle: 0,
+  chevron: 0,
+  wave: 2,
 };
 
 export interface QRData {
