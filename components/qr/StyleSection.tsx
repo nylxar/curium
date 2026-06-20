@@ -53,6 +53,8 @@ function ShapePreview({
     hexagon: 0.15,
     heart: 0,
     sparkle: 0,
+    chevron: 0,
+    wave: 0.15,
   };
   const r = R[pixelShape] * pw;
 
@@ -104,6 +106,8 @@ function ShapePreview({
     plus: 0.1,
     star: 0.2,
     octagon: 0.18,
+    petal: 0.2,
+    burst: 0.12,
   };
   const eyeR = ER[eyeShape] * pw * 3;
   const ex = 0.5,

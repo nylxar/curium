@@ -70,6 +70,10 @@ function PupilPreview({ shape, color }: { shape: PupilShape; color: string }) {
         return PixelShapePath.star(16, 16, 10);
       case "heart":
         return PixelShapePath.heart(16, 16, 10);
+      case "hexagon":
+        return PixelShapePath.hexagon(16, 16, 10);
+      case "crescent":
+        return "M16 6 A10 10 0 0 0 16 26 A9 9 0 0 1 16 6Z";
     }
   })();
   const fillRule =
@@ -117,6 +121,10 @@ function PixelPreview({ shape, color }: { shape: PixelShape; color: string }) {
         return PixelShapePath.heart(cx, cy, cell * 0.5);
       case "sparkle":
         return PixelShapePath.sparkle(cx, cy, cell * 0.5);
+      case "chevron":
+        return PixelShapePath.chevron(cx, cy, cell * 0.5);
+      case "wave":
+        return PixelShapePath.wave(cx, cy, cell * 0.85);
       case "sharp":
         return PixelShapePath.rect(x, y, cell, 0);
       case "soft":
@@ -155,6 +163,8 @@ const EYE_OPTIONS: EyeShape[] = [
   "plus",
   "star",
   "octagon",
+  "petal",
+  "burst",
 ];
 const PUPIL_OPTIONS: PupilShape[] = [
   "dot",
@@ -164,6 +174,8 @@ const PUPIL_OPTIONS: PupilShape[] = [
   "diamond",
   "star",
   "heart",
+  "hexagon",
+  "crescent",
   "none",
 ];
 const PIXEL_OPTIONS: PixelShape[] = [
@@ -181,6 +193,8 @@ const PIXEL_OPTIONS: PixelShape[] = [
   "plus",
   "heart",
   "sparkle",
+  "chevron",
+  "wave",
 ];
 
 const EYE_LABELS: Record<EyeShape, string> = {
@@ -197,6 +211,8 @@ const EYE_LABELS: Record<EyeShape, string> = {
   plus: "Plus",
   star: "Star",
   octagon: "Oct",
+  petal: "Petal",
+  burst: "Burst",
 };
 
 const PUPIL_LABELS: Record<PupilShape, string> = {
@@ -207,6 +223,8 @@ const PUPIL_LABELS: Record<PupilShape, string> = {
   diamond: "Diam",
   star: "Star",
   heart: "Heart",
+  hexagon: "Hex",
+  crescent: "Moon",
   none: "None",
 };
 
@@ -225,6 +243,8 @@ const PIXEL_LABELS: Record<PixelShape, string> = {
   plus: "Plus",
   heart: "Heart",
   sparkle: "Spark",
+  chevron: "Chev",
+  wave: "Wave",
 };
 
 interface EyeProps {
