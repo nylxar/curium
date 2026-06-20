@@ -177,8 +177,8 @@ export default function RootLayout() {
                         options={{ animation: "simple_push", animationDuration: 200 }}
                       />
                     </Stack>
+                    <OverlayHost />
                   </SafeAreaProvider>
-                  <OverlayHost />
                 </ToastProvider>
               </ThemedBackground>
             </ThemeProvider>

@@ -173,6 +173,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "acceptable",
     star: "acceptable",
     heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "acceptable",
     none: "banned",
   },
   soft: {
@@ -183,6 +185,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "acceptable",
     star: "acceptable",
     heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "acceptable",
     none: "banned",
   },
   round: {
@@ -193,6 +197,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "acceptable",
     star: "acceptable",
     heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "acceptable",
     none: "banned",
   },
   pill: {
@@ -203,6 +209,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "acceptable",
     star: "acceptable",
     heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "acceptable",
     none: "banned",
   },
   leaf: {
@@ -213,6 +221,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "acceptable",
     star: "acceptable",
     heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "acceptable",
     none: "banned",
   },
   shield: {
@@ -223,6 +233,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "acceptable",
     star: "acceptable",
     heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "acceptable",
     none: "banned",
   },
   hexagon: {
@@ -233,6 +245,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "acceptable",
     star: "acceptable",
     heart: "acceptable",
+    hexagon: "banned",
+    crescent: "acceptable",
     none: "banned",
   },
   octagon: {
@@ -243,6 +257,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "acceptable",
     star: "acceptable",
     heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "acceptable",
     none: "banned",
   },
   // "dot" eye is a solid disc — many pupils look bad.  A "dot"
@@ -257,6 +273,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "preferred",
     star: "acceptable",
     heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "acceptable",
     none: "banned",
   },
   // Decorative eyes — same-motif pupils are banned (redundant),
@@ -269,6 +287,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "banned",
     star: "acceptable",
     heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "acceptable",
     none: "banned",
   },
   heart: {
@@ -279,6 +299,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "acceptable",
     star: "acceptable",
     heart: "banned",
+    hexagon: "acceptable",
+    crescent: "acceptable",
     none: "banned",
   },
   // "plus" eye + same-motif pupils are too busy (no "plus" in
@@ -292,6 +314,8 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "acceptable",
     star: "acceptable",
     heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "acceptable",
     none: "banned",
   },
   // "star" eye — same-motif star pupil is busy; geometric pupils
@@ -305,6 +329,34 @@ const EYE_PUPIL_COMPAT: Record<
     diamond: "acceptable",
     star: "banned",
     heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "acceptable",
+    none: "banned",
+  },
+  // "petal" eye — botanical feel; hexagon/crescent pair naturally.
+  petal: {
+    dot: "preferred",
+    square: "acceptable",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "acceptable",
+    heart: "preferred",
+    hexagon: "acceptable",
+    crescent: "preferred",
+    none: "banned",
+  },
+  // "burst" eye — celestial; crescent pairs naturally (sun + moon).
+  burst: {
+    dot: "preferred",
+    square: "acceptable",
+    ring: "acceptable",
+    cross: "acceptable",
+    diamond: "acceptable",
+    star: "preferred",
+    heart: "acceptable",
+    hexagon: "acceptable",
+    crescent: "preferred",
     none: "banned",
   },
 };
