@@ -277,7 +277,7 @@ function rrAdaptive(
 }
 
 // ─── Pixel shape config ────────────────────────────────────────────────────
-type PixelShapeKind = "rect" | "circle" | "diamond" | "cross" | "star" | "plus" | "triangle" | "hexagon" | "heart" | "sparkle" | "smooth" | "flow" | "blob" | "chevron" | "wave";
+type PixelShapeKind = "rect" | "circle" | "diamond" | "cross" | "star" | "plus" | "triangle" | "hexagon" | "heart" | "sparkle" | "smooth" | "flow" | "blob" | "chevron" | "wave" | "pinched-square" | "circuit-board" | "hashtag" | "vertical-line" | "horizontal-line";
 const PIXEL_CFG: Record<PixelShape, { r: number; inset: number; type: PixelShapeKind }> = {
   // ── Fused styles ──
   sharp: { r: 0, inset: 0.04, type: "rect" },
@@ -300,6 +300,11 @@ const PIXEL_CFG: Record<PixelShape, { r: number; inset: number; type: PixelShape
   sparkle: { r: 0, inset: 0.06, type: "sparkle" },
   chevron: { r: 0, inset: 0.03, type: "chevron" },
   wave: { r: 0, inset: 0.04, type: "wave" },
+  "pinched-square": { r: 0, inset: 0.04, type: "pinched-square" },
+  "circuit-board": { r: 0, inset: 0.02, type: "circuit-board" },
+  hashtag: { r: 0, inset: 0.06, type: "hashtag" },
+  "vertical-line": { r: 0, inset: 0.06, type: "vertical-line" },
+  "horizontal-line": { r: 0, inset: 0.06, type: "horizontal-line" },
 };
 
 // ─── Eye shape paths ───────────────────────────────────────────────────────
@@ -364,6 +369,61 @@ function eyeShapePaths(shape: EyeShape, ox: number, oy: number, pw: number): { o
         outer: octagonPath(cx, cy, O * 0.5),
         innerCut: octagonPath(cx, cy, I * 0.5),
       };
+    case "inpoint": {
+      const cr2 = Math.min(O * 0.12, 6);
+      const nr = O * 0.22;
+      const outer = (
+        `M${ox + cr2},${oy}` +
+        `H${ox + O - cr2}` +
+        `Q${ox + O},${oy} ${ox + O},${oy + cr2}` +
+        `V${oy + O * 0.55}` +
+        `Q${ox + O},${oy + O * 0.75} ${ox + O * 0.75},${oy + O * 0.85}` +
+        `Q${ox + O * 0.5},${oy + O + nr * 0.3} ${ox + O * 0.35},${oy + O * 0.85}` +
+        `Q${ox + O * 0.15},${oy + O * 0.75} ${ox + O * 0.15},${oy + O * 0.55}` +
+        `V${oy + cr2}` +
+        `Q${ox},${oy} ${ox + cr2},${oy}Z`
+      );
+      const icr = Math.max(0, cr2 - pw);
+      const innerCut = rrCW(ox + pw, oy + pw, I, I, icr);
+      return { outer, innerCut };
+    }
+    case "outpoint": {
+      const cr2 = Math.min(O * 0.12, 6);
+      const br = O * 0.25;
+      const outer = (
+        `M${ox + cr2},${oy}` +
+        `H${ox + O - cr2}` +
+        `Q${ox + O},${oy} ${ox + O},${oy + cr2}` +
+        `V${oy + O * 0.5}` +
+        `Q${ox + O},${oy + O * 0.7} ${ox + O * 0.7},${oy + O * 0.7}` +
+        `Q${ox + O * 0.5},${oy + O + br} ${ox + O * 0.3},${oy + O * 0.7}` +
+        `Q${ox + O * 0.1},${oy + O * 0.7} ${ox + O * 0.1},${oy + O * 0.5}` +
+        `V${oy + cr2}` +
+        `Q${ox},${oy} ${ox + cr2},${oy}Z`
+      );
+      const icr = Math.max(0, cr2 - pw);
+      const innerCut = rrCW(ox + pw, oy + pw, I, I, icr);
+      return { outer, innerCut };
+    }
+    case "leaf": {
+      const cr2 = Math.min(O * 0.12, 6);
+      const lr = O * 0.35;
+      const outer = (
+        `M${ox + cr2},${oy}` +
+        `H${ox + O - cr2}` +
+        `Q${ox + O},${oy} ${ox + O},${oy + cr2}` +
+        `V${oy + O * 0.45}` +
+        `Q${ox + O},${oy + O * 0.65} ${ox + O * 0.75},${oy + O * 0.75}` +
+        `Q${ox + O * 0.6},${oy + O + lr * 0.3} ${ox + O * 0.5},${oy + O + lr * 0.15}` +
+        `Q${ox + O * 0.35},${oy + O + lr * 0.3} ${ox + O * 0.25},${oy + O * 0.75}` +
+        `Q${ox + O * 0.1},${oy + O * 0.65} ${ox + O * 0.1},${oy + O * 0.45}` +
+        `V${oy + cr2}` +
+        `Q${ox},${oy} ${ox + cr2},${oy}Z`
+      );
+      const icr = Math.max(0, cr2 - pw);
+      const innerCut = rrCW(ox + pw, oy + pw, I, I, icr);
+      return { outer, innerCut };
+    }
   }
   return { outer: "", innerCut: "" };
 }
@@ -453,6 +513,35 @@ function pupilPath(shape: PupilShape, ox: number, oy: number, pw: number): strin
         `C${cx - R * 0.85},${cy - R * 0.1} ${cx - R * 0.15},${cy - R * 0.7} ${cx},${cy - R}Z`
       );
     }
+    case "microchip": {
+      const chipW = D * 0.6;
+      const chipH = D * 0.45;
+      const legW = D * 0.08;
+      const legH = D * 0.1;
+      const legs = 4;
+      const legSpan = chipW * 0.8;
+      let d = rrCW(cx - chipW / 2, cy - chipH / 2, chipW, chipH, D * 0.06);
+      for (let i = 0; i < legs; i++) {
+        const lx = cx - legSpan / 2 + (i / (legs - 1)) * legSpan;
+        d += rrCW(lx - legW / 2, cy - chipH / 2 - legH, legW, legH, 1);
+      }
+      for (let i = 0; i < legs; i++) {
+        const lx = cx - legSpan / 2 + (i / (legs - 1)) * legSpan;
+        d += rrCW(lx - legW / 2, cy + chipH / 2, legW, legH, 1);
+      }
+      return d;
+    }
+    case "hashtag": {
+      const barW = D * 0.78;
+      const barH = D * 0.2;
+      const gap = D * 0.14;
+      return (
+        rrCW(cx - barW / 2, cy - gap - barH / 2, barW, barH, D * 0.04) +
+        rrCW(cx - barW / 2, cy + gap - barH / 2, barW, barH, D * 0.04) +
+        rrCW(cx - gap - barH / 2, cy - barW / 2, barH, barW, D * 0.04) +
+        rrCW(cx + gap - barH / 2, cy - barW / 2, barH, barW, D * 0.04)
+      );
+    }
   }
   return "";
 }
@@ -525,6 +614,65 @@ export function generateSVG(
           case "blob": pieces.push(blobPath(cx, cy, drawSz / 2)); break;
           case "chevron": pieces.push(chevronPath(cx, cy, drawSz * 0.55)); break;
           case "wave": pieces.push(wavePath(cx, cy, drawSz)); break;
+          case "pinched-square": {
+            const s = drawSz;
+            const ctrl = s * 0.25;
+            pieces.push(
+              `M${x},${y}` +
+              `Q${x + s / 2},${y + ctrl} ${x + s},${y}` +
+              `Q${x + s},${y + s / 2} ${x + s},${y + s}` +
+              `Q${x + s / 2},${y + s - ctrl} ${x},${y + s}` +
+              `Q${x},${y + s / 2} ${x},${y}Z`
+            );
+            break;
+          }
+          case "circuit-board": {
+            const padR = drawSz * 0.14;
+            let d = circlePath(cx, cy, padR);
+            const viaR = drawSz * 0.06;
+            d += circlePath(x + viaR * 1.5, y + viaR * 1.5, viaR);
+            d += circlePath(x + drawSz - viaR * 1.5, y + viaR * 1.5, viaR);
+            d += circlePath(x + viaR * 1.5, y + drawSz - viaR * 1.5, viaR);
+            d += circlePath(x + drawSz - viaR * 1.5, y + drawSz - viaR * 1.5, viaR);
+            pieces.push(d);
+            break;
+          }
+          case "hashtag": {
+            const bw = drawSz * 0.85;
+            const bh = drawSz * 0.18;
+            const vr = drawSz * 0.02;
+            pieces.push(
+              rrCW(cx - bw / 2, cy - bh * 0.7 - bh / 2, bw, bh, vr) +
+              rrCW(cx - bw / 2, cy + bh * 0.7 - bh / 2, bw, bh, vr) +
+              rrCW(cx - bh * 0.7 - bh / 2, cy - bw / 2, bh, bw, vr) +
+              rrCW(cx + bh * 0.7 - bh / 2, cy - bw / 2, bh, bw, vr)
+            );
+            break;
+          }
+          case "vertical-line": {
+            const hasT = getNeighbor(matrix, r, c, n, -1, 0);
+            const hasB = getNeighbor(matrix, r, c, n, 1, 0);
+            if (hasT || hasB) {
+              const barW = drawSz * 0.35;
+              const barH = hasT && hasB ? pw : hasT ? pw * 0.65 : pw * 0.65;
+              pieces.push(rrCW(cx - barW / 2, cy - barH / 2, barW, barH, barW * 0.3));
+            } else {
+              pieces.push(circlePath(cx, cy, drawSz * 0.25));
+            }
+            break;
+          }
+          case "horizontal-line": {
+            const hasL = getNeighbor(matrix, r, c, n, 0, -1);
+            const hasR = getNeighbor(matrix, r, c, n, 0, 1);
+            if (hasL || hasR) {
+              const barH = drawSz * 0.35;
+              const barW = hasL && hasR ? pw : hasL ? pw * 0.65 : pw * 0.65;
+              pieces.push(rrCW(cx - barW / 2, cy - barH / 2, barW, barH, barH * 0.3));
+            } else {
+              pieces.push(circlePath(cx, cy, drawSz * 0.25));
+            }
+            break;
+          }
           default: pieces.push(rrCW(x, y, drawSz, drawSz, drawR)); break;
         }
       }
@@ -555,7 +703,7 @@ export function generateSVG(
   if (hasPupil && isGridPupil) {
     const pCfg = PIXEL_CFG[qrStyle.pixelShape] ?? PIXEL_CFG.sharp;
     const isPupilRect = pCfg.type === "rect";
-    const pupilInset = Math.max(0, pCfg.inset * pw);
+    const pupilInset = pCfg.inset > 0 ? pw * 0.02 : 0;
     const pupilDrawSz = pw - pupilInset * 2;
     const pupilDrawR = pCfg.r * pupilDrawSz;
 
@@ -571,7 +719,6 @@ export function generateSVG(
           const y = cy - pupilDrawSz / 2;
 
           if (isPupilRect) {
-            // Simple rounded rect — no adaptive corners for pupil.
             pupilPieces.push(rrCW(x, y, pupilDrawSz, pupilDrawSz, pupilDrawR));
           } else {
             switch (pCfg.type) {
