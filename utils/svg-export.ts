@@ -40,7 +40,7 @@ function diamondPath(cx: number, cy: number, hs: number): string {
 }
 
 function crossPath(cx: number, cy: number, s: number): string {
-  const t = s * 0.32;
+  const t = s * 0.48;
   return `M${cx - t},${cy - s}H${cx + t}V${cy - t}H${cx + s}V${cy + t}H${cx + t}V${cy + s}H${cx - t}V${cy + t}H${cx - s}V${cy - t}H${cx - t}Z`;
 }
 
@@ -109,7 +109,7 @@ function octagonPath(cx: number, cy: number, R: number): string {
 }
 
 function sparklePath(cx: number, cy: number, R: number): string {
-  const r = R * 0.18;
+  const r = R * 0.35;
   return (
     `M${cx},${cy - R}` +
     `C${cx + r},${cy - r} ${cx + r},${cy - r} ${cx + R},${cy}` +
@@ -119,15 +119,177 @@ function sparklePath(cx: number, cy: number, R: number): string {
   );
 }
 
+// ─── Qewie-like anatomical refinement shapes ─────────────────────────────
+function petalPath(cx: number, cy: number, R: number): string {
+  const pr = R * 0.42;
+  const d = R * 0.58;
+  return (
+    `M${cx - pr},${cy - d}` +
+    `A${pr},${pr} 0 1 1 ${cx + pr},${cy - d}` +
+    `L${cx + d},${cy - pr}` +
+    `A${pr},${pr} 0 1 1 ${cx + d},${cy + pr}` +
+    `L${cx + pr},${cy + d}` +
+    `A${pr},${pr} 0 1 1 ${cx - pr},${cy + d}` +
+    `L${cx - d},${cy + pr}` +
+    `A${pr},${pr} 0 1 1 ${cx - d},${cy - pr}Z`
+  );
+}
+
+function burstPath(cx: number, cy: number, R: number): string {
+  const n = 8;
+  const innerR = R * 0.55;
+  let d = "";
+  for (let i = 0; i < n; i++) {
+    const a1 = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    const aMid = -Math.PI / 2 + ((i + 0.5) * 2 * Math.PI) / n;
+    const a2 = -Math.PI / 2 + ((i + 1) * 2 * Math.PI) / n;
+    const tipX = cx + Math.cos(a1) * R;
+    const tipY = cy + Math.sin(a1) * R;
+    const ctrlX = cx + Math.cos(aMid) * innerR;
+    const ctrlY = cy + Math.sin(aMid) * innerR;
+    const nextTipX = cx + Math.cos(a2) * R;
+    const nextTipY = cy + Math.sin(a2) * R;
+    if (i === 0) d += `M${tipX.toFixed(2)},${tipY.toFixed(2)}`;
+    d += `Q${ctrlX.toFixed(2)},${ctrlY.toFixed(2)} ${nextTipX.toFixed(2)},${nextTipY.toFixed(2)}`;
+  }
+  return d + "Z";
+}
+
+function smoothPath(x: number, y: number, w: number, h: number, r: number): string {
+  return rrCW(x, y, w, h, r);
+}
+
+function flowPath(cx: number, cy: number, hs: number): string {
+  const w = hs * 0.92;
+  const h = hs * 0.82;
+  const r = hs * 0.35;
+  const x = cx - w;
+  const y = cy - h;
+  const ww = w * 2;
+  const hh = h * 2;
+  const cr = Math.min(r, ww / 2, hh / 2);
+  return (
+    `M${x + cr},${y}` +
+    `C${x + ww - cr},${y} ${x + ww},${y + cr} ${x + ww},${y + cr}` +
+    `V${y + hh - cr}` +
+    `C${x + ww},${y + hh} ${x + ww - cr},${y + hh} ${x + ww - cr},${y + hh}` +
+    `H${x + cr}` +
+    `C${x},${y + hh} ${x},${y + hh - cr} ${x},${y + hh - cr}` +
+    `V${y + cr}` +
+    `C${x},${y} ${x + cr},${y} ${x + cr},${y}Z`
+  );
+}
+
+function blobPath(cx: number, cy: number, hs: number): string {
+  const r = hs * 0.82;
+  return (
+    `M${cx},${cy - r * 0.92}` +
+    `C${cx + r * 0.62},${cy - r * 0.88} ${cx + r * 0.95},${cy - r * 0.38} ${cx + r * 0.88},${cy + r * 0.12}` +
+    `C${cx + r * 0.82},${cy + r * 0.58} ${cx + r * 0.38},${cy + r * 0.95} ${cx - r * 0.08},${cy + r * 0.92}` +
+    `C${cx - r * 0.52},${cy + r * 0.88} ${cx - r * 0.92},${cy + r * 0.48} ${cx - r * 0.88},${cy - r * 0.05}` +
+    `C${cx - r * 0.85},${cy - r * 0.52} ${cx - r * 0.45},${cy - r * 0.92} ${cx},${cy - r * 0.92}Z`
+  );
+}
+
+function chevronPath(cx: number, cy: number, hs: number): string {
+  const w = hs * 0.85;
+  const h = hs * 0.65;
+  const t = hs * 0.3;
+  return (
+    `M${cx - w},${cy + h * 0.25}` +
+    `L${cx},${cy - h}` +
+    `L${cx + w},${cy + h * 0.25}` +
+    `L${cx + w - t},${cy + h * 0.25}` +
+    `L${cx},${cy - h + t * 1.7}` +
+    `L${cx - w + t},${cy + h * 0.25}Z`
+  );
+}
+
+function wavePath(cx: number, cy: number, s: number): string {
+  const hw = s * 0.48;
+  const hh = s * 0.32;
+  const amp = s * 0.16;
+  return (
+    `M${cx - hw},${cy - amp}` +
+    `Q${cx - hw * 0.5},${cy - amp * 2} ${cx},${cy - amp}` +
+    `Q${cx + hw * 0.5},${cy} ${cx + hw},${cy - amp}` +
+    `L${cx + hw},${cy + amp}` +
+    `Q${cx + hw * 0.5},${cy + amp * 2} ${cx},${cy + amp}` +
+    `Q${cx - hw * 0.5},${cy} ${cx - hw},${cy + amp}Z`
+  );
+}
+
+// ─── Neighbor detection ───────────────────────────────────────────────────────
+// Ported from kozakdenys/qr-code-styling + yadav-saurabh/qrGrid.
+function getNeighbor(
+  matrix: boolean[][],
+  r: number,
+  c: number,
+  n: number,
+  dr: number,
+  dc: number,
+): boolean {
+  const rr = r + dr;
+  const cc = c + dc;
+  return rr >= 0 && rr < n && cc >= 0 && cc < n && !!matrix[rr][cc];
+}
+function countNeighbors(
+  matrix: boolean[][],
+  r: number,
+  c: number,
+  n: number,
+): number {
+  return (
+    +getNeighbor(matrix, r, c, n, -1, 0) +
+    +getNeighbor(matrix, r, c, n, 1, 0) +
+    +getNeighbor(matrix, r, c, n, 0, -1) +
+    +getNeighbor(matrix, r, c, n, 0, 1)
+  );
+}
+function rrAdaptive(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  baseR: number,
+  tl: boolean,
+  tr: boolean,
+  br: boolean,
+  bl: boolean,
+): string {
+  const maxR = Math.min(w / 2, h / 2);
+  const clamp = (v: number) => Math.min(v, maxR);
+  const a = clamp(tl ? baseR : 0);
+  const b = clamp(tr ? baseR : 0);
+  const c = clamp(br ? baseR : 0);
+  const d = clamp(bl ? baseR : 0);
+  return (
+    `M${x + a},${y}` +
+    `H${x + w - b}` +
+    `Q${x + w},${y} ${x + w},${y + b}` +
+    `V${y + h - c}` +
+    `Q${x + w},${y + h} ${x + w - c},${y + h}` +
+    `H${x + d}` +
+    `Q${x},${y + h} ${x},${y + h - d}` +
+    `V${y + a}` +
+    `Q${x},${y} ${x + a},${y}Z`
+  );
+}
+
 // ─── Pixel shape config ────────────────────────────────────────────────────
-type PixelShapeKind = "rect" | "circle" | "diamond" | "cross" | "star" | "plus" | "triangle" | "hexagon" | "heart" | "sparkle";
+type PixelShapeKind = "rect" | "circle" | "diamond" | "cross" | "star" | "plus" | "triangle" | "hexagon" | "heart" | "sparkle" | "smooth" | "flow" | "blob" | "chevron" | "wave";
 const PIXEL_CFG: Record<PixelShape, { r: number; inset: number; type: PixelShapeKind }> = {
+  // ── Fused styles ──
   sharp: { r: 0, inset: 0.04, type: "rect" },
   soft: { r: 0.2, inset: 0.06, type: "rect" },
   round: { r: 0.38, inset: 0.08, type: "rect" },
-  dots: { r: 0.5, inset: 0.1, type: "circle" },
-  liquid: { r: 0.5, inset: -0.02, type: "rect" },
   glued: { r: 0.28, inset: 0, type: "rect" },
+  liquid: { r: 0.5, inset: -0.02, type: "rect" },
+  smooth: { r: 0.18, inset: -0.01, type: "smooth" },
+  flow: { r: 0.25, inset: -0.01, type: "flow" },
+  // ── Individual shapes ──
+  dots: { r: 0.5, inset: 0.1, type: "circle" },
+  blob: { r: 0.35, inset: 0.04, type: "blob" },
   diamond: { r: 0, inset: 0.08, type: "diamond" },
   cross: { r: 0, inset: 0.08, type: "cross" },
   star: { r: 0.1, inset: 0.1, type: "star" },
@@ -136,142 +298,171 @@ const PIXEL_CFG: Record<PixelShape, { r: number; inset: number; type: PixelShape
   hexagon: { r: 0, inset: 0.06, type: "hexagon" },
   heart: { r: 0, inset: 0.08, type: "heart" },
   sparkle: { r: 0, inset: 0.06, type: "sparkle" },
+  chevron: { r: 0, inset: 0.03, type: "chevron" },
+  wave: { r: 0, inset: 0.04, type: "wave" },
 };
 
 // ─── Eye shape paths ───────────────────────────────────────────────────────
+// Inner cutout always matches the outer shape's contour (just smaller).
 function eyeShapePaths(shape: EyeShape, ox: number, oy: number, pw: number): { outer: string; innerCut: string } {
   const O = 7 * pw;
   const I = 5 * pw;
-  const oxI = ox + pw;
-  const oyI = oy + pw;
+  const cx = ox + O / 2;
+  const cy = oy + O / 2;
 
   switch (shape) {
     case "sharp":
       return {
         outer: `M${ox},${oy}h${O}v${O}h-${O}Z`,
-        innerCut: `M${oxI},${oyI}h${I}v${I}h-${I}Z`,
+        innerCut: `M${ox + pw},${oy + pw}h${I}v${I}h-${I}Z`,
       };
     case "soft":
       return {
         outer: rrCW(ox, oy, O, O, pw * 0.6),
-        innerCut: rrCW(oxI, oyI, I, I, pw * 0.5),
+        innerCut: rrCW(ox + pw, oy + pw, I, I, pw * 0.5),
       };
     case "round":
       return {
         outer: rrCW(ox, oy, O, O, pw * 1.2),
-        innerCut: rrCW(oxI, oyI, I, I, pw * 1.0),
+        innerCut: rrCW(ox + pw, oy + pw, I, I, pw * 1.0),
       };
     case "pill":
       return {
         outer: rrCW(ox, oy, O, O, O * 0.5),
-        innerCut: rrCW(oxI, oyI, I, I, I * 0.5),
+        innerCut: rrCW(ox + pw, oy + pw, I, I, I * 0.5),
       };
-    case "leaf": {
-      const leafPath = (size: number, oox: number, ooy: number): string => {
-        const S = size;
+    case "dot":
+      return {
+        outer: circlePath(cx, cy, O * 0.5),
+        innerCut: circlePath(cx, cy, I * 0.5),
+      };
+    case "shield": {
+      const build = (size: number, oox: number, ooy: number): string => {
+        const r = size * 0.28;
         return (
-          `M${oox + S},${ooy}` +
-          `C${oox + S},${ooy + S * 0.55} ${oox + S * 0.55},${ooy + S} ${oox},${ooy + S}` +
-          `C${oox + S * 0.45},${ooy + S} ${oox},${ooy + S * 0.45} ${oox + S},${ooy}` +
-          `Z`
+          `M${oox + r},${ooy}H${oox + size - r}` +
+          `Q${oox + size},${ooy} ${oox + size},${ooy + r}` +
+          `V${ooy + size * 0.55}` +
+          `Q${oox + size},${ooy + size * 0.78} ${oox + size * 0.5},${ooy + size}` +
+          `Q${oox},${ooy + size * 0.78} ${oox},${ooy + size * 0.55}` +
+          `V${ooy + r}` +
+          `Q${oox},${ooy} ${oox + r},${ooy}Z`
         );
       };
       return {
-        outer: leafPath(O, ox, oy),
-        innerCut: leafPath(I, oxI, oyI),
+        outer: build(O, ox, oy),
+        innerCut: build(I, ox + pw, oy + pw),
       };
     }
-    case "diamond": {
-      const cxO = ox + O / 2;
-      const cyO = oy + O / 2;
-      const cxI = oxI + I / 2;
-      const cyI = oyI + I / 2;
-      return {
-        outer: diamondPath(cxO, cyO, O / 2),
-        innerCut: diamondPath(cxI, cyI, I / 2),
-      };
-    }
-    case "shield": {
-      const r = O * 0.28;
-      const ri = I * 0.28;
-      const build = (size: number, r0: number, ri0: number, oox: number, ooy: number) =>
-        `M${oox + r0},${ooy}H${oox + size - r0}` +
-        `Q${oox + size},${ooy} ${oox + size},${ooy + r0}` +
-        `V${ooy + size * 0.55}` +
-        `Q${oox + size},${ooy + size * 0.78} ${oox + size * 0.5},${ooy + size}` +
-        `Q${oox},${ooy + size * 0.78} ${oox},${ooy + size * 0.55}` +
-        `V${ooy + r0}` +
-        `Q${oox},${ooy} ${oox + r0},${ooy}Z`;
-      return {
-        outer: build(O, r, r * 0.5, ox, oy),
-        innerCut: build(I, ri, ri * 0.5, oxI, oyI),
-      };
-    }
-    case "dot":
-      return {
-        outer: circlePath(ox + O / 2, oy + O / 2, O * 0.5),
-        innerCut: circlePath(oxI + I / 2, oyI + I / 2, I * 0.5),
-      };
-    case "heart":
-      return {
-        outer: heartPath(ox + O / 2, oy + O / 2, O * 0.5),
-        innerCut: heartPath(oxI + I / 2, oyI + I / 2, I * 0.45),
-      };
     case "hexagon":
       return {
-        outer: hexagonPath(ox + O / 2, oy + O / 2, O * 0.5),
-        innerCut: hexagonPath(oxI + I / 2, oyI + I / 2, I * 0.5),
-      };
-    case "plus":
-      return {
-        outer: plusPath(ox + O / 2, oy + O / 2, O * 0.5, O * 0.18),
-        innerCut: plusPath(oxI + I / 2, oyI + I / 2, I * 0.5, I * 0.18),
-      };
-    case "star":
-      return {
-        outer: star5Path(ox + O / 2, oy + O / 2, O * 0.5),
-        innerCut: star5Path(oxI + I / 2, oyI + I / 2, I * 0.5),
+        outer: hexagonPath(cx, cy, O * 0.5),
+        innerCut: hexagonPath(cx, cy, I * 0.5),
       };
     case "octagon":
       return {
-        outer: octagonPath(ox + O / 2, oy + O / 2, O * 0.5),
-        innerCut: octagonPath(oxI + I / 2, oyI + I / 2, I * 0.5),
+        outer: octagonPath(cx, cy, O * 0.5),
+        innerCut: octagonPath(cx, cy, I * 0.5),
       };
   }
+  return { outer: "", innerCut: "" };
 }
 
-// ─── Pupil scale per eye shape ─────────────────────────────────────────────
-const EYE_PUPIL_SCALE: Record<EyeShape, number> = {
-  sharp: 1.0, soft: 1.0, round: 1.0, pill: 0.78, leaf: 0.9,
-  diamond: 0.7, shield: 0.85, dot: 1.0, heart: 0.7, hexagon: 0.78,
-  plus: 0.55, star: 0.7, octagon: 0.85,
-};
-
-// ─── Pupil path generator ──────────────────────────────────────────────────
-function pupilPath(shape: PupilShape, ox: number, oy: number, pw: number, sizeMul: number): string {
-  const D = 3 * pw * sizeMul;
-  const cxP = ox + 3.5 * pw;
-  const cyP = oy + 3.5 * pw;
-  if (shape === "none") return "";
+// ─── Single-path pupil generator ──────────────────────────────────────────
+function pupilPath(shape: PupilShape, ox: number, oy: number, pw: number): string {
+  if (shape === "none" || shape === "pixel") return "";
+  const D = 3 * pw;
+  const cx = ox + 3.5 * pw;
+  const cy = oy + 3.5 * pw;
+  const R = D / 2;
   switch (shape) {
-    case "dot": return circlePath(cxP, cyP, D * 0.5);
-    case "square": return rrCW(cxP - D / 2, cyP - D / 2, D, D, 0);
-    case "ring": return ringPath(cxP, cyP, D * 0.5, D * 0.28);
-    case "cross": return crossPath(cxP, cyP, D * 0.5);
-    case "diamond": return diamondPath(cxP, cyP, D * 0.5);
-    case "star": return star5Path(cxP, cyP, D * 0.5);
-    case "heart": return heartPath(cxP, cyP, D * 0.45);
+    case "dot":    return circlePath(cx, cy, R);
+    case "square": return rrCW(cx - R, cy - R, D, D, pw * 0.15);
+    case "diamond": return diamondPath(cx, cy, R);
+    case "cross":  return crossPath(cx, cy, R);
+    case "hexagon": return hexagonPath(cx, cy, R);
+    case "octagon": return octagonPath(cx, cy, R);
+    case "shield": {
+      const r = D * 0.28;
+      return (
+        `M${cx - R + r},${cy - R}H${cx + R - r}` +
+        `Q${cx + R},${cy - R} ${cx + R},${cy - R + r}` +
+        `V${cy + R * 0.1}` +
+        `Q${cx + R},${cy + R * 0.56} ${cx},${cy + R}` +
+        `Q${cx - R},${cy + R * 0.56} ${cx - R},${cy + R * 0.1}` +
+        `V${cy - R + r}` +
+        `Q${cx - R},${cy - R} ${cx - R + r},${cy - R}Z`
+      );
+    }
+    case "star":  return nStarPath(cx, cy, R, 5, 0.55);
+    case "heart": return heartPath(cx, cy, R * 1.3);
+    case "blob":  return blobPath(cx, cy, R * 1.1);
+    // ─── MD3 expressive shapes ──
+    case "dome": {
+      const baseY = cy + R * 0.92;
+      const topY = cy - R;
+      return (
+        `M${cx - R * 0.92},${baseY}` +
+        `L${cx - R * 0.92},${cy - R * 0.1}` +
+        `Q${cx - R * 0.92},${topY} ${cx},${topY}` +
+        `Q${cx + R * 0.92},${topY} ${cx + R * 0.92},${cy - R * 0.1}` +
+        `L${cx + R * 0.92},${baseY}Z`
+      );
+    }
+    case "oval": {
+      const rx = R * 0.95;
+      const ry = R * 0.82;
+      return (
+        `M${cx - rx},${cy}a${rx},${ry} 0 1,0 ${rx * 2},0a${rx},${ry} 0 1,0 -${rx * 2},0`
+      );
+    }
+    case "pentagon": return polygonPath(cx, cy, R, 5);
+    case "scallop": {
+      const bumps = 8;
+      const innerR = R * 0.82;
+      let d = "";
+      for (let i = 0; i < bumps; i++) {
+        const a1 = -Math.PI / 2 + (i * 2 * Math.PI) / bumps;
+        const aMid = -Math.PI / 2 + ((i + 0.5) * 2 * Math.PI) / bumps;
+        const a2 = -Math.PI / 2 + ((i + 1) * 2 * Math.PI) / bumps;
+        const tipX = cx + Math.cos(a1) * R;
+        const tipY = cy + Math.sin(a1) * R;
+        const ctrlX = cx + Math.cos(aMid) * innerR;
+        const ctrlY = cy + Math.sin(aMid) * innerR;
+        const nextTipX = cx + Math.cos(a2) * R;
+        const nextTipY = cy + Math.sin(a2) * R;
+        if (i === 0) d += `M${tipX.toFixed(2)},${tipY.toFixed(2)}`;
+        d += `Q${ctrlX.toFixed(2)},${ctrlY.toFixed(2)} ${nextTipX.toFixed(2)},${nextTipY.toFixed(2)}`;
+      }
+      return d + "Z";
+    }
+    case "cloud": {
+      const cR = R * 0.72;
+      const offset = R * 0.35;
+      return (
+        circlePath(cx - offset, cy + R * 0.12, cR) +
+        circlePath(cx, cy - R * 0.18, cR * 1.05) +
+        circlePath(cx + offset, cy + R * 0.12, cR)
+      );
+    }
+    case "droplet": {
+      return (
+        `M${cx},${cy - R}` +
+        `C${cx + R * 0.15},${cy - R * 0.7} ${cx + R * 0.85},${cy - R * 0.1} ${cx + R * 0.85},${cy + R * 0.2}` +
+        `A${R * 0.85},${R * 0.85} 0 1,1 ${cx - R * 0.85},${cy + R * 0.2}` +
+        `C${cx - R * 0.85},${cy - R * 0.1} ${cx - R * 0.15},${cy - R * 0.7} ${cx},${cy - R}Z`
+      );
+    }
   }
+  return "";
 }
 
 // ─── Draw one finder eye ───────────────────────────────────────────────────
-function drawEye(eyeRow: number, eyeCol: number, pw: number, pad: number, eyeShape: EyeShape, pupilShape: PupilShape): { ring: string; pupil: string } {
+function drawEye(eyeRow: number, eyeCol: number, pw: number, pad: number, eyeShape: EyeShape): string {
   const ox = pad + eyeCol * pw;
   const oy = pad + eyeRow * pw;
   const { outer, innerCut } = eyeShapePaths(eyeShape, ox, oy, pw);
-  const ring = `${outer} ${innerCut}`;
-  const pupil = pupilPath(pupilShape, ox, oy, pw, EYE_PUPIL_SCALE[eyeShape]);
-  return { ring, pupil };
+  return `${outer} ${innerCut}`;
 }
 
 // ─── Main SVG generator ────────────────────────────────────────────────────
@@ -293,8 +484,9 @@ export function generateSVG(
   const PAD = Math.round(size * 0.045);
   const pw = (size - PAD * 2) / n;
 
-  // Build data module paths
+  // Build data module paths — rect types get adaptive corners
   const cfg = PIXEL_CFG[qrStyle.pixelShape] ?? PIXEL_CFG.sharp;
+  const isRect = cfg.type === "rect";
   const inset = cfg.inset * pw;
   const drawSz = pw - inset * 2;
   const drawR = cfg.r * drawSz;
@@ -307,32 +499,103 @@ export function generateSVG(
       const cy = PAD + r * pw + pw / 2;
       const x = cx - drawSz / 2;
       const y = cy - drawSz / 2;
-      switch (cfg.type) {
-        case "circle": pieces.push(circlePath(cx, cy, drawSz / 2)); break;
-        case "diamond": pieces.push(diamondPath(cx, cy, drawSz / 2)); break;
-        case "cross": pieces.push(crossPath(cx, cy, drawSz / 2)); break;
-        case "star": pieces.push(star5Path(cx, cy, drawSz * 0.55)); break;
-        case "plus": pieces.push(plusPath(cx, cy, drawSz * 0.5, drawSz * 0.16)); break;
-        case "triangle": pieces.push(trianglePath(cx, cy, drawSz * 0.55)); break;
-        case "hexagon": pieces.push(hexagonPath(cx, cy, drawSz * 0.55)); break;
-        case "heart": pieces.push(heartPath(cx, cy, drawSz * 0.55)); break;
-        case "sparkle": pieces.push(sparklePath(cx, cy, drawSz * 0.5)); break;
-        default: pieces.push(rrCW(x, y, drawSz, drawSz, drawR)); break;
+
+      if (isRect) {
+        const nc = countNeighbors(matrix, r, c, n);
+        const hasL = getNeighbor(matrix, r, c, n, 0, -1);
+        const hasR = getNeighbor(matrix, r, c, n, 0, 1);
+        const hasT = getNeighbor(matrix, r, c, n, -1, 0);
+        const hasB = getNeighbor(matrix, r, c, n, 1, 0);
+        const baseR = cfg.r * drawSz;
+        const rScale = nc === 0 ? 1.3 : nc === 1 ? 0.9 : nc === 2 ? 0.5 : 0.2;
+        pieces.push(rrAdaptive(x, y, drawSz, drawSz, baseR * rScale, !hasT && !hasL, !hasT && !hasR, !hasB && !hasR, !hasB && !hasL));
+      } else {
+        switch (cfg.type) {
+          case "circle": pieces.push(circlePath(cx, cy, drawSz / 2)); break;
+          case "diamond": pieces.push(diamondPath(cx, cy, drawSz / 2)); break;
+          case "cross": pieces.push(crossPath(cx, cy, drawSz / 2)); break;
+          case "star": pieces.push(star5Path(cx, cy, drawSz * 0.55)); break;
+          case "plus": pieces.push(plusPath(cx, cy, drawSz * 0.5, drawSz * 0.16)); break;
+          case "triangle": pieces.push(trianglePath(cx, cy, drawSz * 0.55)); break;
+          case "hexagon": pieces.push(hexagonPath(cx, cy, drawSz * 0.55)); break;
+          case "heart": pieces.push(heartPath(cx, cy, drawSz * 0.55)); break;
+          case "sparkle": pieces.push(sparklePath(cx, cy, drawSz * 0.5)); break;
+          case "smooth": pieces.push(smoothPath(x, y, drawSz, drawSz, drawR)); break;
+          case "flow": pieces.push(flowPath(cx, cy, drawSz / 2)); break;
+          case "blob": pieces.push(blobPath(cx, cy, drawSz / 2)); break;
+          case "chevron": pieces.push(chevronPath(cx, cy, drawSz * 0.55)); break;
+          case "wave": pieces.push(wavePath(cx, cy, drawSz)); break;
+          default: pieces.push(rrCW(x, y, drawSz, drawSz, drawR)); break;
+        }
       }
     }
   }
 
-  // Build finder eye + pupil paths
+  // Build finder eye ring paths
   const eyePos = [
     { r: 0, c: 0 },
     { r: 0, c: n - 7 },
     { r: n - 7, c: 0 },
   ];
-  const eyes = eyePos.map((e) =>
-    drawEye(e.r, e.c, pw, PAD, qrStyle.eyeShape, qrStyle.pupilShape),
-  );
-  const eyeRingPath = eyes.map((e) => e.ring).join(" ");
-  const eyeDotPath = eyes.map((e) => e.pupil).filter((p) => p.length > 0).join(" ");
+  const eyeRingPath = eyePos.map((e) => drawEye(e.r, e.c, pw, PAD, qrStyle.eyeShape)).join(" ");
+
+  // ── Pupil rendering ──
+  const hasPupil = qrStyle.pupilShape !== "none";
+  const isGridPupil = qrStyle.pupilShape === "pixel";
+  const pupilPieces: string[] = [];
+  const eyeDotPath = hasPupil && !isGridPupil
+    ? eyePos.map((e) => {
+        const ox = PAD + e.c * pw;
+        const oy = PAD + e.r * pw;
+        return pupilPath(qrStyle.pupilShape, ox, oy, pw);
+      }).join(" ")
+    : "";
+
+  // Per-module grid pupil (pixel mode)
+  if (hasPupil && isGridPupil) {
+    const pCfg = PIXEL_CFG[qrStyle.pixelShape] ?? PIXEL_CFG.sharp;
+    const isPupilRect = pCfg.type === "rect";
+    const pupilInset = Math.max(0, pCfg.inset * pw);
+    const pupilDrawSz = pw - pupilInset * 2;
+    const pupilDrawR = pCfg.r * pupilDrawSz;
+
+    for (const pos of eyePos) {
+      for (let pr = 0; pr < 3; pr++) {
+        for (let pc = 0; pc < 3; pc++) {
+          const r = pos.r + 2 + pr;
+          const c = pos.c + 2 + pc;
+          if (!matrix[r][c]) continue;
+          const cx = PAD + c * pw + pw / 2;
+          const cy = PAD + r * pw + pw / 2;
+          const x = cx - pupilDrawSz / 2;
+          const y = cy - pupilDrawSz / 2;
+
+          if (isPupilRect) {
+            // Simple rounded rect — no adaptive corners for pupil.
+            pupilPieces.push(rrCW(x, y, pupilDrawSz, pupilDrawSz, pupilDrawR));
+          } else {
+            switch (pCfg.type) {
+              case "circle": pupilPieces.push(circlePath(cx, cy, pupilDrawSz / 2)); break;
+              case "diamond": pupilPieces.push(diamondPath(cx, cy, pupilDrawSz / 2)); break;
+              case "cross": pupilPieces.push(crossPath(cx, cy, pupilDrawSz / 2)); break;
+              case "star": pupilPieces.push(star5Path(cx, cy, pupilDrawSz * 0.55)); break;
+              case "plus": pupilPieces.push(plusPath(cx, cy, pupilDrawSz * 0.5, pupilDrawSz * 0.16)); break;
+              case "triangle": pupilPieces.push(trianglePath(cx, cy, pupilDrawSz * 0.55)); break;
+              case "hexagon": pupilPieces.push(hexagonPath(cx, cy, pupilDrawSz * 0.55)); break;
+              case "heart": pupilPieces.push(heartPath(cx, cy, pupilDrawSz * 0.55)); break;
+              case "sparkle": pupilPieces.push(sparklePath(cx, cy, pupilDrawSz * 0.5)); break;
+              case "smooth": pupilPieces.push(smoothPath(x, y, pupilDrawSz, pupilDrawSz, pupilDrawR)); break;
+              case "flow": pupilPieces.push(flowPath(cx, cy, pupilDrawSz / 2)); break;
+              case "blob": pupilPieces.push(blobPath(cx, cy, pupilDrawSz / 2)); break;
+              case "chevron": pupilPieces.push(chevronPath(cx, cy, pupilDrawSz * 0.55)); break;
+              case "wave": pupilPieces.push(wavePath(cx, cy, pupilDrawSz)); break;
+              default: pupilPieces.push(rrCW(x, y, pupilDrawSz, pupilDrawSz, pupilDrawR)); break;
+            }
+          }
+        }
+      }
+    }
+  }
 
   // Gradient
   const useGradient = qrStyle.gradient.enabled;
@@ -360,6 +623,7 @@ export function generateSVG(
     `<path d="${pieces.join(" ")}" fill="${fgFill}"/>`,
     `<path d="${eyeRingPath}" fill-rule="evenodd" fill="${qrStyle.eyeColor}"/>`,
     eyeDotPath ? `<path d="${eyeDotPath}" fill="${qrStyle.fgColor}"/>` : "",
+    pupilPieces.length > 0 ? `<path d="${pupilPieces.join(" ")}" fill="${qrStyle.fgColor}"/>` : "",
     `</svg>`,
   ]
     .filter(Boolean)
