@@ -17,34 +17,38 @@ export type EyeShape =
   | "soft" // slightly rounded
   | "round" // pill inner, soft outer
   | "pill" // fully pillowed
-  | "leaf" // lens/almond along the diagonal
-  | "diamond" // 45° rhombus
-  | "shield" // rounded top, pointed bottom
   | "dot" // full circle
-  | "heart" // heart silhouette
+  | "shield" // rounded top, pointed bottom
   | "hexagon" // regular hexagon
-  | "plus" // plus / cross
-  | "star" // 5-point star
-  | "octagon" // regular octagon
-  // ─── Curium signature eyes ──
-  | "petal" // 4-petal flower ring (botanical)
-  | "burst"; // 8-point sun ring (celestial)
+  | "octagon"; // regular octagon
 
-// ─── Pupil (inner dot of each eye) shapes ─────────────────────────────────────
-// Pupils are styled independently of the eye ring so a round eye can have
-// a cross pupil, a heart eye can have a dot pupil, etc.  This is what makes
-// the customizer feel rich.
+// ─── Pupil (finder center) shapes ─────────────────────────────────────────────
+// Single-path pupils render ONE SVG path filling the 3×3 center area (like
+// dagronf/QRCode).  Clean, iconic, scannable.  "pixel" renders the 3×3
+// center as 9 per-module shapes using the current pixelShape (textured grid).
+// "none" produces a transparent hole.
 export type PupilShape =
-  | "dot" // filled circle (default)
-  | "square" // filled square
-  | "ring" // hollow circle (donut)
-  | "cross" // plus / cross
-  | "diamond" // 45° rhombus
-  | "star" // 5-point star
-  | "heart" // heart
-  | "hexagon" // regular hexagon
-  | "crescent" // crescent moon (evenodd)
-  | "none"; // no pupil (transparent hole)
+  // ─── Classic shapes ──
+  | "dot"       // circle filling 3×3
+  | "square"    // filled square filling 3×3
+  | "diamond"   // 45° rhombus filling 3×3
+  | "cross"     // thick cross filling 3×3
+  | "hexagon"   // hexagon filling 3×3
+  | "octagon"   // octagon filling 3×3
+  | "shield"    // shield shape filling 3×3
+  | "star"      // 5-point star filling 3×3
+  | "heart"     // heart filling 3×3
+  | "blob"      // organic blob filling 3×3
+  // ─── Material Design 3 expressive shapes ──
+  | "dome"      // half-circle (top half, flat bottom)
+  | "oval"      // horizontal ellipse
+  | "pentagon"  // regular pentagon
+  | "scallop"   // wavy/scalloped circle
+  | "cloud"     // organic cloud
+  | "droplet"   // teardrop
+  // ─── Per-module grid ──
+  | "pixel"     // per-module grid (uses current pixelShape)
+  | "none";     // transparent hole
 
 // ─── Pixel (data module) shapes ──────────────────────────────────────────────
 export type PixelShape =
@@ -63,7 +67,11 @@ export type PixelShape =
   | "heart" // heart
   | "sparkle" // 4-point star / sparkle
   | "chevron" // upward-pointing V
-  | "wave"; // wavy rectangle
+  | "wave" // wavy rectangle
+  // ─── Qewie-like anatomical refinement shapes ──
+  | "smooth" // gentle corner rounding, clean modern
+  | "flow" // organic flowing modules
+  | "blob"; // organic blob-like shape
 
 export interface PixelConfig {
   pieceSize: number;
@@ -88,6 +96,9 @@ export const PIXEL_CONFIG: Record<PixelShape, PixelConfig> = {
   sparkle: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.9 },
   chevron: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.84 },
   wave: { pieceSize: 10, pieceBorderRadius: 2, pieceScale: 0.82 },
+  smooth: { pieceSize: 10, pieceBorderRadius: 3, pieceScale: 0.96 },
+  flow: { pieceSize: 10, pieceBorderRadius: 4, pieceScale: 0.94 },
+  blob: { pieceSize: 10, pieceBorderRadius: 5, pieceScale: 0.92 },
 };
 
 // ─── Frame / quiet-zone styles ────────────────────────────────────────────────
@@ -249,6 +260,9 @@ export const PIXEL_BORDER_RADIUS: Record<PixelShape, number> = {
   sparkle: 0,
   chevron: 0,
   wave: 2,
+  smooth: 4,
+  flow: 6,
+  blob: 8,
 };
 
 export interface QRData {
