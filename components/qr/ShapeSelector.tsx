@@ -136,6 +136,16 @@ function PixelPreview({ shape, color }: { shape: PixelShape; color: string }) {
         return PixelShapePath.rect(x + 0.5, y + 0.5, cell - 1, 2);
       case "glued":
         return PixelShapePath.rect(x, y, cell, 1.5);
+      case "pinched-square":
+        return PixelShapePath["pinched-square"](x, y, cell);
+      case "circuit-board":
+        return PixelShapePath["circuit-board"](x, y, cell);
+      case "hashtag":
+        return PixelShapePath.hashtag(cx, cy, cell * 0.5);
+      case "vertical-line":
+        return PixelShapePath["vertical-line"](x, y, cell);
+      case "horizontal-line":
+        return PixelShapePath["horizontal-line"](x, y, cell);
     }
   };
 
@@ -200,6 +210,11 @@ const PIXEL_OPTIONS: PixelShape[] = [
   "sparkle",
   "chevron",
   "wave",
+  "pinched-square",
+  "circuit-board",
+  "hashtag",
+  "vertical-line",
+  "horizontal-line",
 ];
 
 const EYE_LABELS: Record<EyeShape, string> = {
@@ -211,6 +226,9 @@ const EYE_LABELS: Record<EyeShape, string> = {
   shield: "Shield",
   hexagon: "Hex",
   octagon: "Oct",
+  inpoint: "Inpoint",
+  outpoint: "Outpoint",
+  leaf: "Leaf",
 };
 
 const PUPIL_LABELS: Record<PupilShape, string> = {
@@ -230,6 +248,8 @@ const PUPIL_LABELS: Record<PupilShape, string> = {
   scallop: "Scallop",
   cloud: "Cloud",
   droplet: "Drop",
+  microchip: "Chip",
+  hashtag: "Hash",
   pixel: "Grid",
   none: "None",
 };
@@ -254,6 +274,11 @@ const PIXEL_LABELS: Record<PixelShape, string> = {
   sparkle: "Spark",
   chevron: "Chev",
   wave: "Wave",
+  "pinched-square": "Pinch",
+  "circuit-board": "Circuit",
+  hashtag: "Hash",
+  "vertical-line": "V-Line",
+  "horizontal-line": "H-Line",
 };
 
 interface EyeProps {
