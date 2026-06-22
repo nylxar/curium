@@ -126,240 +126,49 @@ const EYE_SHAPES: QRStyle["eyeShape"][] = [
   "soft",
   "round",
   "pill",
-  "leaf",
-  "diamond",
-  "shield",
   "dot",
-  "heart",
+  "shield",
   "hexagon",
-  "plus",
-  "star",
   "octagon",
 ];
 const PUPIL_SHAPES: QRStyle["pupilShape"][] = [
   "dot",
   "square",
-  "ring",
-  "cross",
   "diamond",
+  "cross",
+  "hexagon",
+  "octagon",
+  "shield",
   "star",
   "heart",
+  "blob",
+  "dome",
+  "oval",
+  "pentagon",
+  "scallop",
+  "cloud",
+  "droplet",
+  "pixel",
   "none",
 ];
 
-// Eye↔Pupil compatibility map for the shuffle.  Some combinations
-// look absurd in the shuffle (e.g. `dot` eye + `dot` pupil is a
-// solid blob with a confusing smaller dot, `heart` eye + `heart`
-// pupil is a redundant double-heart, `star` eye + `cross` pupil is
-// a busy double-motif).  We classify each pupil for each eye as
-// PREFERRED (clean pairing), ACCEPTABLE (visually fine, but a bit
-// busy), or BANNED (always looks wrong).  The shuffle picks 80% of
-// the time from PREFERRED and 20% from ACCEPTABLE — so the user
-// mostly sees "feels right" pairings, with a sprinkle of variety.
-// BANNED shapes are never picked.  The user can still pick any
-// combination manually via the option rows — the filter only
-// applies to `handleShuffle`.
+// Eye↔Pupil compatibility map for the shuffle.
+// Single-path pupils fill the full 3×3 center — all work with all eyes.
+// "pixel" uses per-module grid — also works with all eyes.
+// Only "none" is banned.
 type Compat = "preferred" | "acceptable" | "banned";
 const EYE_PUPIL_COMPAT: Record<
   QRStyle["eyeShape"],
   Record<QRStyle["pupilShape"], Compat>
 > = {
-  // Geometric eyes — work with almost any pupil motif.
-  sharp: {
-    dot: "preferred",
-    square: "preferred",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "acceptable",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  soft: {
-    dot: "preferred",
-    square: "preferred",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "acceptable",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  round: {
-    dot: "preferred",
-    square: "acceptable",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "acceptable",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  pill: {
-    dot: "preferred",
-    square: "acceptable",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "acceptable",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  leaf: {
-    dot: "preferred",
-    square: "acceptable",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "acceptable",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  shield: {
-    dot: "preferred",
-    square: "preferred",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "acceptable",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  hexagon: {
-    dot: "preferred",
-    square: "acceptable",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "acceptable",
-    heart: "acceptable",
-    hexagon: "banned",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  octagon: {
-    dot: "preferred",
-    square: "acceptable",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "acceptable",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  // "dot" eye is a solid disc — many pupils look bad.  A "dot"
-  // pupil is the same shape, just smaller (confusing).  A "ring"
-  // pupil needs an outer ring to show the donut shape, which we
-  // don't have.  "none" leaves the disc unchanged.  All banned.
-  dot: {
-    dot: "banned",
-    square: "preferred",
-    ring: "banned",
-    cross: "preferred",
-    diamond: "preferred",
-    star: "acceptable",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  // Decorative eyes — same-motif pupils are banned (redundant),
-  // geometric pupils (square/dot/cross/diamond) are clean.
-  diamond: {
-    dot: "preferred",
-    square: "preferred",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "banned",
-    star: "acceptable",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  heart: {
-    dot: "preferred",
-    square: "preferred",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "acceptable",
-    heart: "banned",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  // "plus" eye + same-motif pupils are too busy (no "plus" in
-  // PupilShape, but `cross` is the equivalent — banned).  Geometric
-  // pupils keep it readable.
-  plus: {
-    dot: "preferred",
-    square: "preferred",
-    ring: "acceptable",
-    cross: "banned",
-    diamond: "acceptable",
-    star: "acceptable",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  // "star" eye — same-motif star pupil is busy; geometric pupils
-  // (dot, square, cross, diamond) keep it readable.  Heart is OK
-  // as a contrasting motif.
-  star: {
-    dot: "preferred",
-    square: "preferred",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "banned",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "acceptable",
-    none: "banned",
-  },
-  // "petal" eye — botanical feel; hexagon/crescent pair naturally.
-  petal: {
-    dot: "preferred",
-    square: "acceptable",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "acceptable",
-    heart: "preferred",
-    hexagon: "acceptable",
-    crescent: "preferred",
-    none: "banned",
-  },
-  // "burst" eye — celestial; crescent pairs naturally (sun + moon).
-  burst: {
-    dot: "preferred",
-    square: "acceptable",
-    ring: "acceptable",
-    cross: "acceptable",
-    diamond: "acceptable",
-    star: "preferred",
-    heart: "acceptable",
-    hexagon: "acceptable",
-    crescent: "preferred",
-    none: "banned",
-  },
-};
+  sharp: {}, soft: {}, round: {}, pill: {}, dot: {},
+  shield: {}, hexagon: {}, octagon: {},
+} as any;
+for (const eye of ["sharp","soft","round","pill","dot","shield","hexagon","octagon"] as const) {
+  for (const pupil of PUPIL_SHAPES) {
+    (EYE_PUPIL_COMPAT as any)[eye][pupil] = pupil === "none" ? "banned" : "preferred";
+  }
+}
 
 // `pupil === "none"` is the "no pupil" case — which produces a
 // fully hollow eye.  The shuffle's `none` weight is intentionally
@@ -372,6 +181,9 @@ const PIXEL_SHAPES: QRStyle["pixelShape"][] = [
   "dots",
   "liquid",
   "glued",
+  "smooth",
+  "flow",
+  "blob",
   "diamond",
   "cross",
   "star",
@@ -645,7 +457,7 @@ export default function CreateScreen() {
     // it so we don't end up with hollow eyes most of the time.
     const weightedPool =
       pool.length > 1 && Math.random() < NONE_PROBABILITY
-        ? pool.filter((p) => p === "none" || p === "ring")
+        ? pool.filter((p) => p === "none")
         : pool.filter((p) => p !== "none");
     const pupil =
       weightedPool[Math.floor(Math.random() * weightedPool.length)] ??
