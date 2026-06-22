@@ -36,12 +36,9 @@ function EyePreview({ shape, color }: { shape: EyeShape; color: string }) {
   );
 }
 
-// Pupil preview shows the pupil shape on its own.  32×32, centered, ~10px
-// wide.
+// Pupil preview — single-path pupils show the actual shape, grid shows a 3×3.
 function PupilPreview({ shape, color }: { shape: PupilShape; color: string }) {
   if (shape === "none") {
-    // Empty / hollow preview — show a thin dashed circle so the user
-    // knows "this means no pupil".
     return (
       <Svg width={PREVIEW_BOX} height={PREVIEW_BOX} viewBox="0 0 32 32">
         <Path
@@ -54,33 +51,31 @@ function PupilPreview({ shape, color }: { shape: PupilShape; color: string }) {
       </Svg>
     );
   }
-  const d = (() => {
-    switch (shape) {
-      case "dot":
-        return `M16 6 a10 10 0 1 0 0.01 0`;
-      case "square":
-        return `M6 6h20v20h-20z`;
-      case "ring":
-        return `M16 6 a10 10 0 1 0 0.01 0 M16 11 a5 5 0 1 0 0.01 0`;
-      case "cross":
-        return PixelShapePath.cross(16, 16, 10);
-      case "diamond":
-        return PixelShapePath.diamond(16, 16, 9);
-      case "star":
-        return PixelShapePath.star(16, 16, 10);
-      case "heart":
-        return PixelShapePath.heart(16, 16, 10);
-      case "hexagon":
-        return PixelShapePath.hexagon(16, 16, 10);
-      case "crescent":
-        return "M16 6 A10 10 0 0 0 16 26 A9 9 0 0 1 16 6Z";
+  if (shape === "pixel") {
+    // Show a 3×3 grid of small squares to indicate per-module rendering.
+    const cell = 8;
+    const gap = 2;
+    const step = cell + gap;
+    const start = (PREVIEW_BOX - cell * 3 - gap * 2) / 2;
+    const positions: Array<{ x: number; y: number }> = [];
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        positions.push({ x: start + col * step, y: start + row * step });
+      }
     }
-  })();
-  const fillRule =
-    shape === "ring" ? "evenodd" : "nonzero";
+    return (
+      <Svg width={PREVIEW_BOX} height={PREVIEW_BOX} viewBox="0 0 32 32">
+        {positions.map((pos, i) => (
+          <Path key={i} d={`M${pos.x},${pos.y}h${cell}v${cell}h-${cell}Z`} fill={color} />
+        ))}
+      </Svg>
+    );
+  }
+  // Single-path pupil: render the actual shape scaled to preview box.
+  const d = EyeShapePaths.pupil(shape, PREVIEW_PAD, PREVIEW_PAD, 24);
   return (
     <Svg width={PREVIEW_BOX} height={PREVIEW_BOX} viewBox="0 0 32 32">
-      <Path d={d} fill={color} fillRule={fillRule as any} />
+      <Path d={d} fill={color} />
     </Svg>
   );
 }
@@ -125,6 +120,12 @@ function PixelPreview({ shape, color }: { shape: PixelShape; color: string }) {
         return PixelShapePath.chevron(cx, cy, cell * 0.5);
       case "wave":
         return PixelShapePath.wave(cx, cy, cell * 0.85);
+      case "smooth":
+        return PixelShapePath.smooth(x + 0.5, y + 0.5, cell - 1, 2);
+      case "flow":
+        return PixelShapePath.flow(cx, cy, cell * 0.48);
+      case "blob":
+        return PixelShapePath.blob(cx, cy, cell * 0.45);
       case "sharp":
         return PixelShapePath.rect(x, y, cell, 0);
       case "soft":
@@ -154,28 +155,29 @@ const EYE_OPTIONS: EyeShape[] = [
   "soft",
   "round",
   "pill",
-  "leaf",
-  "diamond",
-  "shield",
   "dot",
-  "heart",
+  "shield",
   "hexagon",
-  "plus",
-  "star",
   "octagon",
-  "petal",
-  "burst",
 ];
 const PUPIL_OPTIONS: PupilShape[] = [
   "dot",
   "square",
-  "ring",
-  "cross",
   "diamond",
+  "cross",
+  "hexagon",
+  "octagon",
+  "shield",
   "star",
   "heart",
-  "hexagon",
-  "crescent",
+  "blob",
+  "dome",
+  "oval",
+  "pentagon",
+  "scallop",
+  "cloud",
+  "droplet",
+  "pixel",
   "none",
 ];
 const PIXEL_OPTIONS: PixelShape[] = [
@@ -185,6 +187,9 @@ const PIXEL_OPTIONS: PixelShape[] = [
   "dots",
   "liquid",
   "glued",
+  "smooth",
+  "flow",
+  "blob",
   "diamond",
   "cross",
   "star",
@@ -202,29 +207,30 @@ const EYE_LABELS: Record<EyeShape, string> = {
   soft: "Soft",
   round: "Round",
   pill: "Pill",
-  leaf: "Leaf",
-  diamond: "Diamond",
-  shield: "Shield",
   dot: "Dot",
-  heart: "Heart",
+  shield: "Shield",
   hexagon: "Hex",
-  plus: "Plus",
-  star: "Star",
   octagon: "Oct",
-  petal: "Petal",
-  burst: "Burst",
 };
 
 const PUPIL_LABELS: Record<PupilShape, string> = {
   dot: "Dot",
   square: "Square",
-  ring: "Ring",
-  cross: "Cross",
   diamond: "Diam",
+  cross: "Cross",
+  hexagon: "Hex",
+  octagon: "Oct",
+  shield: "Shield",
   star: "Star",
   heart: "Heart",
-  hexagon: "Hex",
-  crescent: "Moon",
+  blob: "Blob",
+  dome: "Dome",
+  oval: "Oval",
+  pentagon: "Penta",
+  scallop: "Scallop",
+  cloud: "Cloud",
+  droplet: "Drop",
+  pixel: "Grid",
   none: "None",
 };
 
@@ -235,6 +241,9 @@ const PIXEL_LABELS: Record<PixelShape, string> = {
   dots: "Dots",
   liquid: "Liquid",
   glued: "Glued",
+  smooth: "Smooth",
+  flow: "Flow",
+  blob: "Blob",
   diamond: "Diamond",
   cross: "Cross",
   star: "Star",
