@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,12 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
-import { Camera, CameraView, useCameraPermissions } from "expo-camera";
+import { Camera, useCameraDevice, useCameraPermission } from "react-native-vision-camera";
+import {
+  useBarcodeScannerOutput,
+  createBarcodeScanner,
+} from "react-native-vision-camera-barcode-scanner";
+import { loadImage } from "react-native-nitro-image";
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -25,6 +30,17 @@ import Animated, {
 } from "react-native-reanimated";
 import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
 import { useToast } from "@/components/ui/Toast";
+
+const BARCODE_FORMATS = [
+  "qr-code",
+  "ean-13",
+  "ean-8",
+  "code-128",
+  "code-39",
+  "pdf-417",
+  "aztec",
+  "data-matrix",
+] as const;
 
 function detectQRType(data: string): {
   type: string;
@@ -88,7 +104,8 @@ function detectQRType(data: string): {
 }
 
 export default function ScanScreen() {
-  const [permission, requestPermission] = useCameraPermissions();
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice("back");
   const [torch, setTorch] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -97,6 +114,24 @@ export default function ScanScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const toast = useToast();
+
+  const onBarcodeScanned = useCallback(
+    (barcodes: Array<{ rawValue?: string }>) => {
+      if (scanned) return;
+      const value = barcodes[0]?.rawValue;
+      if (!value) return;
+      setScanned(true);
+      setResult(value);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [scanned],
+  );
+
+  const scannerOutput = useBarcodeScannerOutput({
+    barcodeFormats: [...BARCODE_FORMATS],
+    onBarcodeScanned,
+    onError: () => {},
+  });
 
   // Corner breathing animation
   const breathe = useSharedValue(0.4);
@@ -130,16 +165,6 @@ export default function ScanScreen() {
     transform: [{ translateY: (1 - panelProgress.value) * 40 }],
   }));
 
-  const onBarcodeScanned = useCallback(
-    ({ data }: { data: string }) => {
-      if (scanned) return;
-      setScanned(true);
-      setResult(data);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    },
-    [scanned],
-  );
-
   const handleGalleryScan = useCallback(async () => {
     if (galleryLoading) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -154,20 +179,23 @@ export default function ScanScreen() {
     if (picker.canceled || !picker.assets?.[0]?.uri) return;
     setGalleryLoading(true);
     try {
-      const results = await Camera.scanFromURLAsync(picker.assets[0].uri, [
-        "qr",
-        "ean13",
-        "ean8",
-        "code128",
-        "code39",
-        "pdf417",
-        "aztec",
-        "datamatrix",
-      ]);
-      if (results.length > 0) {
-        onBarcodeScanned({ data: results[0].data });
-      } else {
-        toast.info("No code found", "No QR code or barcode detected in image.");
+      const image = await loadImage({ url: picker.assets[0].uri });
+      try {
+        const scanner = createBarcodeScanner({
+          barcodeFormats: [...BARCODE_FORMATS],
+        });
+        try {
+          const barcodes = await (scanner as any).scanCodesInImageAsync(image);
+          if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+            onBarcodeScanned(barcodes);
+          } else {
+            toast.info("No code found", "No QR code or barcode detected in image.");
+          }
+        } finally {
+          scanner.dispose();
+        }
+      } finally {
+        image.dispose();
       }
     } catch {
       toast.info("Scan failed", "Could not read code from image.");
@@ -193,9 +221,7 @@ export default function ScanScreen() {
     }
   };
 
-  if (!permission) return <View style={styles.screen} />;
-
-  if (!permission.granted) {
+  if (!hasPermission) {
     return (
       <View style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}>
         <View
@@ -249,25 +275,18 @@ export default function ScanScreen() {
     );
   }
 
+  if (!device) {
+    return <View style={styles.screen} />;
+  }
+
   return (
     <View style={styles.screen}>
-      <CameraView
+      <Camera
         style={StyleSheet.absoluteFill}
-        facing="back"
-        enableTorch={torch}
-        onBarcodeScanned={scanned ? undefined : onBarcodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: [
-            "qr",
-            "ean13",
-            "ean8",
-            "code128",
-            "code39",
-            "pdf417",
-            "aztec",
-            "datamatrix",
-          ],
-        }}
+        device={device}
+        isActive={!scanned}
+        torchMode={torch ? "on" : "off"}
+        outputs={[scannerOutput]}
       />
 
       {/* Dim overlay so the camera feed is not blindingly bright */}
@@ -361,10 +380,6 @@ export default function ScanScreen() {
               />
             ))}
           </View>
-          {/* Hint pill — always shows the instruction; the "Scanned"
-              indicator lives in the result panel below.  We don't duplicate
-              the text here, only the corner accents + frame flash indicate
-              capture visually. */}
           <View style={[styles.hintPill, { backgroundColor: "rgba(0,0,0,0.55)" }]}>
             <Ionicons name="scan-outline" size={14} color="#fff" />
             <Text

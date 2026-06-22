@@ -130,6 +130,9 @@ const EYE_SHAPES: QRStyle["eyeShape"][] = [
   "shield",
   "hexagon",
   "octagon",
+  "inpoint",
+  "outpoint",
+  "leaf",
 ];
 const PUPIL_SHAPES: QRStyle["pupilShape"][] = [
   "dot",
@@ -148,6 +151,8 @@ const PUPIL_SHAPES: QRStyle["pupilShape"][] = [
   "scallop",
   "cloud",
   "droplet",
+  "microchip",
+  "hashtag",
   "pixel",
   "none",
 ];
@@ -163,8 +168,9 @@ const EYE_PUPIL_COMPAT: Record<
 > = {
   sharp: {}, soft: {}, round: {}, pill: {}, dot: {},
   shield: {}, hexagon: {}, octagon: {},
+  inpoint: {}, outpoint: {}, leaf: {},
 } as any;
-for (const eye of ["sharp","soft","round","pill","dot","shield","hexagon","octagon"] as const) {
+for (const eye of ["sharp","soft","round","pill","dot","shield","hexagon","octagon","inpoint","outpoint","leaf"] as const) {
   for (const pupil of PUPIL_SHAPES) {
     (EYE_PUPIL_COMPAT as any)[eye][pupil] = pupil === "none" ? "banned" : "preferred";
   }
@@ -192,6 +198,11 @@ const PIXEL_SHAPES: QRStyle["pixelShape"][] = [
   "plus",
   "heart",
   "sparkle",
+  "pinched-square",
+  "circuit-board",
+  "hashtag",
+  "vertical-line",
+  "horizontal-line",
 ];
 // Note: FRAME_STYLES, gradient, qrCorners, and logoStyle are intentionally
 // not in the shuffle pool — see handleShuffle for the rationale.  Their
