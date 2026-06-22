@@ -20,7 +20,10 @@ export type EyeShape =
   | "dot" // full circle
   | "shield" // rounded top, pointed bottom
   | "hexagon" // regular hexagon
-  | "octagon"; // regular octagon
+  | "octagon" // regular octagon
+  | "inpoint" // square with inward-pointing corners
+  | "outpoint" // square with outward-pointing corners
+  | "leaf"; // leaf/petal shape
 
 // ─── Pupil (finder center) shapes ─────────────────────────────────────────────
 // Single-path pupils render ONE SVG path filling the 3×3 center area (like
@@ -46,6 +49,9 @@ export type PupilShape =
   | "scallop"   // wavy/scalloped circle
   | "cloud"     // organic cloud
   | "droplet"   // teardrop
+  // ─── Tech shapes ──
+  | "microchip"  // microchip/IC shape
+  | "hashtag"    // hashtag/pound grid
   // ─── Per-module grid ──
   | "pixel"     // per-module grid (uses current pixelShape)
   | "none";     // transparent hole
@@ -71,7 +77,13 @@ export type PixelShape =
   // ─── Qewie-like anatomical refinement shapes ──
   | "smooth" // gentle corner rounding, clean modern
   | "flow" // organic flowing modules
-  | "blob"; // organic blob-like shape
+  | "blob" // organic blob-like shape
+  // ─── Circuit / tech shapes ──
+  | "pinched-square" // square with pinched-in corners
+  | "circuit-board" // circuit-board trace style
+  | "hashtag" // hashtag/pound grid
+  | "vertical-line" // vertical line per module
+  | "horizontal-line"; // horizontal line per module
 
 export interface PixelConfig {
   pieceSize: number;
@@ -99,6 +111,11 @@ export const PIXEL_CONFIG: Record<PixelShape, PixelConfig> = {
   smooth: { pieceSize: 10, pieceBorderRadius: 3, pieceScale: 0.96 },
   flow: { pieceSize: 10, pieceBorderRadius: 4, pieceScale: 0.94 },
   blob: { pieceSize: 10, pieceBorderRadius: 5, pieceScale: 0.92 },
+  "pinched-square": { pieceSize: 10, pieceBorderRadius: 1, pieceScale: 0.92 },
+  "circuit-board": { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.94 },
+  hashtag: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.88 },
+  "vertical-line": { pieceSize: 4, pieceBorderRadius: 0, pieceScale: 0.92 },
+  "horizontal-line": { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.4 },
 };
 
 // ─── Frame / quiet-zone styles ────────────────────────────────────────────────
@@ -263,6 +280,11 @@ export const PIXEL_BORDER_RADIUS: Record<PixelShape, number> = {
   smooth: 4,
   flow: 6,
   blob: 8,
+  "pinched-square": 1,
+  "circuit-board": 0,
+  hashtag: 0,
+  "vertical-line": 0,
+  "horizontal-line": 0,
 };
 
 export interface QRData {
