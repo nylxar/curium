@@ -58,6 +58,11 @@ function ShapePreview({
     sparkle: 0,
     chevron: 0,
     wave: 0.15,
+    "pinched-square": 0.1,
+    "circuit-board": 0.05,
+    hashtag: 0,
+    "vertical-line": 0,
+    "horizontal-line": 0,
   };
   const r = R[pixelShape] * pw;
 
@@ -104,6 +109,9 @@ function ShapePreview({
     shield: 0.18,
     hexagon: 0.18,
     octagon: 0.18,
+    inpoint: 0.15,
+    outpoint: 0.15,
+    leaf: 0.15,
   };
   const eyeR = ER[eyeShape] * pw * 3;
   const ex = 0.5,
@@ -140,6 +148,9 @@ const EYE_SHAPES: EyeShape[] = [
   "shield",
   "hexagon",
   "octagon",
+  "inpoint",
+  "outpoint",
+  "leaf",
 ];
 const PIXEL_SHAPES: PixelShape[] = [
   "sharp",
