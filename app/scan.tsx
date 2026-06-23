@@ -171,9 +171,12 @@ export default function ScanScreen() {
   }));
 
   const handleGalleryScan = useCallback(async () => {
-    toast.info(
+    toast.confirm(
       "Coming Soon",
-      "This feature is not available right now. Curium has moved to a new scanning module for improved performance and detection, but that module hasn't published gallery scanning yet. The feature is already in the main repo — we just need to wait for the next release. Refer to release notes to know more. I apologize for the inconvience.",
+      "This feature is not available right now. Curium has moved to a new scanning module for improved performance and detection, but that module hasn't published gallery scanning yet. The feature is already in the main repo — we just need to wait for the next release.",
+      () => {},
+      "Got it",
+      false,
     );
   }, [toast]);
 
