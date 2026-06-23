@@ -1,18 +1,21 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Linking,
-  ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
-import { Camera, CameraView, useCameraPermissions } from "expo-camera";
-import * as ImagePicker from "expo-image-picker";
+import {
+  Camera,
+  useCameraDevice,
+  useCameraPermission,
+} from "react-native-vision-camera";
+import { useBarcodeScannerOutput } from "react-native-vision-camera-barcode-scanner";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useIsFocused } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import Animated, {
@@ -25,6 +28,17 @@ import Animated, {
 } from "react-native-reanimated";
 import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
 import { useToast } from "@/components/ui/Toast";
+
+const BARCODE_FORMATS = [
+  "qr-code",
+  "ean-13",
+  "ean-8",
+  "code-128",
+  "code-39",
+  "pdf-417",
+  "aztec",
+  "data-matrix",
+] as const;
 
 function detectQRType(data: string): {
   type: string;
@@ -88,15 +102,41 @@ function detectQRType(data: string): {
 }
 
 export default function ScanScreen() {
-  const [permission, requestPermission] = useCameraPermissions();
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice("back");
   const [torch, setTorch] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const isFocused = useIsFocused();
   const { colors, isDark } = useTheme();
   const toast = useToast();
+
+  const onBarcodeScanned = useCallback(
+    (barcodes: Array<{ rawValue?: string }>) => {
+      if (scanned) return;
+      const value = barcodes[0]?.rawValue;
+      if (!value) return;
+      setScanned(true);
+      setResult(value);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    [scanned],
+  );
+
+  const barcodeFormats = useMemo(() => [...BARCODE_FORMATS], []);
+  const scannerOutput = useBarcodeScannerOutput({
+    barcodeFormats,
+    onBarcodeScanned,
+    onError: () => {},
+  });
+
+  // Reset camera readiness when camera deactivates
+  useEffect(() => {
+    if (!isFocused || scanned) setCameraReady(false);
+  }, [isFocused, scanned]);
 
   // Corner breathing animation
   const breathe = useSharedValue(0.4);
@@ -130,51 +170,15 @@ export default function ScanScreen() {
     transform: [{ translateY: (1 - panelProgress.value) * 40 }],
   }));
 
-  const onBarcodeScanned = useCallback(
-    ({ data }: { data: string }) => {
-      if (scanned) return;
-      setScanned(true);
-      setResult(data);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    },
-    [scanned],
-  );
-
   const handleGalleryScan = useCallback(async () => {
-    if (galleryLoading) return;
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      toast.info("Permission needed", "Allow photo access to scan from gallery.");
-      return;
-    }
-    const picker = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 1,
-    });
-    if (picker.canceled || !picker.assets?.[0]?.uri) return;
-    setGalleryLoading(true);
-    try {
-      const results = await Camera.scanFromURLAsync(picker.assets[0].uri, [
-        "qr",
-        "ean13",
-        "ean8",
-        "code128",
-        "code39",
-        "pdf417",
-        "aztec",
-        "datamatrix",
-      ]);
-      if (results.length > 0) {
-        onBarcodeScanned({ data: results[0].data });
-      } else {
-        toast.info("No code found", "No QR code or barcode detected in image.");
-      }
-    } catch {
-      toast.info("Scan failed", "Could not read code from image.");
-    } finally {
-      setGalleryLoading(false);
-    }
-  }, [galleryLoading, onBarcodeScanned, toast]);
+    toast.confirm(
+      "Coming Soon",
+      "This feature is not available right now. Curium has moved to a new scanning module for improved performance and detection, but that module hasn't published gallery scanning yet. The feature is already in the main repo — we just need to wait for the next release.",
+      () => {},
+      "Got it",
+      false,
+    );
+  }, [toast]);
 
   const handleAction = async (action: "open" | "copy") => {
     if (!result) return;
@@ -193,11 +197,11 @@ export default function ScanScreen() {
     }
   };
 
-  if (!permission) return <View style={styles.screen} />;
-
-  if (!permission.granted) {
+  if (!hasPermission) {
     return (
-      <View style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}>
+      <View
+        style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}
+      >
         <View
           style={[
             styles.permIconWrap,
@@ -249,31 +253,29 @@ export default function ScanScreen() {
     );
   }
 
+  if (!device) {
+    return <View style={styles.screen} />;
+  }
+
   return (
     <View style={styles.screen}>
-      <CameraView
+      <Camera
         style={StyleSheet.absoluteFill}
-        facing="back"
-        enableTorch={torch}
-        onBarcodeScanned={scanned ? undefined : onBarcodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: [
-            "qr",
-            "ean13",
-            "ean8",
-            "code128",
-            "code39",
-            "pdf417",
-            "aztec",
-            "datamatrix",
-          ],
-        }}
+        device={device}
+        isActive={isFocused && !scanned}
+        torchMode={cameraReady && torch ? "on" : undefined}
+        outputs={[scannerOutput]}
+        onPreviewStarted={() => setCameraReady(true)}
+        onError={() => {}}
       />
 
       {/* Dim overlay so the camera feed is not blindingly bright */}
       <View
         pointerEvents="none"
-        style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.25)" }]}
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: "rgba(0,0,0,0.25)" },
+        ]}
       />
 
       <View style={styles.overlay}>
@@ -307,13 +309,8 @@ export default function ScanScreen() {
               onPress={handleGalleryScan}
               hitSlop={12}
               style={styles.topBtn}
-              disabled={galleryLoading}
             >
-              {galleryLoading ? (
-                <ActivityIndicator size={20} color="#fff" />
-              ) : (
-                <Ionicons name="images-outline" size={22} color="#fff" />
-              )}
+              <Ionicons name="images-outline" size={22} color="#fff" />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setTorch((t) => !t)}
@@ -361,11 +358,9 @@ export default function ScanScreen() {
               />
             ))}
           </View>
-          {/* Hint pill — always shows the instruction; the "Scanned"
-              indicator lives in the result panel below.  We don't duplicate
-              the text here, only the corner accents + frame flash indicate
-              capture visually. */}
-          <View style={[styles.hintPill, { backgroundColor: "rgba(0,0,0,0.55)" }]}>
+          <View
+            style={[styles.hintPill, { backgroundColor: "rgba(0,0,0,0.55)" }]}
+          >
             <Ionicons name="scan-outline" size={14} color="#fff" />
             <Text
               style={[
@@ -447,11 +442,7 @@ export default function ScanScreen() {
                 ]}
                 onPress={() => handleAction("copy")}
               >
-                <Ionicons
-                  name="copy-outline"
-                  size={16}
-                  color={colors.text}
-                />
+                <Ionicons name="copy-outline" size={16} color={colors.text} />
                 <Text
                   style={[
                     styles.resultBtnLabel,
@@ -471,11 +462,7 @@ export default function ScanScreen() {
                 ]}
                 onPress={() => handleAction("open")}
               >
-                <Ionicons
-                  name="open-outline"
-                  size={16}
-                  color={colors.text}
-                />
+                <Ionicons name="open-outline" size={16} color={colors.text} />
                 <Text
                   style={[
                     styles.resultBtnLabel,

@@ -2,13 +2,16 @@
   "expo": {
     "name": "Curium",
     "slug": "Curium",
-    "version": "0.5.4",
+    "version": "0.5.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "curium",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Curium uses the camera to scan QR codes."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,6 +20,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "backgroundColor": "#0d0d0f",
       "predictiveBackGestureEnabled": false,
       "package": "com.nylxar.curium",
       "permissions": [
@@ -44,14 +48,6 @@
         }
       ],
       [
-        "expo-camera",
-        {
-          "cameraPermission": "Curium uses the camera to scan QR codes.",
-          "microphonePermission": false,
-          "recordAudioAndroid": false
-        }
-      ],
-      [
         "expo-media-library",
         {
           "photosPermission": "Curium saves QR codes to your photo library.",
@@ -65,7 +61,15 @@
           "microphonePermission": false
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-system-ui",
+      [
+        "expo-navigation-bar",
+        {
+          "style": "light",
+          "enforceContrast": false
+        }
+      ]
     ],
     "extra": {
       "router": {},
