@@ -47,6 +47,8 @@
 ---
 
 ### Support Curium 
+If Curium saved you from another bloat, spyware, data-hungry, ad-filled QR tool, then consider supporting its development.
+
 [![badge](https://shieldcn.dev/badge/Support-via%20Gumroad-22c55e.svg?font=fira-code&logo=gumroad&color=e5decf)](https://nylxar.gumroad.com/coffee)
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T6O120WGDS)
 [![badge](https://shieldcn.dev/badge/Support-via%20PayPal-22c55e.svg?font=fira-code&logo=ri%3AFaPaypal&color=e5decf)](https://www.paypal.com/ncp/payment/DUAR5EJ7A3RV8)
@@ -69,7 +71,7 @@
 
 ### QR Scanner
 - **Camera scan** — QR codes + barcodes (EAN-13, Code 128, PDF417, Aztec, Data Matrix)
-- **Gallery scan** — pick an image, detect code automatically
+- **Gallery scan** — coming soon (new scanner module hasn't published static image scanning yet)
 - **Torch toggle** — low-light scanning
 - **Scan to customize** — scan any existing QR, load into generator, restyle and export
 
@@ -136,7 +138,7 @@
 | Navigation | Expo Router |
 | Animations | React Native Reanimated 4 |
 | Gestures | react-native-gesture-handler |
-| Camera | expo-camera |
+| Camera | react-native-vision-camera (MLKit) |
 | Storage | AsyncStorage (offline-first) |
 | Language | TypeScript |
 | Typeface | IBM Plex Mono |

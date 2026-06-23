@@ -5,10 +5,11 @@ export const EYE_SHAPES: { id: EyeShape; label: string }[] = [
   { id: "soft", label: "Soft" },
   { id: "round", label: "Round" },
   { id: "pill", label: "Pill" },
-  { id: "leaf", label: "Leaf" },
-  { id: "diamond", label: "Diamond" },
   { id: "shield", label: "shield" },
   { id: "dot", label: "dots" },
+  { id: "inpoint", label: "Inpoint" },
+  { id: "outpoint", label: "Outpoint" },
+  { id: "leaf", label: "Leaf" },
 ];
 
 export const PIXEL_SHAPES: { id: PixelShape; label: string }[] = [
@@ -18,7 +19,15 @@ export const PIXEL_SHAPES: { id: PixelShape; label: string }[] = [
   { id: "dots", label: "Dots" },
   { id: "liquid", label: "Liquid" },
   { id: "glued", label: "Glued" },
+  { id: "smooth", label: "Smooth" },
+  { id: "flow", label: "Flow" },
+  { id: "blob", label: "Blob" },
   { id: "diamond", label: "diamond" },
   { id: "cross", label: "cross" },
   { id: "star", label: "star" },
+  { id: "pinched-square", label: "Pinch" },
+  { id: "circuit-board", label: "Circuit" },
+  { id: "hashtag", label: "Hash" },
+  { id: "vertical-line", label: "V-Line" },
+  { id: "horizontal-line", label: "H-Line" },
 ];

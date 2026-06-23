@@ -13,7 +13,7 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@/context/ThemeContext";
@@ -24,6 +24,7 @@ export default function WelcomeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ chain?: string }>();
 
   const logoOpacity = useSharedValue(0);
   const logoScale = useSharedValue(0.9);
@@ -64,7 +65,11 @@ export default function WelcomeScreen() {
 
   const handleContinue = async () => {
     await AsyncStorage.setItem("curium_onboarded", "true");
-    router.replace("/");
+    if (params.chain === "whats-new") {
+      router.replace({ pathname: "/whats-new", params: { forced: "true" } });
+    } else {
+      router.replace("/");
+    }
   };
 
   const handleSupport = async () => {

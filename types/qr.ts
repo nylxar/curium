@@ -17,29 +17,44 @@ export type EyeShape =
   | "soft" // slightly rounded
   | "round" // pill inner, soft outer
   | "pill" // fully pillowed
-  | "leaf" // lens/almond along the diagonal
-  | "diamond" // 45° rhombus
-  | "shield" // rounded top, pointed bottom
   | "dot" // full circle
-  | "heart" // heart silhouette
+  | "shield" // rounded top, pointed bottom
   | "hexagon" // regular hexagon
-  | "plus" // plus / cross
-  | "star" // 5-point star
-  | "octagon"; // regular octagon
+  | "octagon" // regular octagon
+  | "inpoint" // square with inward-pointing corners
+  | "outpoint" // square with outward-pointing corners
+  | "leaf"; // leaf/petal shape
 
-// ─── Pupil (inner dot of each eye) shapes ─────────────────────────────────────
-// Pupils are styled independently of the eye ring so a round eye can have
-// a cross pupil, a heart eye can have a dot pupil, etc.  This is what makes
-// the customizer feel rich.
+// ─── Pupil (finder center) shapes ─────────────────────────────────────────────
+// Single-path pupils render ONE SVG path filling the 3×3 center area (like
+// dagronf/QRCode).  Clean, iconic, scannable.  "pixel" renders the 3×3
+// center as 9 per-module shapes using the current pixelShape (textured grid).
+// "none" produces a transparent hole.
 export type PupilShape =
-  | "dot" // filled circle (default)
-  | "square" // filled square
-  | "ring" // hollow circle (donut)
-  | "cross" // plus / cross
-  | "diamond" // 45° rhombus
-  | "star" // 5-point star
-  | "heart" // heart
-  | "none"; // no pupil (transparent hole)
+  // ─── Classic shapes ──
+  | "dot"       // circle filling 3×3
+  | "square"    // filled square filling 3×3
+  | "diamond"   // 45° rhombus filling 3×3
+  | "cross"     // thick cross filling 3×3
+  | "hexagon"   // hexagon filling 3×3
+  | "octagon"   // octagon filling 3×3
+  | "shield"    // shield shape filling 3×3
+  | "star"      // 5-point star filling 3×3
+  | "heart"     // heart filling 3×3
+  | "blob"      // organic blob filling 3×3
+  // ─── Material Design 3 expressive shapes ──
+  | "dome"      // half-circle (top half, flat bottom)
+  | "oval"      // horizontal ellipse
+  | "pentagon"  // regular pentagon
+  | "scallop"   // wavy/scalloped circle
+  | "cloud"     // organic cloud
+  | "droplet"   // teardrop
+  // ─── Tech shapes ──
+  | "microchip"  // microchip/IC shape
+  | "hashtag"    // hashtag/pound grid
+  // ─── Per-module grid ──
+  | "pixel"     // per-module grid (uses current pixelShape)
+  | "none";     // transparent hole
 
 // ─── Pixel (data module) shapes ──────────────────────────────────────────────
 export type PixelShape =
@@ -56,7 +71,19 @@ export type PixelShape =
   | "hexagon" // hexagon
   | "plus" // filled plus
   | "heart" // heart
-  | "sparkle"; // 4-point star / sparkle
+  | "sparkle" // 4-point star / sparkle
+  | "chevron" // upward-pointing V
+  | "wave" // wavy rectangle
+  // ─── Qewie-like anatomical refinement shapes ──
+  | "smooth" // gentle corner rounding, clean modern
+  | "flow" // organic flowing modules
+  | "blob" // organic blob-like shape
+  // ─── Circuit / tech shapes ──
+  | "pinched-square" // square with pinched-in corners
+  | "circuit-board" // circuit-board trace style
+  | "hashtag" // hashtag/pound grid
+  | "vertical-line" // vertical line per module
+  | "horizontal-line"; // horizontal line per module
 
 export interface PixelConfig {
   pieceSize: number;
@@ -79,6 +106,16 @@ export const PIXEL_CONFIG: Record<PixelShape, PixelConfig> = {
   plus: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.88 },
   heart: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.86 },
   sparkle: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.9 },
+  chevron: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.84 },
+  wave: { pieceSize: 10, pieceBorderRadius: 2, pieceScale: 0.82 },
+  smooth: { pieceSize: 10, pieceBorderRadius: 3, pieceScale: 0.96 },
+  flow: { pieceSize: 10, pieceBorderRadius: 4, pieceScale: 0.94 },
+  blob: { pieceSize: 10, pieceBorderRadius: 5, pieceScale: 0.92 },
+  "pinched-square": { pieceSize: 10, pieceBorderRadius: 1, pieceScale: 0.92 },
+  "circuit-board": { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.94 },
+  hashtag: { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.88 },
+  "vertical-line": { pieceSize: 4, pieceBorderRadius: 0, pieceScale: 0.92 },
+  "horizontal-line": { pieceSize: 10, pieceBorderRadius: 0, pieceScale: 0.4 },
 };
 
 // ─── Frame / quiet-zone styles ────────────────────────────────────────────────
@@ -238,6 +275,16 @@ export const PIXEL_BORDER_RADIUS: Record<PixelShape, number> = {
   plus: 0,
   heart: 0,
   sparkle: 0,
+  chevron: 0,
+  wave: 2,
+  smooth: 4,
+  flow: 6,
+  blob: 8,
+  "pinched-square": 1,
+  "circuit-board": 0,
+  hashtag: 0,
+  "vertical-line": 0,
+  "horizontal-line": 0,
 };
 
 export interface QRData {
