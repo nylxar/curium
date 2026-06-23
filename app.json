@@ -8,7 +8,10 @@
     "scheme": "curium",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Curium uses the camera to scan QR codes."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -63,7 +66,8 @@
       [
         "expo-navigation-bar",
         {
-          "enforceContrast": true
+          "style": "light",
+          "enforceContrast": false
         }
       ]
     ],
