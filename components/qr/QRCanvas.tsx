@@ -698,11 +698,6 @@ function drawEye(
 // React Native component, not an SVG component).
 //
 
-// Module-level flag: has ANY QRCanvas in this app session already played its
-// entrance animation?  Survives component unmount/remount so the fade-in
-// plays exactly once per app launch, not once per mount.
-let _hasAnimatedSession = false;
-
 // ─── Frame styling ────────────────────────────────────────────────────────────
 // Returns the View-style props that wrap the QR in a decorative border.
 function frameStyle(frame: FrameStyle, fg: string): {
@@ -835,7 +830,8 @@ export function QRCanvas({
   // Plays once per app session via module-level flag.  The animation
   // is driven by useLayoutEffect — no safety net needed because the
   // flag guarantees it runs exactly once.
-  const genProgress = useSharedValue(skipAnimation || _hasAnimatedSession ? 1 : 0);
+  const genProgress = useSharedValue(skipAnimation ? 1 : 0);
+  const wasEmptyRef = useRef(true);
   const genStyle = useAnimatedStyle(() => ({
     opacity: 0.55 + genProgress.value * 0.45,
     transform: [
@@ -854,18 +850,21 @@ export function QRCanvas({
   useLayoutEffect(() => {
     if (isEmpty) {
       genProgress.value = 0;
+      wasEmptyRef.current = true;
       return;
     }
-    if (skipAnimation || _hasAnimatedSession) {
+    if (skipAnimation) {
       genProgress.value = 1;
       return;
     }
-    if (matrix) {
-      _hasAnimatedSession = true;
+    if (wasEmptyRef.current && matrix) {
+      wasEmptyRef.current = false;
       genProgress.value = withTiming(1, {
         duration: 200,
         easing: Easing.out(Easing.cubic),
       });
+    } else {
+      genProgress.value = 1;
     }
   }, [isEmpty, matrix, skipAnimation]);
 

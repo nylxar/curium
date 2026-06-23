@@ -66,7 +66,7 @@ export default function WelcomeScreen() {
   const handleContinue = async () => {
     await AsyncStorage.setItem("curium_onboarded", "true");
     if (params.chain === "whats-new") {
-      router.replace({ pathname: "/whats-new", params: { forced: "true", chain: "true" } });
+      router.replace({ pathname: "/whats-new", params: { forced: "true" } });
     } else {
       router.replace("/");
     }

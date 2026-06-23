@@ -54,18 +54,16 @@ export default function WhatsNewScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{ forced?: string; chain?: string }>();
+  const params = useLocalSearchParams<{ forced?: string }>();
   const isForced = params.forced === "true";
-  const isChained = params.chain === "true";
 
   const release = useMemo(() => parseReleaseNotes(RELEASE_NOTES_MD), []);
   const appVersion = require("../app.json").expo.version;
   const [matched, setMatched] = useState(true);
 
   const dismiss = useCallback(() => {
-    if (isChained) router.replace("/");
-    else router.back();
-  }, [isChained, router]);
+    router.replace("/");
+  }, [router]);
 
   useEffect(() => {
     // If parsed version doesn't match app version, no notes to show
