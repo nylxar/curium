@@ -71,7 +71,7 @@ If Curium saved you from another bloat, spyware, data-hungry, ad-filled QR tool,
 
 ### QR Scanner
 - **Camera scan** — QR codes + barcodes (EAN-13, Code 128, PDF417, Aztec, Data Matrix)
-- **Gallery scan** — pick an image, detect code automatically
+- **Gallery scan** — coming soon (new scanner module hasn't published static image scanning yet)
 - **Torch toggle** — low-light scanning
 - **Scan to customize** — scan any existing QR, load into generator, restyle and export
 
@@ -138,7 +138,7 @@ If Curium saved you from another bloat, spyware, data-hungry, ad-filled QR tool,
 | Navigation | Expo Router |
 | Animations | React Native Reanimated 4 |
 | Gestures | react-native-gesture-handler |
-| Camera | expo-camera |
+| Camera | react-native-vision-camera (MLKit) |
 | Storage | AsyncStorage (offline-first) |
 | Language | TypeScript |
 | Typeface | IBM Plex Mono |
