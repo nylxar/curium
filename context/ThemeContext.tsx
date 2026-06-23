@@ -17,6 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SystemUI from "expo-system-ui";
+import { setStyle } from "expo-navigation-bar";
 import { Platform } from "react-native";
 import { DarkColors, LightColors, AmoledColors, AppTheme } from "@/constants/theme";
 import { defaultQRStyle, QRStyle } from "@/types/qr";
@@ -138,7 +139,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (Platform.OS !== "android") return;
     SystemUI.setBackgroundColorAsync(colors.bg);
-  }, [colors.bg]);
+    setStyle(isDark ? "light" : "dark");
+  }, [colors.bg, isDark]);
 
   const defaultQRStyleForTheme = useMemo(
     () => defaultQRStyle(isDark),
