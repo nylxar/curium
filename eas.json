@@ -6,11 +6,7 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=arm64-v8a"
-      }
+      "distribution": "internal"
     },
     "preview": {
       "distribution": "internal",
