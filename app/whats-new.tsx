@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -62,6 +62,11 @@ export default function WhatsNewScreen() {
   const appVersion = require("../app.json").expo.version;
   const [matched, setMatched] = useState(true);
 
+  const dismiss = useCallback(() => {
+    if (isChained) router.replace("/");
+    else router.back();
+  }, [isChained, router]);
+
   useEffect(() => {
     // If parsed version doesn't match app version, no notes to show
     setMatched(release.version === appVersion);
@@ -90,7 +95,7 @@ export default function WhatsNewScreen() {
         ]}
       >
         {isForced ? (
-          <TouchableOpacity onPress={() => isChained ? router.replace("/") : router.back()} hitSlop={12}>
+          <TouchableOpacity onPress={dismiss} hitSlop={12}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         ) : (
@@ -104,7 +109,7 @@ export default function WhatsNewScreen() {
         >
           What's New
         </Text>
-        <TouchableOpacity onPress={() => isChained ? router.replace("/") : router.back()} hitSlop={12}>
+        <TouchableOpacity onPress={dismiss} hitSlop={12}>
           <Text
             style={[
               styles.doneBtn,
