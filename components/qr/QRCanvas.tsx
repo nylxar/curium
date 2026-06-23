@@ -843,19 +843,29 @@ export function QRCanvas({
     ],
   }));
 
+  const shadowStyle = useAnimatedStyle(() => ({
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: genProgress.value * 0.08,
+    shadowRadius: 8,
+    elevation: genProgress.value * 3,
+  }));
+
   useLayoutEffect(() => {
+    if (isEmpty) {
+      genProgress.value = 0;
+      return;
+    }
     if (skipAnimation || _hasAnimatedSession) {
       genProgress.value = 1;
       return;
     }
-    if (!isEmpty && matrix) {
+    if (matrix) {
       _hasAnimatedSession = true;
       genProgress.value = withTiming(1, {
         duration: 200,
         easing: Easing.out(Easing.cubic),
       });
-    } else if (isEmpty) {
-      genProgress.value = 0;
     }
   }, [isEmpty, matrix, skipAnimation]);
 
@@ -1226,25 +1236,28 @@ export function QRCanvas({
   }
 
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        // Outer radius is the larger of the frame radius and the inner
-        // QR radius + padding.  This way the outer shape is always at
-        // least as rounded as the QR it contains, so nothing pokes out.
-        borderRadius: hasFrame
-          ? Math.max(fStyle.borderRadius, cornerR + framePad)
-          : cornerR,
-        backgroundColor: hasFrame ? bgFill : "transparent",
-        borderWidth: hasFrame ? fStyle.borderWidth : 0,
-        borderColor: hasFrame ? fStyle.borderColor : "transparent",
-        borderStyle: hasFrame ? fStyle.borderStyle : "solid",
-        alignItems: "center",
-        justifyContent: "center",
-        // "double" frame: shadow effect on the outer container.
-        ...(qrStyle.frame === "double" && styles.doubleOuter),
-      }}
+    <Animated.View
+      style={[
+        {
+          width: size,
+          height: size,
+          // Outer radius is the larger of the frame radius and the inner
+          // QR radius + padding.  This way the outer shape is always at
+          // least as rounded as the QR it contains, so nothing pokes out.
+          borderRadius: hasFrame
+            ? Math.max(fStyle.borderRadius, cornerR + framePad)
+            : cornerR,
+          backgroundColor: hasFrame ? bgFill : "transparent",
+          borderWidth: hasFrame ? fStyle.borderWidth : 0,
+          borderColor: hasFrame ? fStyle.borderColor : "transparent",
+          borderStyle: hasFrame ? fStyle.borderStyle : "solid",
+          alignItems: "center",
+          justifyContent: "center",
+          // "double" frame: shadow effect on the outer container.
+          ...(qrStyle.frame === "double" && styles.doubleOuter),
+        },
+        shadowStyle,
+      ]}
     >
       <View
         style={{
@@ -1544,7 +1557,7 @@ export function QRCanvas({
           )}
         </Animated.View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
