@@ -698,10 +698,11 @@ function drawEye(
 // React Native component, not an SVG component).
 //
 
-// Module-level "has any QR ever been generated" flag.  The entrance animation
-// plays ONCE per app session on the very first QRCanvas mount, regardless of
-// which screen it lives on.  Subsequent mounts (e.g., navigating to
-// qr-detail.tsx, which also renders QRCanvas) skip the animation entirely
+// Module-level flag: has ANY QRCanvas in this app session already played its
+// entrance animation?  Survives component unmount/remount so the fade-in
+// plays exactly once per app launch, not once per mount.
+let _hasAnimatedSession = false;
+
 // ─── Frame styling ────────────────────────────────────────────────────────────
 // Returns the View-style props that wrap the QR in a decorative border.
 function frameStyle(frame: FrameStyle, fg: string): {
@@ -831,13 +832,10 @@ export function QRCanvas({
   const gradIdRef = useRef(`qrgrad_${Math.random().toString(36).slice(2, 9)}`);
 
   // ── Generation animation: subtle scale-up + opacity entrance ──
-  // The old double-assignment pattern (value=0; value=withTiming(...))
-  // caused a race condition on production Hermes where both assignments
-  // hit the UI thread simultaneously, leaving genProgress stuck at 0
-  // (55% opacity).  Fixed by removing the redundant reset — the shared
-  // value is already 0 from initialization or the isEmpty branch.
-  const genProgress = useSharedValue(skipAnimation ? 1 : 0);
-  const localDidGenerate = useRef(false);
+  // Plays once per app session via module-level flag.  The animation
+  // is driven by useLayoutEffect — no safety net needed because the
+  // flag guarantees it runs exactly once.
+  const genProgress = useSharedValue(skipAnimation || _hasAnimatedSession ? 1 : 0);
   const genStyle = useAnimatedStyle(() => ({
     opacity: 0.55 + genProgress.value * 0.45,
     transform: [
@@ -846,18 +844,17 @@ export function QRCanvas({
   }));
 
   useLayoutEffect(() => {
-    if (skipAnimation) {
+    if (skipAnimation || _hasAnimatedSession) {
       genProgress.value = 1;
       return;
     }
-    if (!isEmpty && matrix && !localDidGenerate.current) {
-      localDidGenerate.current = true;
+    if (!isEmpty && matrix) {
+      _hasAnimatedSession = true;
       genProgress.value = withTiming(1, {
         duration: 200,
         easing: Easing.out(Easing.cubic),
       });
     } else if (isEmpty) {
-      localDidGenerate.current = false;
       genProgress.value = 0;
     }
   }, [isEmpty, matrix, skipAnimation]);
