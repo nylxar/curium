@@ -1,6 +1,6 @@
 {
   "name": "curium",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "main": "expo-router/entry",
   "scripts": {
     "postinstall": "node scripts/write-build-info.js && node scripts/sync-release-notes.js",
