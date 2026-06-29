@@ -1,0 +1,9 @@
+{
+  "identifier": "default",
+  "description": "Default capabilities for Curium",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "store:default"
+  ]
+}
