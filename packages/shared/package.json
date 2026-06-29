@@ -1,0 +1,33 @@
+{
+  "name": "@curium/shared",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types/qr": "./src/types/qr.ts",
+    "./constants/theme": "./src/constants/theme.ts",
+    "./constants/qrPresets": "./src/constants/qrPresets.ts",
+    "./constants/colorUtils": "./src/constants/colorUtils.ts",
+    "./utils/svg-export": "./src/utils/svg-export.ts",
+    "./services/history": "./src/services/history.ts",
+    "./services/settings": "./src/services/settings.ts",
+    "./services/templates": "./src/services/templates.ts"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6",
+    "typescript": "~6.0.3"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  }
+}
