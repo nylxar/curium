@@ -1,9 +1,9 @@
 {
-  "commit": "d2f79a7765da4d17282a63ca370ebf8a487e2c71",
-  "shortCommit": "d2f79a7",
-  "branch": "nightly",
-  "commitDate": "2026-06-22 22:41:23 +0300",
-  "commitMessage": "up2241062226",
+  "commit": "9028e34c515b6bb5e98fe1dbde4e6a235e1511d8",
+  "shortCommit": "9028e34",
+  "branch": "master",
+  "commitDate": "2026-06-24 12:39:02 +0300",
+  "commitMessage": "Merge pull request #21 from nylxar/preview",
   "isDirty": true,
-  "buildDate": "2026-06-23T10:26:15.692Z"
+  "buildDate": "2026-06-29T11:02:01.029Z"
 }
