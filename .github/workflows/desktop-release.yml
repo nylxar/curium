@@ -61,19 +61,22 @@ jobs:
             target: aarch64-unknown-linux-gnu
 
     runs-on: ${{ matrix.platform }}
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: packages/desktop
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 11
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: lts/*
           cache: pnpm
@@ -103,6 +106,7 @@ jobs:
       - name: Install Linux dependencies (arm64)
         if: runner.os == 'Linux' && matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
+          sudo dpkg --add-architecture arm64
           sudo apt-get update
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev:arm64 \
@@ -110,12 +114,6 @@ jobs:
             librsvg2-dev:arm64 \
             patchelf \
             xdg-utils
-          sudo dpkg --add-architecture arm64
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev:arm64 \
-            libappindicator3-dev:arm64 \
-            librsvg2-dev:arm64
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
@@ -124,20 +122,6 @@ jobs:
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # ── macOS signing + notarization (optional) ────────────────────────
-          # Uncomment for production releases to remove "unidentified developer" warning.
-          # Requires Apple Developer Program ($99/yr).
-          # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # APPLE_ID: ${{ secrets.APPLE_ID }}
-          # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          # ── Tauri updater signing (optional) ──────────────────────────────
-          # Uncomment to enable auto-update for future versions.
-          # Generate keys with: pnpm tauri signer generate -w ~/.tauri/curium.key
-          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
           releaseName: "Curium v__VERSION__"
