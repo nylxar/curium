@@ -3,7 +3,8 @@ packages:
 
 allowBuilds:
   esbuild: true
-  unrs-resolver: set this to true or false
+  unrs-resolver: true
+  "@tauri-apps/cli": true
 peerDependencyRules:
   allowedVersions:
     "eslint-plugin-import>eslint": "^10"
