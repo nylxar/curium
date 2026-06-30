@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   generateSVG,
   QRStyle,
@@ -16,10 +16,6 @@ import {
   Info,
   LifeBuoy,
   Shuffle,
-  Download,
-  FileImage,
-  Copy,
-  Trash2,
   ExternalLink,
   Shield,
   EyeOff,
@@ -33,6 +29,8 @@ import { QRPreview } from "./components/QRPreview";
 import { LogoOverlay } from "./components/LogoOverlay";
 import { StylePanel } from "./components/StylePanel";
 import { ExportBar } from "./components/ExportBar";
+import { animateThemeTransition, bounceButton } from "./utils/animations";
+import { gsap } from "gsap";
 
 // ─── QR Type encoding ────────────────────────────────────────────────────────
 interface FormState {
@@ -100,6 +98,51 @@ function encodeQR(type: QRType, forms: FormState): string {
   }
 }
 
+function decodeQR(data: string): { type: QRType; form: FormState[QRType] } | null {
+  if (!data) return null;
+  if (data.startsWith("WIFI:")) {
+    const ssid = data.match(/S:([^;]+)/)?.[1] ?? "";
+    const password = data.match(/P:([^;]+)/)?.[1] ?? "";
+    const encryption = (data.match(/T:([^;]+)/)?.[1] ?? "WPA") as "WPA" | "WEP" | "nopass";
+    return { type: "wifi", form: { ssid, password, encryption } };
+  }
+  if (data.startsWith("mailto:")) {
+    const rest = data.slice(7);
+    const qi = rest.indexOf("?");
+    const to = qi >= 0 ? decodeURIComponent(rest.slice(0, qi)) : rest;
+    const params = qi >= 0 ? new URLSearchParams(rest.slice(qi)) : new URLSearchParams();
+    return { type: "email", form: { to, subject: params.get("subject") ?? "", body: params.get("body") ?? "" } };
+  }
+  if (data.startsWith("tel:")) {
+    return { type: "phone", form: { phone: data.slice(4) } };
+  }
+  if (data.startsWith("sms:")) {
+    const rest = data.slice(4);
+    const qi = rest.indexOf("?");
+    const phone = qi >= 0 ? rest.slice(0, qi) : rest;
+    const params = qi >= 0 ? new URLSearchParams(rest.slice(qi + 1)) : new URLSearchParams();
+    return { type: "sms", form: { phone, message: params.get("body") ?? "" } };
+  }
+  if (data.startsWith("BEGIN:VCARD")) {
+    const name = data.match(/FN:(.+)/m)?.[1] ?? "";
+    const phone = data.match(/TEL:(.+)/m)?.[1] ?? "";
+    const email = data.match(/EMAIL:(.+)/m)?.[1] ?? "";
+    const org = data.match(/ORG:(.+)/m)?.[1] ?? "";
+    return { type: "contact", form: { name, phone, email, org } };
+  }
+  if (data.startsWith("geo:")) {
+    const match = data.match(/geo:([^,]+),([^?]+)/);
+    const lat = match?.[1] ?? "";
+    const lng = match?.[2] ?? "";
+    const labelMatch = data.match(/\(([^)]+)\)/);
+    return { type: "location", form: { lat, lng, label: labelMatch?.[1] ?? "" } };
+  }
+  if (data.startsWith("http://") || data.startsWith("https://")) {
+    return { type: "url", form: { url: data } };
+  }
+  return { type: "text", form: { text: data } };
+}
+
 // ─── Shuffle pools ───────────────────────────────────────────────────────────
 const SHUFFLE_EYES: QRStyle["eyeShape"][] = [
   "sharp", "soft", "round", "pill", "dot", "shield", "hexagon", "octagon",
@@ -107,7 +150,7 @@ const SHUFFLE_EYES: QRStyle["eyeShape"][] = [
 const SHUFFLE_PUPILS: QRStyle["pupilShape"][] = [
   "dot", "square", "diamond", "cross", "hexagon", "octagon", "shield",
   "star", "heart", "blob", "dome", "oval", "pentagon", "scallop",
-  "cloud", "droplet", "pixel", "none",
+  "cloud", "droplet",
 ];
 const SHUFFLE_PIXELS: QRStyle["pixelShape"][] = [
   "sharp", "soft", "round", "dots", "liquid", "glued", "smooth", "flow",
@@ -115,7 +158,6 @@ const SHUFFLE_PIXELS: QRStyle["pixelShape"][] = [
   "heart", "sparkle", "pinched-square", "circuit-board", "hashtag",
   "vertical-line", "horizontal-line",
 ];
-const NONE_PROBABILITY = 0.1;
 
 const QR_TYPES: { id: QRType; label: string }[] = [
   { id: "url", label: "URL" },
@@ -384,16 +426,42 @@ function SettingsPanel({
   setTheme: (t: "dark" | "light" | "amoled" | "system") => void;
 }) {
   return (
-    <div className="section">
-      <div className="section-title">Theme</div>
-      <div className="btn-row">
-        {(["system", "dark", "light", "amoled"] as const).map((t) => (
-          <button key={t} className={`btn ${theme === t ? "btn-primary" : ""}`} onClick={() => setTheme(t)}>
-            {t}
-          </button>
-        ))}
+    <>
+      <div className="section">
+        <div className="section-title">Theme</div>
+        <div className="btn-row">
+          {(["system", "dark", "light", "amoled"] as const).map((t) => (
+            <button key={t} className={`btn ${theme === t ? "btn-primary" : ""}`} onClick={() => setTheme(t)}>
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+      <div className="section">
+        <div className="section-title">About</div>
+        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
+          Curium is a privacy-first QR generator. No ads, no accounts, no tracking.
+          All data stays on your device.
+        </p>
+      </div>
+      <div className="section">
+        <div className="section-title">Keyboard Shortcuts</div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+            <span>Shuffle style</span>
+            <kbd style={{ background: "var(--bg)", padding: "2px 6px", borderRadius: 4, fontSize: 11 }}>Space</kbd>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+            <span>Export SVG</span>
+            <kbd style={{ background: "var(--bg)", padding: "2px 6px", borderRadius: 4, fontSize: 11 }}>Ctrl+S</kbd>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+            <span>Export PNG</span>
+            <kbd style={{ background: "var(--bg)", padding: "2px 6px", borderRadius: 4, fontSize: 11 }}>Ctrl+Shift+S</kbd>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -568,8 +636,15 @@ function SupportPanel() {
 // ─── Main App ────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [theme, setTheme] = useState<"dark" | "light" | "amoled" | "system">("dark");
+  const [theme, setTheme] = useState<"dark" | "light" | "amoled" | "system">(() => {
+    try {
+      const stored = localStorage.getItem("curium_theme");
+      if (stored === "dark" || stored === "light" || stored === "amoled" || stored === "system") return stored;
+    } catch {}
+    return "dark";
+  });
   const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light" | "amoled">("dark");
+  const shuffleBtnRef = useRef<HTMLButtonElement>(null);
 
   // Resolve system theme
   useEffect(() => {
@@ -584,35 +659,105 @@ export default function App() {
     return () => mq.removeEventListener("change", resolve);
   }, [theme]);
 
-  // Sync resolved theme to body and .app
+  // Sync resolved theme to body, html, and .app
   useEffect(() => {
+    document.documentElement.setAttribute("data-theme", resolvedTheme);
     document.body.setAttribute("data-theme", resolvedTheme);
-  }, [resolvedTheme]);
+    localStorage.setItem("curium_theme", theme);
+    animateThemeTransition();
+  }, [resolvedTheme, theme]);
+
   const [activeTab, setActiveTab] = useState<TabId>("generate");
+  const sidePanelRef = useRef<HTMLDivElement>(null);
+
+  // Snappy tab transition (150ms)
+  useEffect(() => {
+    if (!sidePanelRef.current) return;
+    gsap.fromTo(sidePanelRef.current, { opacity: 0.5, y: 4 }, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" });
+  }, [activeTab]);
   const [activeType, setActiveType] = useState<QRType>("text");
   const [forms, setForms] = useState<FormState>(DEFAULT_FORMS);
   const [qrStyle, setQrStyle] = useState<QRStyle>(DEFAULT_QR_STYLE);
   const [templates, setTemplates] = useState<Template[]>(loadTemplates);
   const [templateName, setTemplateName] = useState("");
   const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
+  const skipHistorySave = useRef(false);
 
   const qrValue = useMemo(() => encodeQR(activeType, forms), [activeType, forms]);
 
   const svg = useMemo(
-    () => (qrValue ? generateSVG(qrValue, qrStyle, 512) : null),
+    () => (qrValue ? generateSVG(qrValue, qrStyle, 512, !!qrStyle.logoUri) : null),
     [qrValue, qrStyle],
   );
 
-  // Save to history when data or style changes (debounced, no duplicates)
+  // Export SVG always includes the logo
+  const exportSvg = useMemo(
+    () => (qrValue ? generateSVG(qrValue, qrStyle, 512, false) : null),
+    [qrValue, qrStyle],
+  );
+
+  const doExportSVG = useCallback(() => {
+    if (!exportSvg) return;
+    const blob = new Blob([exportSvg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "curium-qr.svg";
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [exportSvg]);
+
+  const doExportPNG = useCallback(() => {
+    if (!exportSvg) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const img = new Image();
+    const blob = new Blob([exportSvg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, 1024, 1024);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((pngBlob) => {
+        if (!pngBlob) return;
+        const pngUrl = URL.createObjectURL(pngBlob);
+        const a = document.createElement("a");
+        a.href = pngUrl;
+        a.download = "curium-qr.png";
+        a.click();
+        URL.revokeObjectURL(pngUrl);
+      }, "image/png");
+    };
+    img.src = url;
+  }, [exportSvg]);
+
+  // Save to history — data changes save fast, style-only changes save after 5s idle
+  const lastSavedData = useRef<string>("");
+  const lastSavedStyleKey = useRef<string>("");
+  const historyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    if (!svg || !qrValue) return;
-    const timer = setTimeout(() => {
+    if (skipHistorySave.current || !svg || !qrValue) return;
+    const styleKey = JSON.stringify(qrStyle);
+    const dataChanged = lastSavedData.current !== qrValue;
+    const styleChanged = lastSavedStyleKey.current !== styleKey;
+
+    if (!dataChanged && !styleChanged) return;
+
+    if (historyTimer.current) clearTimeout(historyTimer.current);
+
+    const delay = dataChanged ? 300 : 5000;
+
+    historyTimer.current = setTimeout(() => {
+      if (skipHistorySave.current) return;
       setHistory((prev) => {
-        const styleStr = JSON.stringify(qrStyle);
-        // Skip if identical data AND style to most recent entry
-        if (prev.length > 0 && prev[0].data === qrValue && JSON.stringify(prev[0].style) === styleStr) {
-          return prev;
-        }
+        const prevKey = prev.length > 0 ? prev[0].data + "|" + JSON.stringify(prev[0].style) : "";
+        const key = qrValue + "|" + styleKey;
+        if (prevKey === key) return prev;
+        lastSavedData.current = qrValue;
+        lastSavedStyleKey.current = styleKey;
         const entry: HistoryEntry = {
           id: Date.now().toString(),
           data: qrValue,
@@ -624,8 +769,9 @@ export default function App() {
         saveHistoryToStorage(updated);
         return updated;
       });
-    }, 2000);
-    return () => clearTimeout(timer);
+    }, delay);
+
+    return () => { if (historyTimer.current) clearTimeout(historyTimer.current); };
   }, [svg, qrValue, qrStyle]);
 
   const updateStyle = useCallback(
@@ -640,11 +786,10 @@ export default function App() {
   );
 
   const handleShuffle = useCallback(() => {
+    if (shuffleBtnRef.current) bounceButton(shuffleBtnRef.current);
     const r = QR_COLORS[Math.floor(Math.random() * QR_COLORS.length)];
     const eye = SHUFFLE_EYES[Math.floor(Math.random() * SHUFFLE_EYES.length)];
-    const pool = SHUFFLE_PUPILS.filter((p) => p !== "none");
-    const weightedPool = Math.random() < NONE_PROBABILITY ? ["none" as const] : pool;
-    const pupil = weightedPool[Math.floor(Math.random() * weightedPool.length)];
+    const pupil = SHUFFLE_PUPILS[Math.floor(Math.random() * SHUFFLE_PUPILS.length)];
     const pixel = SHUFFLE_PIXELS[Math.floor(Math.random() * SHUFFLE_PIXELS.length)];
     setQrStyle((p) => ({
       ...p,
@@ -657,6 +802,26 @@ export default function App() {
       pixelShape: pixel,
     }));
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
+
+      if (e.code === "Space" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        handleShuffle();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (e.shiftKey) doExportPNG();
+        else doExportSVG();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleShuffle, doExportSVG, doExportPNG]);
 
   const saveTemplate = useCallback(() => {
     if (!templateName.trim()) return;
@@ -678,12 +843,22 @@ export default function App() {
   }, []);
 
   const clearHistory = useCallback(() => {
+    if (!window.confirm("Clear all history? This cannot be undone.")) return;
     setHistory([]);
     saveHistoryToStorage([]);
   }, []);
 
   const loadHistoryEntry = useCallback((entry: HistoryEntry) => {
+    skipHistorySave.current = true;
+    lastSavedData.current = entry.data;
+    lastSavedStyleKey.current = JSON.stringify(entry.style);
+    const decoded = decodeQR(entry.data);
+    if (decoded) {
+      setActiveType(decoded.type);
+      setForms((f) => ({ ...f, [decoded.type]: decoded.form }));
+    }
     setQrStyle({ ...entry.style });
+    setTimeout(() => { skipHistorySave.current = false; }, 500);
   }, []);
 
   const handleLogoPositionChange = useCallback((pos: { x: number; y: number }) => {
@@ -774,13 +949,13 @@ export default function App() {
       </div>
 
       {/* ── Side Panel ── */}
-      <div className="side-panel">
+      <div className="side-panel" ref={sidePanelRef}>
         {renderTabContent()}
       </div>
 
       {/* ── Main Area ── */}
       <div className="main">
-        <div className="qr-card">
+        <div className={`qr-card ${svg ? "qr-animate" : ""}`}>
           <div style={{ position: "relative", width: 400, height: 400 }}>
             <QRPreview svg={svg} size={400} />
             {qrStyle.logoUri && svg && (
@@ -798,10 +973,10 @@ export default function App() {
         </div>
         {svg && (
           <div className="action-row">
-            <button className="btn btn-icon" onClick={handleShuffle} title="Shuffle">
+            <button className="btn btn-icon" ref={shuffleBtnRef} onClick={handleShuffle} title="Shuffle">
               <Shuffle size={16} />
             </button>
-            <ExportBar svg={svg} input={qrValue} qrStyle={qrStyle} />
+            <ExportBar svg={exportSvg ?? svg} input={qrValue} onExportSVG={doExportSVG} onExportPNG={doExportPNG} />
           </div>
         )}
       </div>
