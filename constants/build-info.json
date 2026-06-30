@@ -1,9 +1,9 @@
 {
-  "commit": "9028e34c515b6bb5e98fe1dbde4e6a235e1511d8",
-  "shortCommit": "9028e34",
+  "commit": "41dc8483dd3f35a1777150c737cb85cd9139bedc",
+  "shortCommit": "41dc848",
   "branch": "master",
-  "commitDate": "2026-06-24 12:39:02 +0300",
-  "commitMessage": "Merge pull request #21 from nylxar/preview",
+  "commitDate": "2026-06-29 15:26:16 +0300",
+  "commitMessage": "tauri.conf.json",
   "isDirty": true,
-  "buildDate": "2026-06-29T11:02:01.029Z"
+  "buildDate": "2026-06-29T19:36:42.640Z"
 }
