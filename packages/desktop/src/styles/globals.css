@@ -21,8 +21,8 @@ body[data-theme="dark"],
   --surface-offset: #1e1e21;
   --border: #2a2a2e;
   --text: #f5f0e8;
-  --text-muted: #a8a39a;
-  --text-faint: #5a5650;
+  --text-muted: #b0a99e;
+  --text-faint: #7a756d;
   --primary: #f5f0e8;
   --primary-bg: #f5f0e822;
   --success: #7ad88a;
@@ -37,8 +37,8 @@ body[data-theme="light"],
   --surface-offset: #ebe6dd;
   --border: #d6cfc1;
   --text: #1a1a1f;
-  --text-muted: #5a5650;
-  --text-faint: #a8a39a;
+  --text-muted: #4a4640;
+  --text-faint: #7a756d;
   --primary: #1a1a1f;
   --primary-bg: #1a1a1f18;
   --success: #2f8a3f;
@@ -52,6 +52,14 @@ body[data-theme="amoled"],
   --surface: #0a0a0a;
   --surface-offset: #141414;
   --border: #1e1e1e;
+  --text: #f5f0e8;
+  --text-muted: #b0a99e;
+  --text-faint: #7a756d;
+  --primary: #f5f0e8;
+  --primary-bg: #f5f0e822;
+  --success: #7ad88a;
+  --error: #ff6b6b;
+  --warning: #f5c46a;
 }
 
 * {
@@ -139,6 +147,7 @@ body {
   background: var(--surface);
   border-right: 1px solid var(--border);
   overflow-y: auto;
+  overflow-x: visible;
   padding: var(--spacing-lg);
 }
 
@@ -154,6 +163,21 @@ body {
   gap: var(--spacing-base);
 }
 
+.qr-card {
+  border-radius: var(--radius-xl);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+@keyframes qr-in {
+  from { opacity: 0; transform: scale(0.95) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.qr-animate {
+  animation: qr-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.1) both;
+}
+
 .qr-preview {
   position: relative;
   display: flex;
@@ -165,12 +189,6 @@ body {
   border-radius: var(--radius-xl);
 }
 
-.qr-card {
-  border-radius: var(--radius-xl);
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
 .action-row {
   display: flex;
   align-items: center;
@@ -179,6 +197,12 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+}
+
+.action-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ── Form Elements ──────────────────────────────────────────────────────── */
@@ -244,10 +268,16 @@ textarea.input {
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.96);
 }
 
 .btn:hover {
   background: var(--border);
+  color: var(--text);
 }
 
 .btn-primary {
@@ -268,27 +298,48 @@ textarea.input {
   align-items: center;
   justify-content: center;
   font-size: 16px;
+  color: var(--text);
+}
+
+.btn-icon:hover {
+  color: var(--text);
 }
 
 /* ── Color Grid ─────────────────────────────────────────────────────────── */
 
 .color-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: var(--spacing-xs);
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  padding: 8px;
+  margin: -8px;
 }
 
 .color-swatch {
   width: 100%;
   aspect-ratio: 1;
   border-radius: var(--radius-sm);
-  border: 2px solid transparent;
+  border: 1.5px solid var(--border);
   cursor: pointer;
   transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.color-swatch::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 40%;
+  height: 40%;
+  border-radius: 2px 0 3px 0;
 }
 
 .color-swatch:hover {
-  transform: scale(1.1);
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px var(--primary);
+  z-index: 1;
 }
 
 .color-swatch.active {
@@ -319,6 +370,7 @@ textarea.input {
 
 .shape-btn:hover {
   background: var(--border);
+  transform: translateY(-1px);
 }
 
 .shape-btn.active {
@@ -498,7 +550,7 @@ textarea.input {
 /* ── Scrollbar ──────────────────────────────────────────────────────────── */
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -507,9 +559,228 @@ textarea.input {
 
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-faint);
 }
+
+/* ── Custom Checkbox ────────────────────────────────────────────────────── */
+
+.checkbox-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.checkbox-wrap input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  background: var(--surface-offset);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.checkbox-wrap input[type="checkbox"]:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.checkbox-wrap input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-wrap input[type="checkbox"]:hover {
+  border-color: var(--text-muted);
+}
+
+/* ── Color Preview Box ──────────────────────────────────────────────────── */
+
+.color-preview {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.color-preview:hover {
+  transform: scale(1.1);
+  border-color: var(--text-muted);
+}
+
+.color-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-trigger {
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: border-color 0.12s ease;
+}
+
+.color-trigger:hover {
+  border-color: var(--text-muted);
+}
+
+.color-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  width: 240px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+.color-section {
+  margin-bottom: 10px;
+}
+
+.color-section:last-child {
+  margin-bottom: 0;
+}
+
+.color-section-label {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.color-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.color-dot:hover {
+  transform: scale(1.15);
+  border-color: var(--text-muted);
+}
+
+.color-dot.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1.5px var(--bg);
+}
+
+.color-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+}
+
+.color-hex-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.color-hex-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 6px;
+  outline: none;
+}
+
+.color-hex-input:focus {
+  border-color: var(--primary);
+}
+
+.color-native-trigger {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0;
+  background: none;
+}
+
+.color-native-trigger::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.color-native-trigger::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+/* ── Collapsible Section ────────────────────────────────────────────────── */
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 0;
+}
+
+.section-header:hover .section-title {
+  color: var(--text);
+}
+
+.section-chevron {
+  color: var(--text-faint);
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+  flex-shrink: 0;
+}
+
+.section-chevron.open {
+  transform: rotate(90deg);
+}
+
+.section-body {
+  overflow: visible;
+  transition: max-height 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.1), opacity 0.1s ease;
+}
+
+

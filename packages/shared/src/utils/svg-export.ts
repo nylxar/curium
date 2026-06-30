@@ -27,10 +27,6 @@ function circlePath(cx: number, cy: number, r: number): string {
   return `M${cx - r},${cy}a${r},${r} 0 1,0 ${r * 2},0a${r},${r} 0 1,0 -${r * 2},0`;
 }
 
-function ringPath(cx: number, cy: number, outer: number, inner: number): string {
-  return `${circlePath(cx, cy, outer)} ${circlePath(cx, cy, inner)}`;
-}
-
 function diamondPath(cx: number, cy: number, hs: number): string {
   return `M${cx},${cy - hs}L${cx + hs},${cy}L${cx},${cy + hs}L${cx - hs},${cy}Z`;
 }
@@ -115,41 +111,6 @@ function sparklePath(cx: number, cy: number, R: number): string {
   );
 }
 
-function petalPath(cx: number, cy: number, R: number): string {
-  const pr = R * 0.42;
-  const d = R * 0.58;
-  return (
-    `M${cx - pr},${cy - d}` +
-    `A${pr},${pr} 0 1 1 ${cx + pr},${cy - d}` +
-    `L${cx + d},${cy - pr}` +
-    `A${pr},${pr} 0 1 1 ${cx + d},${cy + pr}` +
-    `L${cx + pr},${cy + d}` +
-    `A${pr},${pr} 0 1 1 ${cx - pr},${cy + d}` +
-    `L${cx - d},${cy + pr}` +
-    `A${pr},${pr} 0 1 1 ${cx - d},${cy - pr}Z`
-  );
-}
-
-function burstPath(cx: number, cy: number, R: number): string {
-  const n = 8;
-  const innerR = R * 0.55;
-  let d = "";
-  for (let i = 0; i < n; i++) {
-    const a1 = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-    const aMid = -Math.PI / 2 + ((i + 0.5) * 2 * Math.PI) / n;
-    const a2 = -Math.PI / 2 + ((i + 1) * 2 * Math.PI) / n;
-    const tipX = cx + Math.cos(a1) * R;
-    const tipY = cy + Math.sin(a1) * R;
-    const ctrlX = cx + Math.cos(aMid) * innerR;
-    const ctrlY = cy + Math.sin(aMid) * innerR;
-    const nextTipX = cx + Math.cos(a2) * R;
-    const nextTipY = cy + Math.sin(a2) * R;
-    if (i === 0) d += `M${tipX.toFixed(2)},${tipY.toFixed(2)}`;
-    d += `Q${ctrlX.toFixed(2)},${ctrlY.toFixed(2)} ${nextTipX.toFixed(2)},${nextTipY.toFixed(2)}`;
-  }
-  return d + "Z";
-}
-
 function smoothPath(x: number, y: number, w: number, h: number, r: number): string {
   return rrCW(x, y, w, h, r);
 }
@@ -202,7 +163,6 @@ function chevronPath(cx: number, cy: number, hs: number): string {
 
 function wavePath(cx: number, cy: number, s: number): string {
   const hw = s * 0.48;
-  const hh = s * 0.32;
   const amp = s * 0.16;
   return (
     `M${cx - hw},${cy - amp}` +
@@ -546,10 +506,11 @@ export function generateSVG(
   data: string,
   qrStyle: QRStyle,
   size: number = 512,
+  skipLogo: boolean = false,
 ): string | null {
   const ECL_ORDER: ECL[] = ["L", "M", "Q", "H"];
   const eclIdx = ECL_ORDER.indexOf(qrStyle.ecl);
-  const effectiveEcl = qrStyle.logoUri
+  const effectiveEcl = qrStyle.logoUri && !skipLogo
     ? ECL_ORDER[Math.max(eclIdx, 3)]
     : qrStyle.ecl;
 
@@ -754,7 +715,7 @@ export function generateSVG(
     pupilPieces.length > 0 ? `<path d="${pupilPieces.join(" ")}" fill="${qrStyle.fgColor}"/>` : "",
   ];
 
-  if (qrStyle.logoUri) {
+  if (qrStyle.logoUri && !skipLogo) {
     const logoPad = size * 0.04;
     const logoArea = size * 0.2;
     const lx = (size - logoArea) / 2;
