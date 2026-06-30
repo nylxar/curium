@@ -28,8 +28,6 @@ export const PUPIL_SHAPES: { id: PupilShape; label: string }[] = [
   { id: "scallop", label: "Scallop" },
   { id: "cloud", label: "Cloud" },
   { id: "droplet", label: "Drop" },
-  { id: "pixel", label: "Pixel" },
-  { id: "none", label: "None" },
 ];
 
 export const PIXEL_SHAPES: { id: PixelShape; label: string }[] = [
