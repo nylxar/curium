@@ -78,7 +78,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Enable Corepack
-        run: corepack enable
+        run: corepack enable && corepack prepare pnpm@11.8.0 --activate
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
