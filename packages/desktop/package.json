@@ -3,26 +3,27 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
+    "dev": "rsbuild dev",
+    "build": "tsc -b && rsbuild build",
+    "preview": "rsbuild preview",
     "tauri": "tauri dev",
     "tauri:build": "tauri build"
   },
   "dependencies": {
     "@curium/shared": "workspace:*",
+    "gsap": "^3.15.0",
     "lucide-react": "^1.21.0",
     "qrcode": "1.5.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@rsbuild/core": "^2.1.1",
+    "@rsbuild/plugin-react": "^2.1.0",
     "@tauri-apps/cli": "^2.10.1",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.5.2",
-    "typescript": "~5.8.3",
-    "vite": "^6.3.5"
+    "typescript": "~5.8.3"
   }
 }
