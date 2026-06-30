@@ -70,16 +70,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: lts/*
-          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -91,6 +88,13 @@ jobs:
         with:
           workspaces: packages/desktop/src-tauri -> target
           shared-key: ${{ matrix.artifact_suffix }}
+
+      - name: pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
 
       - name: Install Linux dependencies (x64)
         if: runner.os == 'Linux' && matrix.target == 'x86_64-unknown-linux-gnu'
@@ -116,7 +120,7 @@ jobs:
             xdg-utils
 
       - name: Install frontend dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build and release
         uses: tauri-apps/tauri-action@v1
