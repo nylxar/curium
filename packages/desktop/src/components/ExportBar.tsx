@@ -1,14 +1,15 @@
 import { Download, FileImage, Copy } from "lucide-react";
-import { QRStyle } from "@curium/shared";
 
 interface ExportBarProps {
   svg: string;
   input: string;
-  qrStyle: QRStyle;
+  onExportSVG?: () => void;
+  onExportPNG?: () => void;
 }
 
-export function ExportBar({ svg, input }: ExportBarProps) {
+export function ExportBar({ svg, input, onExportSVG, onExportPNG }: ExportBarProps) {
   const downloadSVG = () => {
+    if (onExportSVG) { onExportSVG(); return; }
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -19,6 +20,7 @@ export function ExportBar({ svg, input }: ExportBarProps) {
   };
 
   const downloadPNG = () => {
+    if (onExportPNG) { onExportPNG(); return; }
     const canvas = document.createElement("canvas");
     canvas.width = 1024;
     canvas.height = 1024;
@@ -55,10 +57,10 @@ export function ExportBar({ svg, input }: ExportBarProps) {
 
   return (
     <>
-      <button className="btn btn-icon" onClick={downloadSVG} title="Export SVG">
+      <button className="btn btn-icon" onClick={downloadSVG} title="Export SVG (Ctrl+S)">
         <Download size={16} />
       </button>
-      <button className="btn btn-icon" onClick={downloadPNG} title="Export PNG">
+      <button className="btn btn-icon" onClick={downloadPNG} title="Export PNG (Ctrl+Shift+S)">
         <FileImage size={16} />
       </button>
       <button className="btn btn-icon" onClick={copyToClipboard} title="Copy Data">

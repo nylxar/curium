@@ -7,6 +7,8 @@ import {
   FrameStyle,
   LogoBackground,
 } from "@curium/shared";
+import { CollapsibleSection } from "./CollapsibleSection";
+import { ColorPicker } from "./ColorPicker";
 
 const FRAME_OPTIONS: FrameStyle[] = ["none", "thin", "rounded", "thick", "dashed", "dotted", "double"];
 const FRAME_LABELS: Record<FrameStyle, string> = { none: "None", thin: "Thin", rounded: "Round", thick: "Thick", dashed: "Dash", dotted: "Dot", double: "Dbl" };
@@ -45,9 +47,7 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
   if (section === "adjust") {
     return (
       <>
-        {/* ── Frame ── */}
-        <div className="section">
-          <div className="section-title">Frame</div>
+        <CollapsibleSection title="Frame">
           <div className="shape-grid">
             {FRAME_OPTIONS.map((f) => (
               <button key={f} className={`shape-btn ${style.frame === f ? "active" : ""}`} onClick={() => onUpdate({ frame: f })}>
@@ -55,11 +55,9 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
               </button>
             ))}
           </div>
-        </div>
+        </CollapsibleSection>
 
-        {/* ── QR Corners ── */}
-        <div className="section">
-          <div className="section-title">QR Corners</div>
+        <CollapsibleSection title="QR Corners">
           <div className="shape-grid">
             {CORNER_OPTIONS.map((c) => (
               <button key={c.value} className={`shape-btn ${style.qrCorners === c.value ? "active" : ""}`} onClick={() => onUpdate({ qrCorners: c.value })}>
@@ -67,43 +65,45 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
               </button>
             ))}
           </div>
-        </div>
+        </CollapsibleSection>
 
-        {/* ── Gradient ── */}
-        <div className="section">
-          <div className="section-title">Gradient</div>
-          <label style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-            <input type="checkbox" checked={style.gradient.enabled} onChange={(e) => onUpdate({ gradient: { ...style.gradient, enabled: e.target.checked } })} style={{ width: 16, height: 16 }} />
-            Enable
+        <CollapsibleSection title="Gradient" defaultOpen={style.gradient.enabled}>
+          <label className="checkbox-wrap">
+            <input type="checkbox" checked={style.gradient.enabled} onChange={(e) => onUpdate({ gradient: { ...style.gradient, enabled: e.target.checked } })} />
+            Enable gradient
           </label>
           {style.gradient.enabled && (
-            <>
-              <div className="btn-row" style={{ marginTop: 8 }}>
+            <div style={{ marginTop: 8 }}>
+              <div className="btn-row">
                 {ANGLE_PRESETS.map((a) => (
                   <button key={a.value} className={`btn ${style.gradient.angle === a.value ? "btn-primary" : ""}`} onClick={() => onUpdate({ gradient: { ...style.gradient, angle: a.value } })}>
                     {a.label}
                   </button>
                 ))}
               </div>
-              <div className="input-group" style={{ marginTop: 8 }}>
-                <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Start</label>
-                <input type="color" className="input" value={style.gradient.startColor} onChange={(e) => onUpdate({ gradient: { ...style.gradient, startColor: e.target.value } })} style={{ height: 36, padding: 4, cursor: "pointer" }} />
+              <div style={{ marginTop: 8 }}>
+                <ColorPicker
+                  label="Start"
+                  value={style.gradient.startColor}
+                  onChange={(c) => onUpdate({ gradient: { ...style.gradient, startColor: c } })}
+                />
               </div>
-              <div className="input-group" style={{ marginTop: 8 }}>
-                <label style={{ fontSize: 11, color: "var(--text-muted)" }}>End</label>
-                <input type="color" className="input" value={style.gradient.endColor} onChange={(e) => onUpdate({ gradient: { ...style.gradient, endColor: e.target.value } })} style={{ height: 36, padding: 4, cursor: "pointer" }} />
+              <div style={{ marginTop: 8 }}>
+                <ColorPicker
+                  label="End"
+                  value={style.gradient.endColor}
+                  onChange={(c) => onUpdate({ gradient: { ...style.gradient, endColor: c } })}
+                />
               </div>
-              <div className="input-group" style={{ marginTop: 8 }}>
-                <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Angle: {style.gradient.angle}°</label>
-                <input type="range" min={0} max={345} step={15} value={style.gradient.angle} onChange={(e) => onUpdate({ gradient: { ...style.gradient, angle: Number(e.target.value) } })} style={{ width: "100%" }} />
+              <div style={{ marginTop: 8 }}>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Angle: {style.gradient.angle}°</span>
+                <input type="range" min={0} max={345} step={15} value={style.gradient.angle} onChange={(e) => onUpdate({ gradient: { ...style.gradient, angle: Number(e.target.value) } })} style={{ width: "100%", marginTop: 4 }} />
               </div>
-            </>
+            </div>
           )}
-        </div>
+        </CollapsibleSection>
 
-        {/* ── Logo Style ── */}
-        <div className="section">
-          <div className="section-title">Logo Style</div>
+        <CollapsibleSection title="Logo Style" defaultOpen={style.logoStyle.background !== "none"}>
           <div className="shape-grid">
             {LOGO_BACKGROUNDS.map((b) => (
               <button key={b.id} className={`shape-btn ${style.logoStyle.background === b.id ? "active" : ""}`} onClick={() => onUpdate({ logoStyle: { ...style.logoStyle, background: b.id } })}>
@@ -112,32 +112,29 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
             ))}
           </div>
           {style.logoStyle.background !== "none" && (
-            <>
-              <div className="input-group" style={{ marginTop: 8 }}>
-                <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Padding: {style.logoStyle.padding}%</label>
-                <div className="btn-row">
-                  {PADDING_STEPS.map((p) => (
-                    <button key={p} className={`btn ${style.logoStyle.padding === p ? "btn-primary" : ""}`} onClick={() => onUpdate({ logoStyle: { ...style.logoStyle, padding: p } })}>
-                      {p}
-                    </button>
-                  ))}
-                </div>
+            <div style={{ marginTop: 8 }}>
+              <div className="btn-row">
+                {PADDING_STEPS.map((p) => (
+                  <button key={p} className={`btn ${style.logoStyle.padding === p ? "btn-primary" : ""}`} onClick={() => onUpdate({ logoStyle: { ...style.logoStyle, padding: p } })}>
+                    {p}%
+                  </button>
+                ))}
               </div>
-              <label style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 8 }}>
-                <input type="checkbox" checked={style.logoStyle.border} onChange={(e) => onUpdate({ logoStyle: { ...style.logoStyle, border: e.target.checked } })} style={{ width: 16, height: 16 }} />
-                Border
-              </label>
-              <label style={{ fontSize: 12, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 8 }}>
-                <input type="checkbox" checked={style.logoStyle.shadow} onChange={(e) => onUpdate({ logoStyle: { ...style.logoStyle, shadow: e.target.checked } })} style={{ width: 16, height: 16 }} />
-                Shadow
-              </label>
-            </>
+              <div style={{ marginTop: 8, display: "flex", gap: 16 }}>
+                <label className="checkbox-wrap">
+                  <input type="checkbox" checked={style.logoStyle.border} onChange={(e) => onUpdate({ logoStyle: { ...style.logoStyle, border: e.target.checked } })} />
+                  Border
+                </label>
+                <label className="checkbox-wrap">
+                  <input type="checkbox" checked={style.logoStyle.shadow} onChange={(e) => onUpdate({ logoStyle: { ...style.logoStyle, shadow: e.target.checked } })} />
+                  Shadow
+                </label>
+              </div>
+            </div>
           )}
-        </div>
+        </CollapsibleSection>
 
-        {/* ── Error Correction ── */}
-        <div className="section">
-          <div className="section-title">Error Correction</div>
+        <CollapsibleSection title="Error Correction" defaultOpen={false}>
           <div className="btn-row">
             {(["L", "M", "Q", "H"] as const).map((ecl) => (
               <button key={ecl} className={`btn ${style.ecl === ecl ? "btn-primary" : ""}`} onClick={() => onUpdate({ ecl })}>
@@ -145,7 +142,7 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
               </button>
             ))}
           </div>
-        </div>
+        </CollapsibleSection>
       </>
     );
   }
@@ -153,25 +150,31 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
   // Default: "style" section
   return (
     <>
-      {/* ── Color ── */}
-      <div className="section">
-        <div className="section-title">Color</div>
+      <CollapsibleSection title="Color">
         <div className="color-grid">
           {QR_COLORS.map((c) => (
             <button
               key={c.id}
               className={`color-swatch ${style.colorId === c.id ? "active" : ""}`}
-              style={{ background: c.bg, border: `2px solid ${c.fg}` }}
+              style={{ background: c.bg }}
               title={c.label}
               onClick={() => onUpdate({ colorId: c.id, fgColor: c.fg, bgColor: c.bg })}
-            />
+            >
+              <span style={{
+                position: "absolute",
+                right: 0,
+                bottom: 0,
+                width: "40%",
+                height: "40%",
+                borderRadius: "2px 0 3px 0",
+                background: c.fg,
+              }} />
+            </button>
           ))}
         </div>
-      </div>
+      </CollapsibleSection>
 
-      {/* ── Eye Shape ── */}
-      <div className="section">
-        <div className="section-title">Eye Shape</div>
+      <CollapsibleSection title="Eye Shape">
         <div className="shape-grid">
           {EYE_SHAPES.map((e) => (
             <button key={e.id} className={`shape-btn ${style.eyeShape === e.id ? "active" : ""}`} onClick={() => onUpdate({ eyeShape: e.id })}>
@@ -179,11 +182,9 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
             </button>
           ))}
         </div>
-      </div>
+      </CollapsibleSection>
 
-      {/* ── Pupil ── */}
-      <div className="section">
-        <div className="section-title">Pupil</div>
+      <CollapsibleSection title="Pupil">
         <div className="shape-grid">
           {PUPIL_SHAPES.map((p) => (
             <button key={p.id} className={`shape-btn ${style.pupilShape === p.id ? "active" : ""}`} onClick={() => onUpdate({ pupilShape: p.id })}>
@@ -191,11 +192,9 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
             </button>
           ))}
         </div>
-      </div>
+      </CollapsibleSection>
 
-      {/* ── Pixel Shape ── */}
-      <div className="section">
-        <div className="section-title">Pixel Shape</div>
+      <CollapsibleSection title="Pixel Shape">
         <div className="shape-grid">
           {PIXEL_SHAPES.map((p) => (
             <button key={p.id} className={`shape-btn ${style.pixelShape === p.id ? "active" : ""}`} onClick={() => onUpdate({ pixelShape: p.id })}>
@@ -203,35 +202,26 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
             </button>
           ))}
         </div>
-      </div>
+      </CollapsibleSection>
 
-      {/* ── Custom Colors ── */}
-      <div className="section">
-        <div className="section-title">Custom Colors</div>
-        <div className="input-group">
-          <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Foreground</label>
-          <input type="color" className="input" value={style.fgColor} onChange={(e) => onUpdate({ fgColor: e.target.value })} style={{ height: 36, padding: 4, cursor: "pointer" }} />
+      <CollapsibleSection title="Custom Colors">
+        <ColorPicker label="Foreground" value={style.fgColor} onChange={(c) => onUpdate({ fgColor: c })} />
+        <div style={{ marginTop: 8 }}>
+          <ColorPicker label="Background" value={style.bgColor} onChange={(c) => onUpdate({ bgColor: c })} />
         </div>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Background</label>
-          <input type="color" className="input" value={style.bgColor} onChange={(e) => onUpdate({ bgColor: e.target.value })} style={{ height: 36, padding: 4, cursor: "pointer" }} />
+        <div style={{ marginTop: 8 }}>
+          <ColorPicker label="Eye Color" value={style.eyeColor} onChange={(c) => onUpdate({ eyeColor: c })} />
         </div>
-        <div className="input-group" style={{ marginTop: 8 }}>
-          <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Eye Color</label>
-          <input type="color" className="input" value={style.eyeColor} onChange={(e) => onUpdate({ eyeColor: e.target.value })} style={{ height: 36, padding: 4, cursor: "pointer" }} />
-        </div>
-      </div>
+      </CollapsibleSection>
 
-      {/* ── Logo ── */}
-      <div className="section">
-        <div className="section-title">Logo</div>
+      <CollapsibleSection title="Logo" defaultOpen={!!style.logoUri}>
         {style.logoUri ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <img src={style.logoUri} alt="Logo" style={{ width: 48, height: 48, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)" }} />
+            <img src={style.logoUri} alt="Logo" style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover", border: "1px solid var(--border)" }} />
             <button className="btn btn-danger" onClick={() => onUpdate({ logoUri: undefined })}>Remove</button>
           </div>
         ) : (
-          <label className="btn" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+          <label className="btn" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}>
             Choose Image
             <input
               type="file"
@@ -247,7 +237,7 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
             />
           </label>
         )}
-      </div>
+      </CollapsibleSection>
     </>
   );
 }
