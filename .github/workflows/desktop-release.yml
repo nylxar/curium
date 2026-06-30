@@ -1,0 +1,149 @@
+name: Desktop Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Target platform"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - macos
+          - windows
+          - linux
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ── macOS (.dmg) ───────────────────────────────────────────────────
+          - platform: macos-14
+            args: "--target aarch64-apple-darwin --bundles dmg"
+            artifact_suffix: macos-arm64
+            target: aarch64-apple-darwin
+          - platform: macos-14
+            args: "--target x86_64-apple-darwin --bundles dmg"
+            artifact_suffix: macos-x64
+            target: x86_64-apple-darwin
+
+          # ── Windows (.exe via NSIS) ────────────────────────────────────────
+          - platform: windows-latest
+            args: "--target x86_64-pc-windows-msvc --bundles nsis"
+            artifact_suffix: windows-x64
+            target: x86_64-pc-windows-msvc
+          - platform: windows-latest
+            args: "--target aarch64-pc-windows-msvc --bundles nsis"
+            artifact_suffix: windows-arm64
+            target: aarch64-pc-windows-msvc
+
+          # ── Linux (.AppImage) ──────────────────────────────────────────────
+          - platform: ubuntu-22.04
+            args: "--target x86_64-unknown-linux-gnu --bundles appimage"
+            artifact_suffix: linux-x64
+            target: x86_64-unknown-linux-gnu
+          - platform: ubuntu-24.04-arm
+            args: "--target aarch64-unknown-linux-gnu --bundles appimage"
+            artifact_suffix: linux-arm64
+            target: aarch64-unknown-linux-gnu
+
+    runs-on: ${{ matrix.platform }}
+    defaults:
+      run:
+        working-directory: packages/desktop
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: packages/desktop/src-tauri -> target
+          shared-key: ${{ matrix.artifact_suffix }}
+
+      - name: Install Linux dependencies (x64)
+        if: runner.os == 'Linux' && matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            xdg-utils
+
+      - name: Install Linux dependencies (arm64)
+        if: runner.os == 'Linux' && matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev:arm64 \
+            libappindicator3-dev:arm64 \
+            librsvg2-dev:arm64 \
+            patchelf \
+            xdg-utils
+          sudo dpkg --add-architecture arm64
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev:arm64 \
+            libappindicator3-dev:arm64 \
+            librsvg2-dev:arm64
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and release
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ── macOS signing + notarization (optional) ────────────────────────
+          # Uncomment for production releases to remove "unidentified developer" warning.
+          # Requires Apple Developer Program ($99/yr).
+          # APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          # APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          # APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          # ── Tauri updater signing (optional) ──────────────────────────────
+          # Uncomment to enable auto-update for future versions.
+          # Generate keys with: pnpm tauri signer generate -w ~/.tauri/curium.key
+          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: "Curium v__VERSION__"
+          releaseBody: "See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/RELEASE_NOTES.md) for details."
+          releaseDraft: true
+          prerelease: false
+          projectPath: packages/desktop
+          tauriScript: pnpm tauri
+          args: ${{ matrix.args }}
