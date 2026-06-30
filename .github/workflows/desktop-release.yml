@@ -126,5 +126,5 @@ jobs:
           releaseDraft: true
           prerelease: false
           projectPath: packages/desktop
-          tauriScript: corepack pnpm tauri
+          tauriScript: corepack pnpm exec tauri
           args: ${{ matrix.args }}
