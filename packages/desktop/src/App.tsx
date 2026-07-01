@@ -24,13 +24,21 @@ import {
   Check,
   Coffee,
   CreditCard,
+  BadgeInfo,
+  Cpu,
 } from "lucide-react";
 import { QRPreview } from "./components/QRPreview";
 import { LogoOverlay } from "./components/LogoOverlay";
 import { StylePanel } from "./components/StylePanel";
 import { ExportBar } from "./components/ExportBar";
+import { TitleBar, useIsTauri } from "./components/TitleBar";
+import { ConfirmDialog } from "./components/ConfirmDialog";
+import { Splash } from "./components/Splash";
+import { Welcome } from "./components/Welcome";
+import { WhatsNew } from "./components/WhatsNew";
 import { animateThemeTransition, bounceButton } from "./utils/animations";
 import { gsap } from "gsap";
+import buildInfo from "./build-info.json";
 
 // ─── QR Type encoding ────────────────────────────────────────────────────────
 interface FormState {
@@ -39,7 +47,11 @@ interface FormState {
   email: { to: string; subject: string; body: string };
   phone: { phone: string };
   sms: { phone: string; message: string };
-  wifi: { ssid: string; password: string; encryption: "WPA" | "WEP" | "nopass" };
+  wifi: {
+    ssid: string;
+    password: string;
+    encryption: "WPA" | "WEP" | "nopass";
+  };
   contact: { name: string; phone: string; email: string; org: string };
   location: { lat: string; lng: string; label: string };
 }
@@ -98,20 +110,31 @@ function encodeQR(type: QRType, forms: FormState): string {
   }
 }
 
-function decodeQR(data: string): { type: QRType; form: FormState[QRType] } | null {
+function decodeQR(
+  data: string,
+): { type: QRType; form: FormState[QRType] } | null {
   if (!data) return null;
   if (data.startsWith("WIFI:")) {
     const ssid = data.match(/S:([^;]+)/)?.[1] ?? "";
     const password = data.match(/P:([^;]+)/)?.[1] ?? "";
-    const encryption = (data.match(/T:([^;]+)/)?.[1] ?? "WPA") as "WPA" | "WEP" | "nopass";
+    const encryption = (data.match(/T:([^;]+)/)?.[1] ?? "WPA") as
+      "WPA" | "WEP" | "nopass";
     return { type: "wifi", form: { ssid, password, encryption } };
   }
   if (data.startsWith("mailto:")) {
     const rest = data.slice(7);
     const qi = rest.indexOf("?");
     const to = qi >= 0 ? decodeURIComponent(rest.slice(0, qi)) : rest;
-    const params = qi >= 0 ? new URLSearchParams(rest.slice(qi)) : new URLSearchParams();
-    return { type: "email", form: { to, subject: params.get("subject") ?? "", body: params.get("body") ?? "" } };
+    const params =
+      qi >= 0 ? new URLSearchParams(rest.slice(qi)) : new URLSearchParams();
+    return {
+      type: "email",
+      form: {
+        to,
+        subject: params.get("subject") ?? "",
+        body: params.get("body") ?? "",
+      },
+    };
   }
   if (data.startsWith("tel:")) {
     return { type: "phone", form: { phone: data.slice(4) } };
@@ -120,7 +143,8 @@ function decodeQR(data: string): { type: QRType; form: FormState[QRType] } | nul
     const rest = data.slice(4);
     const qi = rest.indexOf("?");
     const phone = qi >= 0 ? rest.slice(0, qi) : rest;
-    const params = qi >= 0 ? new URLSearchParams(rest.slice(qi + 1)) : new URLSearchParams();
+    const params =
+      qi >= 0 ? new URLSearchParams(rest.slice(qi + 1)) : new URLSearchParams();
     return { type: "sms", form: { phone, message: params.get("body") ?? "" } };
   }
   if (data.startsWith("BEGIN:VCARD")) {
@@ -135,7 +159,10 @@ function decodeQR(data: string): { type: QRType; form: FormState[QRType] } | nul
     const lat = match?.[1] ?? "";
     const lng = match?.[2] ?? "";
     const labelMatch = data.match(/\(([^)]+)\)/);
-    return { type: "location", form: { lat, lng, label: labelMatch?.[1] ?? "" } };
+    return {
+      type: "location",
+      form: { lat, lng, label: labelMatch?.[1] ?? "" },
+    };
   }
   if (data.startsWith("http://") || data.startsWith("https://")) {
     return { type: "url", form: { url: data } };
@@ -145,18 +172,56 @@ function decodeQR(data: string): { type: QRType; form: FormState[QRType] } | nul
 
 // ─── Shuffle pools ───────────────────────────────────────────────────────────
 const SHUFFLE_EYES: QRStyle["eyeShape"][] = [
-  "sharp", "soft", "round", "pill", "dot", "shield", "hexagon", "octagon",
+  "sharp",
+  "soft",
+  "round",
+  "pill",
+  "dot",
+  "shield",
+  "hexagon",
+  "octagon",
 ];
 const SHUFFLE_PUPILS: QRStyle["pupilShape"][] = [
-  "dot", "square", "diamond", "cross", "hexagon", "octagon", "shield",
-  "star", "heart", "blob", "dome", "oval", "pentagon", "scallop",
-  "cloud", "droplet",
+  "dot",
+  "square",
+  "diamond",
+  "cross",
+  "hexagon",
+  "octagon",
+  "shield",
+  "star",
+  "heart",
+  "blob",
+  "dome",
+  "oval",
+  "pentagon",
+  "scallop",
+  "cloud",
+  "droplet",
 ];
 const SHUFFLE_PIXELS: QRStyle["pixelShape"][] = [
-  "sharp", "soft", "round", "dots", "liquid", "glued", "smooth", "flow",
-  "blob", "diamond", "cross", "star", "triangle", "hexagon", "plus",
-  "heart", "sparkle", "pinched-square", "circuit-board", "hashtag",
-  "vertical-line", "horizontal-line",
+  "sharp",
+  "soft",
+  "round",
+  "dots",
+  "liquid",
+  "glued",
+  "smooth",
+  "flow",
+  "blob",
+  "diamond",
+  "cross",
+  "star",
+  "triangle",
+  "hexagon",
+  "plus",
+  "heart",
+  "sparkle",
+  "pinched-square",
+  "circuit-board",
+  "hashtag",
+  "vertical-line",
+  "horizontal-line",
 ];
 
 const QR_TYPES: { id: QRType; label: string }[] = [
@@ -171,20 +236,29 @@ const QR_TYPES: { id: QRType; label: string }[] = [
 ];
 
 // ─── Tab definitions ─────────────────────────────────────────────────────────
-type TabId = "generate" | "style" | "adjust" | "templates" | "history" | "settings" | "about" | "info" | "support";
+type TabId =
+  | "generate"
+  | "style"
+  | "adjust"
+  | "templates"
+  | "history"
+  | "settings"
+  | "about"
+  | "info"
+  | "support";
 
 const TOP_TABS: { id: TabId; icon: typeof QrCode; label: string }[] = [
   { id: "generate", icon: QrCode, label: "Generate" },
   { id: "style", icon: Palette, label: "Style" },
   { id: "adjust", icon: SlidersHorizontal, label: "Adjust" },
   { id: "templates", icon: Bookmark, label: "Templates" },
+  { id: "history", icon: History, label: "History" },
 ];
 
 const BOTTOM_TABS: { id: TabId; icon: typeof History; label: string }[] = [
-  { id: "history", icon: History, label: "History" },
   { id: "settings", icon: Settings, label: "Settings" },
   { id: "about", icon: Info, label: "About" },
-  { id: "info", icon: Info, label: "Info" },
+  { id: "info", icon: Cpu, label: "Info" },
   { id: "support", icon: LifeBuoy, label: "Support" },
 ];
 
@@ -241,7 +315,10 @@ function GeneratePanel({
   activeType: QRType;
   setActiveType: (t: QRType) => void;
   forms: FormState;
-  updateForm: <K extends keyof FormState>(type: K, partial: Partial<FormState[K]>) => void;
+  updateForm: <K extends keyof FormState>(
+    type: K,
+    partial: Partial<FormState[K]>,
+  ) => void;
 }) {
   return (
     <>
@@ -281,27 +358,72 @@ function GeneratePanel({
         )}
         {activeType === "email" && (
           <div className="input-group">
-            <input className="input" placeholder="To" value={forms.email.to} onChange={(e) => updateForm("email", { to: e.target.value })} />
-            <input className="input" placeholder="Subject" value={forms.email.subject} onChange={(e) => updateForm("email", { subject: e.target.value })} />
-            <textarea className="input" placeholder="Body" value={forms.email.body} onChange={(e) => updateForm("email", { body: e.target.value })} rows={2} />
+            <input
+              className="input"
+              placeholder="To"
+              value={forms.email.to}
+              onChange={(e) => updateForm("email", { to: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Subject"
+              value={forms.email.subject}
+              onChange={(e) => updateForm("email", { subject: e.target.value })}
+            />
+            <textarea
+              className="input"
+              placeholder="Body"
+              value={forms.email.body}
+              onChange={(e) => updateForm("email", { body: e.target.value })}
+              rows={2}
+            />
           </div>
         )}
         {activeType === "phone" && (
-          <input className="input" placeholder="+1 234 567 890" value={forms.phone.phone} onChange={(e) => updateForm("phone", { phone: e.target.value })} />
+          <input
+            className="input"
+            placeholder="+1 234 567 890"
+            value={forms.phone.phone}
+            onChange={(e) => updateForm("phone", { phone: e.target.value })}
+          />
         )}
         {activeType === "sms" && (
           <div className="input-group">
-            <input className="input" placeholder="Phone" value={forms.sms.phone} onChange={(e) => updateForm("sms", { phone: e.target.value })} />
-            <input className="input" placeholder="Message (optional)" value={forms.sms.message} onChange={(e) => updateForm("sms", { message: e.target.value })} />
+            <input
+              className="input"
+              placeholder="Phone"
+              value={forms.sms.phone}
+              onChange={(e) => updateForm("sms", { phone: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Message (optional)"
+              value={forms.sms.message}
+              onChange={(e) => updateForm("sms", { message: e.target.value })}
+            />
           </div>
         )}
         {activeType === "wifi" && (
           <div className="input-group">
-            <input className="input" placeholder="SSID" value={forms.wifi.ssid} onChange={(e) => updateForm("wifi", { ssid: e.target.value })} />
-            <input className="input" placeholder="Password" value={forms.wifi.password} onChange={(e) => updateForm("wifi", { password: e.target.value })} />
+            <input
+              className="input"
+              placeholder="SSID"
+              value={forms.wifi.ssid}
+              onChange={(e) => updateForm("wifi", { ssid: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Password"
+              value={forms.wifi.password}
+              onChange={(e) => updateForm("wifi", { password: e.target.value })}
+            />
             <div className="btn-row">
               {(["WPA", "WEP", "nopass"] as const).map((enc) => (
-                <button key={enc} className={`btn ${forms.wifi.encryption === enc ? "btn-primary" : ""}`} onClick={() => updateForm("wifi", { encryption: enc })}>
+                <button
+                  key={enc}
+                  className={`btn ${forms.wifi.encryption === enc ? "btn-primary" : ""}`}
+                  onClick={() => updateForm("wifi", { encryption: enc })}
+                >
                   {enc === "nopass" ? "None" : enc}
                 </button>
               ))}
@@ -310,17 +432,54 @@ function GeneratePanel({
         )}
         {activeType === "contact" && (
           <div className="input-group">
-            <input className="input" placeholder="Name" value={forms.contact.name} onChange={(e) => updateForm("contact", { name: e.target.value })} />
-            <input className="input" placeholder="Phone" value={forms.contact.phone} onChange={(e) => updateForm("contact", { phone: e.target.value })} />
-            <input className="input" placeholder="Email" value={forms.contact.email} onChange={(e) => updateForm("contact", { email: e.target.value })} />
-            <input className="input" placeholder="Organization" value={forms.contact.org} onChange={(e) => updateForm("contact", { org: e.target.value })} />
+            <input
+              className="input"
+              placeholder="Name"
+              value={forms.contact.name}
+              onChange={(e) => updateForm("contact", { name: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Phone"
+              value={forms.contact.phone}
+              onChange={(e) => updateForm("contact", { phone: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Email"
+              value={forms.contact.email}
+              onChange={(e) => updateForm("contact", { email: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Organization"
+              value={forms.contact.org}
+              onChange={(e) => updateForm("contact", { org: e.target.value })}
+            />
           </div>
         )}
         {activeType === "location" && (
           <div className="input-group">
-            <input className="input" placeholder="Latitude" value={forms.location.lat} onChange={(e) => updateForm("location", { lat: e.target.value })} />
-            <input className="input" placeholder="Longitude" value={forms.location.lng} onChange={(e) => updateForm("location", { lng: e.target.value })} />
-            <input className="input" placeholder="Label (optional)" value={forms.location.label} onChange={(e) => updateForm("location", { label: e.target.value })} />
+            <input
+              className="input"
+              placeholder="Latitude"
+              value={forms.location.lat}
+              onChange={(e) => updateForm("location", { lat: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Longitude"
+              value={forms.location.lng}
+              onChange={(e) => updateForm("location", { lng: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Label (optional)"
+              value={forms.location.label}
+              onChange={(e) =>
+                updateForm("location", { label: e.target.value })
+              }
+            />
           </div>
         )}
       </div>
@@ -355,7 +514,9 @@ function TemplatesPanel({
             onChange={(e) => setTemplateName(e.target.value)}
             style={{ flex: 1 }}
           />
-          <button className="btn btn-primary" onClick={onSave}>Save</button>
+          <button className="btn btn-primary" onClick={onSave}>
+            Save
+          </button>
         </div>
       </div>
       {templates.length > 0 && (
@@ -363,11 +524,23 @@ function TemplatesPanel({
           <div className="section-title">Saved ({templates.length})</div>
           <div className="list">
             {templates.map((t) => (
-              <div key={t.id} className="list-item">
-                <div className="list-item-info" onClick={() => onApply(t)}>
+              <div
+                key={t.id}
+                className="list-item"
+                onClick={() => onApply(t)}
+                style={{ cursor: "pointer" }}
+              >
+                <div className="list-item-info">
                   <div className="list-item-value">{t.name}</div>
                 </div>
-                <button className="btn" onClick={() => onDelete(t.id)} style={{ fontSize: 10, padding: "4px 8px" }}>
+                <button
+                  className="btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(t.id);
+                  }}
+                  style={{ fontSize: 10, padding: "4px 8px" }}
+                >
                   Del
                 </button>
               </div>
@@ -393,9 +566,13 @@ function HistoryPanel({
       <div className="section">
         <div className="section-title">History ({history.length})</div>
         {history.length > 0 ? (
-          <button className="btn btn-danger" onClick={onClear}>Clear All</button>
+          <button className="btn btn-danger" onClick={onClear}>
+            Clear All
+          </button>
         ) : (
-          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No history yet</p>
+          <p style={{ fontSize: 12, color: "var(--text-muted)" }}>
+            No history yet
+          </p>
         )}
       </div>
       {history.length > 0 && (
@@ -431,33 +608,75 @@ function SettingsPanel({
         <div className="section-title">Theme</div>
         <div className="btn-row">
           {(["system", "dark", "light", "amoled"] as const).map((t) => (
-            <button key={t} className={`btn ${theme === t ? "btn-primary" : ""}`} onClick={() => setTheme(t)}>
+            <button
+              key={t}
+              className={`btn ${theme === t ? "btn-primary" : ""}`}
+              onClick={() => setTheme(t)}
+            >
               {t}
             </button>
           ))}
         </div>
       </div>
       <div className="section">
-        <div className="section-title">About</div>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
-          Curium is a privacy-first QR generator. No ads, no accounts, no tracking.
-          All data stays on your device.
-        </p>
-      </div>
-      <div className="section">
         <div className="section-title">Keyboard Shortcuts</div>
         <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "4px 0",
+            }}
+          >
             <span>Shuffle style</span>
-            <kbd style={{ background: "var(--bg)", padding: "2px 6px", borderRadius: 4, fontSize: 11 }}>Space</kbd>
+            <kbd
+              style={{
+                background: "var(--bg)",
+                padding: "2px 6px",
+                borderRadius: 4,
+                fontSize: 11,
+              }}
+            >
+              Space
+            </kbd>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "4px 0",
+            }}
+          >
             <span>Export SVG</span>
-            <kbd style={{ background: "var(--bg)", padding: "2px 6px", borderRadius: 4, fontSize: 11 }}>Ctrl+S</kbd>
+            <kbd
+              style={{
+                background: "var(--bg)",
+                padding: "2px 6px",
+                borderRadius: 4,
+                fontSize: 11,
+              }}
+            >
+              Ctrl+S
+            </kbd>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "4px 0",
+            }}
+          >
             <span>Export PNG</span>
-            <kbd style={{ background: "var(--bg)", padding: "2px 6px", borderRadius: 4, fontSize: 11 }}>Ctrl+Shift+S</kbd>
+            <kbd
+              style={{
+                background: "var(--bg)",
+                padding: "2px 6px",
+                borderRadius: 4,
+                fontSize: 11,
+              }}
+            >
+              Ctrl+Shift+S
+            </kbd>
           </div>
         </div>
       </div>
@@ -485,17 +704,34 @@ function AboutPanel() {
     <>
       <div className="section">
         <div className="section-title">What is this</div>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8 }}>
-          Curium is a QR code generator, customizer, and scanner. It runs entirely on your device. No servers. No accounts. No cloud. Your QR codes, your data, your rules.
+        <p
+          style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8 }}
+        >
+          Curium is a QR code generator, customizer, and scanner. It runs
+          entirely on your device. No servers. No accounts. No cloud. Your QR
+          codes, your data, your rules.
         </p>
       </div>
       <div className="section">
         <div className="section-title">Why it exists</div>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8 }}>
-          Every QR code generator on the internet does the same thing: they let you create a code, then they track you, log your data, or serve you ads. Most of them are free because you are the product.
+        <p
+          style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8 }}
+        >
+          Every QR code generator on the internet does the same thing: they let
+          you create a code, then they track you, log your data, or serve you
+          ads. Most of them are free because you are the product.
         </p>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8, marginTop: 12 }}>
-          Curium exists because a QR code is a simple thing. It does not need a server. It does not need your location. It does not need to phone home. It is math — and math works offline.
+        <p
+          style={{
+            fontSize: 12,
+            color: "var(--text-muted)",
+            lineHeight: 1.8,
+            marginTop: 12,
+          }}
+        >
+          Curium exists because a QR code is a simple thing. It does not need a
+          server. It does not need your location. It does not need to phone
+          home. It is math — and math works offline.
         </p>
       </div>
       <div className="section">
@@ -521,21 +757,49 @@ function AboutPanel() {
         </div>
       </div>
       <div className="section">
-        <div className="section-title">Against capitalism for simple things</div>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8 }}>
-          A QR code is a 35-year-old standard. It is public domain math. The idea that companies can charge you for generating a QR code — or worse, track you for doing it — is absurd.
+        <div className="section-title">
+          Against capitalism for simple things
+        </div>
+        <p
+          style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8 }}
+        >
+          A QR code is a 35-year-old standard. It is public domain math. The
+          idea that companies can charge you for generating a QR code — or
+          worse, track you for doing it — is absurd.
         </p>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8, marginTop: 12 }}>
-          Curium rejects the idea that every digital tool must be a SaaS product. Some things should just work. Some things should be free. Some things should respect your privacy by default, not as a premium feature.
+        <p
+          style={{
+            fontSize: 12,
+            color: "var(--text-muted)",
+            lineHeight: 1.8,
+            marginTop: 12,
+          }}
+        >
+          Curium rejects the idea that every digital tool must be a SaaS
+          product. Some things should just work. Some things should be free.
+          Some things should respect your privacy by default, not as a premium
+          feature.
         </p>
       </div>
       <div className="section">
         <div className="section-title">The future</div>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8 }}>
-          Curium is not just an app. It is a statement. Every feature we ship proves that a tool can be powerful, beautiful, and free — without compromising your privacy.
+        <p
+          style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8 }}
+        >
+          Curium is not just an app. It is a statement. Every feature we ship
+          proves that a tool can be powerful, beautiful, and free — without
+          compromising your privacy.
         </p>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.8, marginTop: 12 }}>
-          We are building the definitive QR tool. Not the one that makes the most money. The one that makes all others unnecessary.
+        <p
+          style={{
+            fontSize: 12,
+            color: "var(--text-muted)",
+            lineHeight: 1.8,
+            marginTop: 12,
+          }}
+        >
+          We are building the definitive QR tool. Not the one that makes the
+          most money. The one that makes all others unnecessary.
         </p>
       </div>
     </>
@@ -543,55 +807,108 @@ function AboutPanel() {
 }
 
 function InfoPanel() {
-  const PRIVACY_ITEMS = [
-    { icon: Shield, text: "No internet requests. Fully offline." },
-    { icon: EyeOff, text: "No analytics, no tracking, no telemetry." },
-    { icon: Lock, text: "All data stays on your device." },
-  ];
+  const isTauri = typeof window !== "undefined" && !!(window as any).__TAURI__;
 
   return (
     <>
       <div className="section">
         <div className="section-title">Build</div>
         <div className="info-grid">
-          <div className="info-row"><span className="info-label">Version</span><span className="info-value">0.5.7</span></div>
-          <div className="info-row"><span className="info-label">Platform</span><span className="info-value">Desktop (Web)</span></div>
-          <div className="info-row"><span className="info-label">Runtime</span><span className="info-value">React + Vite + Tauri</span></div>
+          <div className="info-row">
+            <span className="info-label">Version</span>
+            <span className="info-value">0.5.7</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Platform</span>
+            <span className="info-value">
+              {isTauri ? "Desktop (Tauri)" : "Desktop (Web)"}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Runtime</span>
+            <span className="info-value">
+              {isTauri ? "React + Tauri" : "React + rsbuild"}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Renderer</span>
+            <span className="info-value">
+              {isTauri
+                ? navigator.userAgent.includes("Edg")
+                  ? "WebView2"
+                  : "WebKitGTK"
+                : "Browser"}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Commit</span>
+            <span className="info-value">
+              {buildInfo.shortCommit}
+              {buildInfo.isDirty ? " +" : ""}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Branch</span>
+            <span className="info-value">{buildInfo.branch}</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">Built</span>
+            <span className="info-value">
+              {buildInfo.buildDate.split("T")[0]}
+            </span>
+          </div>
         </div>
       </div>
       <div className="section">
         <div className="section-title">Links</div>
         <div className="link-list">
-          <a className="link-row" href="https://github.com/nylxar/curium" target="_blank" rel="noreferrer">
+          <a
+            className="link-row"
+            href="https://github.com/nylxar/curium"
+            target="_blank"
+            rel="noreferrer"
+          >
             <span>Source Code</span>
             <ExternalLink size={14} />
           </a>
-          <a className="link-row" href="https://github.com/nylxar/curium/issues" target="_blank" rel="noreferrer">
+          <a
+            className="link-row"
+            href="https://github.com/nylxar/curium/issues"
+            target="_blank"
+            rel="noreferrer"
+          >
             <span>Report an Issue</span>
             <ExternalLink size={14} />
           </a>
-          <a className="link-row" href="https://x.com/nylxar" target="_blank" rel="noreferrer">
+          <a
+            className="link-row"
+            href="https://x.com/nylxar"
+            target="_blank"
+            rel="noreferrer"
+          >
             <span>Follow Nylxar</span>
             <ExternalLink size={14} />
           </a>
         </div>
       </div>
-      <div className="section">
-        <div className="section-title">Privacy</div>
-        <div className="privacy-list">
-          {PRIVACY_ITEMS.map((item, i) => (
-            <div key={i} className="privacy-row">
-              <item.icon size={14} className="point-icon-success" />
-              <span className="point-text">{item.text}</span>
-            </div>
-          ))}
-        </div>
-      </div>
       <div className="section" style={{ textAlign: "center", marginTop: 24 }}>
-        <p style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: 0.5 }}>
+        <p
+          style={{
+            fontSize: 10,
+            color: "var(--text-faint)",
+            letterSpacing: 0.5,
+          }}
+        >
           Made with cats · Open source · Free forever
         </p>
-        <p style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: 0.5, marginTop: 4 }}>
+        <p
+          style={{
+            fontSize: 10,
+            color: "var(--text-faint)",
+            letterSpacing: 0.5,
+            marginTop: 4,
+          }}
+        >
           &copy; {new Date().getFullYear()} Curium
         </p>
       </div>
@@ -601,32 +918,83 @@ function InfoPanel() {
 
 function SupportPanel() {
   const OPTIONS = [
-    { icon: Coffee, label: "Ko-fi", url: "https://ko-fi.com/nylxar", color: "#FF5E5B" },
-    { icon: CreditCard, label: "PayPal", url: "https://www.paypal.com/ncp/payment/DUAR5EJ7A3RV8", color: "#003087" },
-    { icon: CreditCard, label: "Gumroad", url: "https://nylxar.gumroad.com/coffee", color: "#FF90E8" },
+    {
+      icon: Coffee,
+      label: "Ko-fi",
+      url: "https://ko-fi.com/nylxar",
+      color: "#FF5E5B",
+    },
+    {
+      icon: CreditCard,
+      label: "PayPal",
+      url: "https://www.paypal.com/ncp/payment/DUAR5EJ7A3RV8",
+      color: "#003087",
+    },
+    {
+      icon: CreditCard,
+      label: "Gumroad",
+      url: "https://nylxar.gumroad.com/coffee",
+      color: "#FF90E8",
+    },
   ];
 
   return (
     <>
-      <div className="section" style={{ textAlign: "center", marginBottom: 24 }}>
-        <div style={{ width: 56, height: 56, borderRadius: 28, background: "var(--primary-bg)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+      <div
+        className="section"
+        style={{ textAlign: "center", marginBottom: 24 }}
+      >
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            background: "var(--primary-bg)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto 12px",
+          }}
+        >
           <LifeBuoy size={24} style={{ color: "var(--primary)" }} />
         </div>
-        <div className="section-title" style={{ marginBottom: 4 }}>Support Curium</div>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
-          If Curium saved you from another bloat, spyware, data-hungry, ad-filled QR tool, then consider supporting its development.
+        <div className="section-title" style={{ marginBottom: 4 }}>
+          Support Curium
+        </div>
+        <p
+          style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}
+        >
+          If Curium saved you from another bloat, spyware, data-hungry,
+          ad-filled QR tool, then consider supporting its development.
         </p>
       </div>
       <div className="link-list">
         {OPTIONS.map((opt, i) => (
-          <a key={i} className="link-row" href={opt.url} target="_blank" rel="noreferrer">
+          <a
+            key={i}
+            className="link-row"
+            href={opt.url}
+            target="_blank"
+            rel="noreferrer"
+          >
             <opt.icon size={16} style={{ color: opt.color }} />
             <span>{opt.label}</span>
-            <ExternalLink size={14} style={{ marginLeft: "auto", opacity: 0.4 }} />
+            <ExternalLink
+              size={14}
+              style={{ marginLeft: "auto", opacity: 0.4 }}
+            />
           </a>
         ))}
       </div>
-      <p style={{ fontSize: 11, color: "var(--text-faint)", textAlign: "center", marginTop: 24, lineHeight: 1.6 }}>
+      <p
+        style={{
+          fontSize: 11,
+          color: "var(--text-faint)",
+          textAlign: "center",
+          marginTop: 24,
+          lineHeight: 1.6,
+        }}
+      >
         Every contribution helps in introducing new features and customizations.
       </p>
     </>
@@ -636,14 +1004,25 @@ function SupportPanel() {
 // ─── Main App ────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [theme, setTheme] = useState<"dark" | "light" | "amoled" | "system">(() => {
-    try {
-      const stored = localStorage.getItem("curium_theme");
-      if (stored === "dark" || stored === "light" || stored === "amoled" || stored === "system") return stored;
-    } catch {}
-    return "dark";
-  });
-  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light" | "amoled">("dark");
+  const [theme, setTheme] = useState<"dark" | "light" | "amoled" | "system">(
+    () => {
+      try {
+        const stored = localStorage.getItem("curium_theme");
+        if (
+          stored === "dark" ||
+          stored === "light" ||
+          stored === "amoled" ||
+          stored === "system"
+        )
+          return stored;
+      } catch {}
+      return "dark";
+    },
+  );
+  const [resolvedTheme, setResolvedTheme] = useState<
+    "dark" | "light" | "amoled"
+  >("dark");
+  const isTauri = useIsTauri();
   const shuffleBtnRef = useRef<HTMLButtonElement>(null);
 
   // Resolve system theme
@@ -663,9 +1042,22 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", resolvedTheme);
     document.body.setAttribute("data-theme", resolvedTheme);
+    document.body.style.background = "";
     localStorage.setItem("curium_theme", theme);
     animateThemeTransition();
   }, [resolvedTheme, theme]);
+
+  // Onboarding: show welcome → whats-new on first launch
+  const [onboarding, setOnboarding] = useState<"welcome" | "whatsnew" | "done">(
+    () => {
+      try {
+        if (!localStorage.getItem("curium_onboarded")) return "welcome";
+        if (localStorage.getItem("curium_last_seen_version") !== "0.5.7")
+          return "whatsnew";
+      } catch {}
+      return "done";
+    },
+  );
 
   const [activeTab, setActiveTab] = useState<TabId>("generate");
   const sidePanelRef = useRef<HTMLDivElement>(null);
@@ -673,7 +1065,11 @@ export default function App() {
   // Snappy tab transition (150ms)
   useEffect(() => {
     if (!sidePanelRef.current) return;
-    gsap.fromTo(sidePanelRef.current, { opacity: 0.5, y: 4 }, { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" });
+    gsap.fromTo(
+      sidePanelRef.current,
+      { opacity: 0.5, y: 4 },
+      { opacity: 1, y: 0, duration: 0.15, ease: "power2.out" },
+    );
   }, [activeTab]);
   const [activeType, setActiveType] = useState<QRType>("text");
   const [forms, setForms] = useState<FormState>(DEFAULT_FORMS);
@@ -682,11 +1078,16 @@ export default function App() {
   const [templateName, setTemplateName] = useState("");
   const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
   const skipHistorySave = useRef(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const qrValue = useMemo(() => encodeQR(activeType, forms), [activeType, forms]);
+  const qrValue = useMemo(
+    () => encodeQR(activeType, forms),
+    [activeType, forms],
+  );
 
   const svg = useMemo(
-    () => (qrValue ? generateSVG(qrValue, qrStyle, 512, !!qrStyle.logoUri) : null),
+    () =>
+      qrValue ? generateSVG(qrValue, qrStyle, 512, !!qrStyle.logoUri) : null,
     [qrValue, qrStyle],
   );
 
@@ -698,17 +1099,19 @@ export default function App() {
 
   const doExportSVG = useCallback(() => {
     if (!exportSvg) return;
+    const ts = new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-");
     const blob = new Blob([exportSvg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "curium-qr.svg";
+    a.download = `curium-qr-${ts}.svg`;
     a.click();
     URL.revokeObjectURL(url);
   }, [exportSvg]);
 
   const doExportPNG = useCallback(() => {
     if (!exportSvg) return;
+    const ts = new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-");
     const canvas = document.createElement("canvas");
     canvas.width = 1024;
     canvas.height = 1024;
@@ -725,7 +1128,7 @@ export default function App() {
         const pngUrl = URL.createObjectURL(pngBlob);
         const a = document.createElement("a");
         a.href = pngUrl;
-        a.download = "curium-qr.png";
+        a.download = `curium-qr-${ts}.png`;
         a.click();
         URL.revokeObjectURL(pngUrl);
       }, "image/png");
@@ -733,10 +1136,16 @@ export default function App() {
     img.src = url;
   }, [exportSvg]);
 
-  // Save to history — data changes save fast, style-only changes save after 5s idle
+  // Save to history — debounced: waits for user to stop typing/adjusting
   const lastSavedData = useRef<string>("");
   const lastSavedStyleKey = useRef<string>("");
   const historyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestQrValue = useRef(qrValue);
+  const latestQrStyle = useRef(qrStyle);
+  const latestSvg = useRef(svg);
+  latestQrValue.current = qrValue;
+  latestQrStyle.current = qrStyle;
+  latestSvg.current = svg;
 
   useEffect(() => {
     if (skipHistorySave.current || !svg || !qrValue) return;
@@ -748,30 +1157,44 @@ export default function App() {
 
     if (historyTimer.current) clearTimeout(historyTimer.current);
 
-    const delay = dataChanged ? 300 : 5000;
+    const delay = dataChanged ? 2000 : 5000;
 
     historyTimer.current = setTimeout(() => {
       if (skipHistorySave.current) return;
+      const curValue = latestQrValue.current;
+      const curStyle = latestQrStyle.current;
+      const curSvg = latestSvg.current;
+      const curStyleKey = JSON.stringify(curStyle);
+      if (
+        lastSavedData.current === curValue &&
+        lastSavedStyleKey.current === curStyleKey
+      )
+        return;
+      lastSavedData.current = curValue;
+      lastSavedStyleKey.current = curStyleKey;
+      const entry: HistoryEntry = {
+        id: Date.now().toString(),
+        data: curValue,
+        style: { ...curStyle },
+        svg: curSvg ?? "",
+        createdAt: Date.now(),
+      };
       setHistory((prev) => {
-        const prevKey = prev.length > 0 ? prev[0].data + "|" + JSON.stringify(prev[0].style) : "";
-        const key = qrValue + "|" + styleKey;
+        const prevKey =
+          prev.length > 0
+            ? prev[0].data + "|" + JSON.stringify(prev[0].style)
+            : "";
+        const key = curValue + "|" + curStyleKey;
         if (prevKey === key) return prev;
-        lastSavedData.current = qrValue;
-        lastSavedStyleKey.current = styleKey;
-        const entry: HistoryEntry = {
-          id: Date.now().toString(),
-          data: qrValue,
-          style: { ...qrStyle },
-          svg,
-          createdAt: Date.now(),
-        };
         const updated = [entry, ...prev].slice(0, 100);
         saveHistoryToStorage(updated);
         return updated;
       });
     }, delay);
 
-    return () => { if (historyTimer.current) clearTimeout(historyTimer.current); };
+    return () => {
+      if (historyTimer.current) clearTimeout(historyTimer.current);
+    };
   }, [svg, qrValue, qrStyle]);
 
   const updateStyle = useCallback(
@@ -789,8 +1212,10 @@ export default function App() {
     if (shuffleBtnRef.current) bounceButton(shuffleBtnRef.current);
     const r = QR_COLORS[Math.floor(Math.random() * QR_COLORS.length)];
     const eye = SHUFFLE_EYES[Math.floor(Math.random() * SHUFFLE_EYES.length)];
-    const pupil = SHUFFLE_PUPILS[Math.floor(Math.random() * SHUFFLE_PUPILS.length)];
-    const pixel = SHUFFLE_PIXELS[Math.floor(Math.random() * SHUFFLE_PIXELS.length)];
+    const pupil =
+      SHUFFLE_PUPILS[Math.floor(Math.random() * SHUFFLE_PUPILS.length)];
+    const pixel =
+      SHUFFLE_PIXELS[Math.floor(Math.random() * SHUFFLE_PIXELS.length)];
     setQrStyle((p) => ({
       ...p,
       colorId: r.id,
@@ -807,7 +1232,12 @@ export default function App() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      )
+        return;
 
       if (e.code === "Space" && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
@@ -825,25 +1255,36 @@ export default function App() {
 
   const saveTemplate = useCallback(() => {
     if (!templateName.trim()) return;
-    const t: Template = { id: Date.now().toString(), name: templateName.trim(), style: { ...qrStyle } };
+    const t: Template = {
+      id: Date.now().toString(),
+      name: templateName.trim(),
+      style: { ...qrStyle },
+    };
     const updated = [t, ...templates].slice(0, 50);
     setTemplates(updated);
     saveTemplatesToStorage(updated);
     setTemplateName("");
   }, [templateName, qrStyle, templates]);
 
-  const deleteTemplate = useCallback((id: string) => {
-    const updated = templates.filter((t) => t.id !== id);
-    setTemplates(updated);
-    saveTemplatesToStorage(updated);
-  }, [templates]);
+  const deleteTemplate = useCallback(
+    (id: string) => {
+      const updated = templates.filter((t) => t.id !== id);
+      setTemplates(updated);
+      saveTemplatesToStorage(updated);
+    },
+    [templates],
+  );
 
   const applyTemplate = useCallback((t: Template) => {
     setQrStyle({ ...t.style });
   }, []);
 
   const clearHistory = useCallback(() => {
-    if (!window.confirm("Clear all history? This cannot be undone.")) return;
+    setConfirmOpen(true);
+  }, []);
+
+  const confirmClearHistory = useCallback(() => {
+    setConfirmOpen(false);
     setHistory([]);
     saveHistoryToStorage([]);
   }, []);
@@ -858,12 +1299,17 @@ export default function App() {
       setForms((f) => ({ ...f, [decoded.type]: decoded.form }));
     }
     setQrStyle({ ...entry.style });
-    setTimeout(() => { skipHistorySave.current = false; }, 500);
+    setTimeout(() => {
+      skipHistorySave.current = false;
+    }, 500);
   }, []);
 
-  const handleLogoPositionChange = useCallback((pos: { x: number; y: number }) => {
-    setQrStyle((s) => ({ ...s, logoPosition: pos }));
-  }, []);
+  const handleLogoPositionChange = useCallback(
+    (pos: { x: number; y: number }) => {
+      setQrStyle((s) => ({ ...s, logoPosition: pos }));
+    },
+    [],
+  );
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -879,7 +1325,9 @@ export default function App() {
       case "style":
         return <StylePanel style={qrStyle} onUpdate={updateStyle} />;
       case "adjust":
-        return <StylePanel style={qrStyle} onUpdate={updateStyle} section="adjust" />;
+        return (
+          <StylePanel style={qrStyle} onUpdate={updateStyle} section="adjust" />
+        );
       case "templates":
         return (
           <TemplatesPanel
@@ -913,7 +1361,29 @@ export default function App() {
   };
 
   return (
-    <div className="app" data-theme={resolvedTheme}>
+    <div
+      className="app"
+      data-theme={resolvedTheme}
+      {...(isTauri ? { "data-tauri": "" } : {})}
+    >
+      <Splash />
+      {(onboarding === "whatsnew" || onboarding === "welcome") && (
+        <WhatsNew
+          onDone={() => {
+            localStorage.setItem("curium_last_seen_version", "0.5.7");
+            setOnboarding("done");
+          }}
+        />
+      )}
+      {onboarding === "welcome" && (
+        <Welcome
+          onDone={() => {
+            localStorage.setItem("curium_onboarded", "true");
+            setOnboarding("whatsnew");
+          }}
+        />
+      )}
+      {isTauri && <TitleBar />}
       {/* ── Tab Bar ── */}
       <div className="tab-bar">
         <div className="tab-bar-top">
@@ -950,6 +1420,9 @@ export default function App() {
 
       {/* ── Side Panel ── */}
       <div className="side-panel" ref={sidePanelRef}>
+        <div className="app-brand">
+          <span className="app-brand-name">Curium</span>
+        </div>
         {renderTabContent()}
       </div>
 
@@ -973,13 +1446,32 @@ export default function App() {
         </div>
         {svg && (
           <div className="action-row">
-            <button className="btn btn-icon" ref={shuffleBtnRef} onClick={handleShuffle} title="Shuffle">
+            <button
+              className="btn btn-icon"
+              ref={shuffleBtnRef}
+              onClick={handleShuffle}
+              title="Shuffle"
+            >
               <Shuffle size={16} />
             </button>
-            <ExportBar svg={exportSvg ?? svg} input={qrValue} onExportSVG={doExportSVG} onExportPNG={doExportPNG} />
+            <ExportBar
+              svg={exportSvg ?? svg}
+              input={qrValue}
+              onExportSVG={doExportSVG}
+              onExportPNG={doExportPNG}
+            />
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Clear History"
+        message="This will remove all history entries. This cannot be undone."
+        confirmLabel="Clear All"
+        onConfirm={confirmClearHistory}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }
