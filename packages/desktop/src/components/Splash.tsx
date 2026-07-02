@@ -8,6 +8,14 @@ export function Splash() {
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Remove the HTML splash immediately — React takes over
+    const htmlSplash = document.getElementById("curium-splash");
+    if (htmlSplash) {
+      htmlSplash.style.transition = "none";
+      htmlSplash.style.display = "none";
+      htmlSplash.remove();
+    }
+
     const tl = gsap.timeline();
 
     tl.fromTo(
