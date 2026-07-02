@@ -7,12 +7,10 @@ import {
   Linking,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
-import {
-  Camera,
-  useCameraDevice,
-  useCameraPermission,
-} from "react-native-vision-camera";
-import { useBarcodeScannerOutput } from "react-native-vision-camera-barcode-scanner";
+import { Camera, useCameraDevice, useCameraPermission } from "react-native-vision-camera";
+import { useBarcodeScannerOutput, createBarcodeScanner } from "react-native-vision-camera-barcode-scanner";
+import { loadImage } from "react-native-nitro-image";
+import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useIsFocused } from "expo-router";
@@ -171,13 +169,37 @@ export default function ScanScreen() {
   }));
 
   const handleGalleryScan = useCallback(async () => {
-    toast.confirm(
-      "Coming Soon",
-      "This feature is not available right now. Curium has moved to a new scanning module for improved performance and detection, but that module hasn't published gallery scanning yet. The feature is already in the main repo — we just need to wait for the next release.",
-      () => {},
-      "Got it",
-      false,
-    );
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        toast.warning("Permission needed", "Allow photo library access to scan QR codes from images.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        quality: 1,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const uri = result.assets[0].uri;
+      const image = await loadImage({ filePath: uri });
+      const scanner = createBarcodeScanner({ barcodeFormats: ["all-formats"] });
+      try {
+        const barcodes = await scanner.scanCodesInImageAsync(image);
+        if (barcodes.length > 0) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setResult(barcodes[0].rawValue ?? "");
+          setScanned(true);
+        } else {
+          toast.warning("No QR code found", "The selected image does not contain a readable QR or barcode.");
+        }
+      } finally {
+        image.dispose();
+        scanner.dispose();
+      }
+    } catch (err) {
+      toast.error("Scan failed", "Could not read the image. Try a clearer photo.");
+    }
   }, [toast]);
 
   const handleAction = async (action: "open" | "copy") => {
