@@ -1429,13 +1429,11 @@ export default function App() {
       {/* ── Main Area ── */}
       <div className="main">
         <div className={`qr-card ${svg ? "qr-animate" : ""}`}>
-          <div style={{ position: "relative", width: 400, height: 400 }}>
-            <QRPreview svg={svg} size={400} />
+          <div className="qr-container">
+            <QRPreview svg={svg} />
             {qrStyle.logoUri && svg && (
               <LogoOverlay
                 uri={qrStyle.logoUri}
-                containerSize={400}
-                logoSize={60}
                 style={qrStyle.logoStyle}
                 bgColor={qrStyle.bgColor}
                 initialPosition={qrStyle.logoPosition}

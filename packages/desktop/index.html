@@ -15,6 +15,9 @@
       [data-theme="light"] { --bg: #f5f0e8; --surface: #fbf8f3; --surface-offset: #ebe6dd; --border: #d6cfc1; --text: #1a1a1f; --text-muted: #4a4640; --text-faint: #7a756d; --primary: #1a1a1f; --primary-bg: #1a1a1f18; --success: #2f8a3f; --error: #c43d3d; --warning: #b07a16; }
       [data-theme="amoled"] { --bg: #000000; --surface: #0a0a0a; --surface-offset: #141414; --border: #1e1e1e; --text: #f5f0e8; --text-muted: #b0a99e; --text-faint: #7a756d; --primary: #f5f0e8; --primary-bg: #f5f0e822; --success: #7ad88a; --error: #ff6b6b; --warning: #f5c46a; }
       body { margin: 0; padding: 0; font-family: var(--font-mono); background: var(--bg); color: var(--text); }
+      #curium-splash { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg); pointer-events: none; }
+      #curium-splash img { width: 72px; height: 72px; border-radius: 16px; }
+      #curium-splash span { display: block; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: 0.5px; margin-top: 14px; }
     </style>
     <script>
       (function() {
@@ -32,5 +35,16 @@
   </head>
   <body>
     <div id="root"></div>
+    <div id="curium-splash">
+      <img src="./src/icon.png" alt="" />
+      <span>Curium</span>
+    </div>
+    <script>
+      // Fallback: if React fails to mount, remove splash after 3s
+      setTimeout(function() {
+        var s = document.getElementById('curium-splash');
+        if (s) { s.style.display = 'none'; s.remove(); }
+      }, 3000);
+    </script>
   </body>
 </html>
