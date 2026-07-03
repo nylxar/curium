@@ -6,7 +6,9 @@ export type QRType =
   | "sms"
   | "wifi"
   | "contact"
-  | "location";
+  | "location"
+  | "event"
+  | "otpauth";
 
 export type ECL = "L" | "M" | "Q" | "H";
 
@@ -166,6 +168,7 @@ export interface QRStyle {
   fgColor: string;
   bgColor: string;
   eyeColor: string;
+  pupilColor: string;
   eyeShape: EyeShape;
   pupilShape: PupilShape;
   pixelShape: PixelShape;
@@ -187,6 +190,7 @@ export const DEFAULT_QR_STYLE: QRStyle = {
   fgColor: "#1c1917",
   bgColor: "#fafaf9",
   eyeColor: "#041520",
+  pupilColor: "#1c1917",
   eyeShape: "round",
   pupilShape: "dot",
   pixelShape: "dots",
@@ -216,6 +220,7 @@ export const DEFAULT_QR_STYLE_DARK: QRStyle = {
   fgColor: "#f5f0e8",
   bgColor: "#0d0d0f",
   eyeColor: "#f5f0e8",
+  pupilColor: "#f5f0e8",
   eyeShape: "round",
   pupilShape: "dot",
   pixelShape: "dots",
@@ -249,6 +254,7 @@ export type SheetId =
   | "fgColor"
   | "bgColor"
   | "eyeColor"
+  | "pupilColor"
   | "eye"
   | "pupil"
   | "pixel"
@@ -326,6 +332,21 @@ export interface LocationForm {
   lng: string;
   label: string;
 }
+export interface EventForm {
+  title: string;
+  location: string;
+  start: string;
+  end: string;
+  description: string;
+}
+export interface OTPAuthForm {
+  issuer: string;
+  account: string;
+  secret: string;
+  algorithm: "SHA1" | "SHA256" | "SHA512";
+  digits: 6 | 8;
+  period: number;
+}
 
 export type AnyForm =
   | URLForm
@@ -335,4 +356,6 @@ export type AnyForm =
   | SMSForm
   | WiFiForm
   | ContactForm
-  | LocationForm;
+  | LocationForm
+  | EventForm
+  | OTPAuthForm;
