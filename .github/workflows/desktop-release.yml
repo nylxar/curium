@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - "v*"
-    branches:
-      - preview
   workflow_dispatch:
     inputs:
       platform:

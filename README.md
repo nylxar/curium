@@ -111,7 +111,6 @@ If Curium saved you from another bloat, spyware, data-hungry, ad-filled QR tool,
 - [ ] Batch style swap — restyle an entire set of QRs with one template change
 - [ ] Eye size slider (5–9 modules)
 - [ ] Presets: Standard (7), Compact (5), Bold (9)
-- [ ] Gated behind "Experimental" toggle with scan disclaimer
 - [ ] Per-eye size control (each eye independently sized)
 - [ ] Eye position presets (compact, standard, spaced)
 - [ ] Drag-to-reposition eyes within the grid
