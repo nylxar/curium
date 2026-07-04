@@ -15,7 +15,7 @@ interface BatchPanelProps {
   onExportSVG: () => void;
   onExportPNG: () => void;
   onImportCSV: (entries: BatchEntry[]) => void;
-  onShuffle: () => void;
+  onShuffleStyles: () => void;
 }
 
 function parseCSV(text: string): BatchEntry[] {
@@ -54,7 +54,7 @@ export function BatchPanel({
   onExportSVG,
   onExportPNG,
   onImportCSV,
-  onShuffle,
+  onShuffleStyles,
 }: BatchPanelProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -87,15 +87,13 @@ export function BatchPanel({
   return (
     <>
       <div className="section">
-        <div className="section-header">
+        <div className="section-header" style={{ marginBottom: 8 }}>
           <div className="section-title">
             Batch ({entries.length} {entries.length === 1 ? "entry" : "entries"})
           </div>
-          {entries.length > 1 && (
-            <button className="btn btn-icon" onClick={onShuffle} title="Shuffle order">
-              <Shuffle size={14} />
-            </button>
-          )}
+          <button className="btn btn-icon" onClick={onShuffleStyles} title="Shuffle styles">
+            <Shuffle size={14} />
+          </button>
         </div>
         <textarea
           className="input"
