@@ -5,17 +5,31 @@
 <h1 align="center">Curium</h1>
 
 <p align="center">
-  Modern, privacy-first QR customizer.<br/>
-  No analytics. No network. Just your codes.
+  Modern, privacy-first QR code generator, customizer, and scanner.<br/>
+  No analytics. No network. No accounts. Just your codes.
 </p>
 
 <p align="center">
   <img src="https://badgen.net/github/release/nylxar/curium?labelColor=111&color=555" alt="Latest Release" />
-  <img src="https://badgen.net/badge/platform/Android%207%2B/111?labelColor=111&color=555" alt="Platform" />
+  <img src="https://badgen.net/badge/platform/Android%207%2B%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux/111?labelColor=111&color=555" alt="Platforms" />
   <img src="https://badgen.net/badge/license/GPL-3.0/111?labelColor=111&color=555" alt="License" />
   <img src="https://badgen.net/badge/SDK/56/111?labelColor=111&color=555" alt="SDK" />
   <img src="https://api.visitorbadge.io/api/visitors?path=nylxar%2Fcurium&label=downloads&style=flat&countColor=%23555&labelColor=%23111" alt="Downloads" />
 </p>
+
+---
+
+### Why Curium Exists
+
+A QR code is a 35-year-old standard. It is public domain math. The idea that companies can charge you for generating a QR code — or worse, track you for doing it — is absurd.
+
+The QR code industry has become entirely different than its inventor intended it to be. Most QR code generators on the internet do the same thing: they let you create a code, then they track you, log your data, or serve you ads. Most of them are free because you are the product.
+
+Capitalism has ruined even the basic needs of humans. Every digital tool must be a SaaS product. Every feature must be behind a paywall. Every interaction must be tracked and monetized.
+
+Curium rejects this. Some things should just work. Some things should be free. Some things should respect your privacy by default, not as a premium feature.
+
+Unlike others, Curium has a modern UI/UX, no ads, no bloat, no spyware, no hunger for data. As it develops, it ships every feature an ideal QR tool should have. With releases for Android, Windows, macOS, Linux, CLI, Web, and iOS, it deprecates and makes every other QR tool obsolete — bringing an end to decades of QR capitalism.
 
 ---
 
@@ -46,22 +60,27 @@
 
 ---
 
-### Support Curium 
-If Curium saved you from another bloat, spyware, data-hungry, ad-filled QR tool, then consider supporting its development.
+## Platforms
 
-[![badge](https://shieldcn.dev/badge/Support-via%20Gumroad-22c55e.svg?font=fira-code&logo=gumroad&color=e5decf)](https://nylxar.gumroad.com/coffee)
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T6O120WGDS)
-[![badge](https://shieldcn.dev/badge/Support-via%20PayPal-22c55e.svg?font=fira-code&logo=ri%3AFaPaypal&color=e5decf)](https://www.paypal.com/ncp/payment/DUAR5EJ7A3RV8)
+| Platform | Status | Download |
+|----------|--------|----------|
+| Android | Stable | [Releases](https://github.com/nylxar/curium/releases) |
+| Windows | Stable | [Releases](https://github.com/nylxar/curium/releases) |
+| macOS | Stable | [Releases](https://github.com/nylxar/curium/releases) |
+| Linux | Stable | [Releases](https://github.com/nylxar/curium/releases) |
+| CLI | In Development | — |
+| Web | In Development | — |
+| iOS | Planned | — |
 
 ---
 
 ## Features
 
 ### QR Generator
-- **8 payload types** — URL, text, Wi-Fi, email, phone, SMS, contact, location
-- **Pixel styles** — square, dots, rounded, extra-rounded, diamond, and more
-- **Eye styles** — square, rounded, circle, and more
-- **Corner radius** — sharp → pill (5 levels)
+- **10 payload types** — URL, text, Wi-Fi, email, phone, SMS, contact, location, event, OTP auth
+- **21 pixel styles** — sharp, soft, round, dots, liquid, glued, smooth, flow, blob, diamond, cross, star, triangle, hexagon, plus, heart, sparkle, pinched-square, circuit-board, hashtag, vertical-line, horizontal-line
+- **8 eye styles** — sharp, soft, round, pill, dot, shield, hexagon, octagon
+- **18 pupil styles** — dot, square, diamond, cross, hexagon, octagon, shield, star, heart, blob, dome, oval, pentagon, scallop, cloud, droplet, and more
 - **Logo overlay** — pick from gallery, resize, reposition by drag
 - **Logo background** — rounded, circle, or none
 - **Logo border & shadow** — toggle independently
@@ -71,25 +90,32 @@ If Curium saved you from another bloat, spyware, data-hungry, ad-filled QR tool,
 
 ### QR Scanner
 - **Camera scan** — QR codes + barcodes (EAN-13, Code 128, PDF417, Aztec, Data Matrix)
-- **Gallery scan** — coming soon (new scanner module hasn't published static image scanning yet)
+- **Gallery scan** — scan QR codes from images in your photo library
 - **Torch toggle** — low-light scanning
 - **Scan to customize** — scan any existing QR, load into generator, restyle and export
+- **Smart open** — opens URLs, dials phones, composes emails, launches maps, and more
 
 ### Templates
 - **Save styles** — save any QR configuration as a named template
 - **One-tap load** — restore a saved template instantly
-- **Delete** — long-press to remove unwanted templates
+- **Delete** — remove unwanted templates
+
+### Batch Generation
+- **Multi-QR** — create dozens of QR codes in one session
+- **Style shuffle** — assign random styles to each QR independently
+- **CSV import/export** — bulk data management
+- **Export as zip** — SVG or PNG, timestamped filenames
 
 ### Export
 - **Save PNG** — high quality, saved to gallery
 - **Share PNG** — send via any installed app
-- **Share SVG** — vector format, shared as document (works with WhatsApp, Signal, Telegram, etc.)
+- **Share SVG** — vector format, shared as document
 - **Copy content** — clipboard
 
 ### Themes
 - **Light / Dark / System** — follows device preference
+- **AMOLED** — pure black for OLED screens
 - **Dynamic** — UI syncs to your QR's background color
-- **Pure Black** — AMOLED enhancement for OLED screens
 - **Smooth transitions** — cross-fade between themes
 
 ### History
@@ -99,57 +125,68 @@ If Curium saved you from another bloat, spyware, data-hungry, ad-filled QR tool,
 - **Clear all** — with confirmation dialog
 - **Search** — filter by content or type
 
+### Desktop (Tauri)
+- **Tabbed sidebar** — Generate, Style, Adjust, Batch, Templates, History, Settings
+- **Custom title bar** — native window controls
+- **Keyboard shortcuts** — Space (shuffle), Ctrl+S (SVG), Ctrl+Shift+S (PNG)
+- **Draggable logo** — position with mouse
+- **Onboarding** — Welcome + What's New screens
+
 ---
 
 ## What's Coming
 
-- [ ] Batch QR generation — create dozens of QR codes in one session, export as zip
+- [ ] CLI tool — headless QR generation for scripts and CI/CD
+- [ ] Web app — browser-based generator
+- [ ] iOS app — full feature parity with Android
 - [ ] QR-from-image — upload an image, generate a QR that visually matches its color palette
-- [ ] Animated QR — QR that transitions between two states (e.g., normal → brand reveal)
-- [ ] Multi-color regions — different colors per data region, not just monochrome
-- [ ] QR version override — force specific module count for exact sizing
-- [ ] Batch style swap — restyle an entire set of QRs with one template change
-- [ ] Eye size slider (5–9 modules)
-- [ ] Presets: Standard (7), Compact (5), Bold (9)
-- [ ] Per-eye size control (each eye independently sized)
-- [ ] Eye position presets (compact, standard, spaced)
-- [ ] Drag-to-reposition eyes within the grid
-- [ ] Scan confidence indicator (visual feedback on scannability)
-- [ ] Pupil size control (independent of outer ring)
-- [ ] Full per-eye customization (size, position, shape independently)
-- [ ] QR-from-image — generate a QR that visually matches an uploaded image
-- [ ] Batch generation — create multiple QR codes at once
-- [ ] QR templates — save and reuse style configurations
 - [ ] Animated QR — QR that transitions between two states
-- [ ] Multi-color QR — different colors per data region
-- [ ] QR version override — force a specific QR version (module count)
-- [ ] Separator style customization — the quiet zone around the QR
-- [ ] Export as SVG vector (not just PNG raster)
+- [ ] Multi-color regions — different colors per data region
+- [ ] QR version override — force specific module count
+- [ ] Eye size slider (5–9 modules)
+- [ ] Per-eye size control (each eye independently sized)
+- [ ] Drag-to-reposition eyes within the grid
+- [ ] Scan confidence indicator
 - [ ] QR history tags / folders
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Expo SDK 56, React Native 0.85 |
-| Navigation | Expo Router |
-| Animations | React Native Reanimated 4 |
-| Gestures | react-native-gesture-handler |
-| Camera | react-native-vision-camera (MLKit) |
-| Storage | AsyncStorage (offline-first) |
-| Language | TypeScript |
-| Typeface | IBM Plex Mono |
+| Layer | Mobile | Desktop |
+|-------|--------|---------|
+| Framework | Expo SDK 56, React Native 0.85 | React + Tauri |
+| Navigation | Expo Router | React Router |
+| Animations | React Native Reanimated 4 | GSAP |
+| Gestures | react-native-gesture-handler | Native events |
+| Camera | react-native-vision-camera + MLKit | — |
+| Storage | AsyncStorage | localStorage / tauri-plugin-store |
+| Bundler | Metro | rsbuild |
+| Language | TypeScript | TypeScript |
+| Typeface | IBM Plex Mono | IBM Plex Mono |
 
 ---
 
-## Build Variants
+## Project Structure
 
-| Variant | Application ID | Purpose |
-|---------|---------------|---------|
-| **Stable** | `com.nylxar.curium.stable` | Production releases |
-| **Preview** |`com.nylxar.curium.preview`| Preview testing |
+```
+app/                     Expo Router screens (mobile)
+components/qr/           QR creation, styling, export, templates
+components/ui/           Shared UI primitives (sheets, toasts, overlays)
+constants/               Theme tokens, QR presets, build info, release notes
+context/                 Theme provider
+services/                Local history, settings, and template persistence
+utils/                   SVG export, release notes parser
+types/                   QR payload and style types
+plugins/                 Expo config plugins
+scripts/                 Build info generator, release notes sync
+assets/                  Fonts, icons, splash assets
+packages/
+  shared/                Shared types, constants, utilities (mobile + desktop)
+  desktop/               Tauri + React desktop app
+    src/                 Desktop components, styles, utils
+    src-tauri/           Rust backend, Tauri config, icons
+```
 
 ---
 
@@ -159,7 +196,8 @@ If Curium saved you from another bloat, spyware, data-hungry, ad-filled QR tool,
 
 - Node.js 22+
 - pnpm
-- Android Studio or a connected device
+- Android Studio or a connected device (mobile)
+- Rust toolchain (desktop)
 
 ### Install
 
@@ -169,7 +207,7 @@ cd curium
 pnpm install
 ```
 
-### Run
+### Run Mobile
 
 ```bash
 pnpm start
@@ -177,48 +215,34 @@ pnpm start
 pnpm android
 ```
 
-### Build Release APK
+### Run Desktop
+
+```bash
+cd packages/desktop
+pnpm tauri dev
+```
+
+### Build Release
 
 Releases are built automatically via GitHub Actions when a `v*` tag is pushed.
 
-- **Stable**: Create a `v*` tag (e.g., `v1.0.0`)
-- **Manual**: Go to Actions → Android APK Splits → Run workflow
+- **Android**: Creates draft release with APK/AAB splits
+- **Desktop**: Builds DMG (macOS), NSIS (Windows), AppImage (Linux) and uploads to the same release
 
-Or download the latest APK directly from [Releases](https://github.com/nylxar/curium/releases).
+Or download the latest from [Releases](https://github.com/nylxar/curium/releases).
 
 ---
 
 ## CI/CD
 
-The GitHub Actions workflow builds release APKs with ABI splits (`armeabi-v7a`, `arm64-v8a`, `x86_64`, universal).
-
-| Trigger | Flavor | Release |
-|---------|--------|---------|
-| Push tag `v*` | stable | Yes |
-| Daily cron (3 AM UTC) | nightly | No |
-| Manual dispatch | selectable | No |
+| Workflow | Trigger | Platforms | Release |
+|----------|---------|-----------|---------|
+| Android APK Splits | Push tag `v*` | Android | Yes (draft) |
+| Desktop Release | Push tag `v*` | macOS, Windows, Linux | Yes (uploads to Android release) |
 
 ---
 
-## Project Structure
-
-```
-app/                 Expo Router screens
-components/qr/       QR creation, styling, export, templates, navigation
-components/ui/       Shared UI primitives (sheets, toasts, overlays)
-constants/           Theme tokens, QR presets, build info, release notes
-context/             Theme provider
-services/            Local history, settings, and template persistence
-utils/               SVG export, release notes parser
-types/               QR payload and style types
-plugins/             Expo config plugins
-scripts/             Build info generator, release notes sync
-assets/              Fonts, icons, splash assets
-```
-
----
-
-## Permissions
+## Permissions (Mobile)
 
 | Permission | Why |
 |-----------|-----|
