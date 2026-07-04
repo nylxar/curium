@@ -6,10 +6,12 @@ import {
   DEFAULT_QR_STYLE,
   QR_COLORS,
 } from "@curium/shared";
+import { zipSync, strToU8 } from "fflate";
 import {
   QrCode,
   Palette,
   SlidersHorizontal,
+  Layers,
   Bookmark,
   History,
   Settings,
@@ -36,6 +38,7 @@ import { ConfirmDialog } from "./components/ConfirmDialog";
 import { Splash } from "./components/Splash";
 import { Welcome } from "./components/Welcome";
 import { WhatsNew } from "./components/WhatsNew";
+import { BatchPanel } from "./components/BatchPanel";
 import { animateThemeTransition, bounceButton } from "./utils/animations";
 import { gsap } from "gsap";
 import buildInfo from "./build-info.json";
@@ -54,6 +57,8 @@ interface FormState {
   };
   contact: { name: string; phone: string; email: string; org: string };
   location: { lat: string; lng: string; label: string };
+  event: { title: string; location: string; start: string; end: string; description: string };
+  otpauth: { issuer: string; account: string; secret: string; algorithm: "SHA1" | "SHA256" | "SHA512"; digits: 6 | 8; period: number };
 }
 
 const DEFAULT_FORMS: FormState = {
@@ -65,6 +70,8 @@ const DEFAULT_FORMS: FormState = {
   wifi: { ssid: "", password: "", encryption: "WPA" },
   contact: { name: "", phone: "", email: "", org: "" },
   location: { lat: "", lng: "", label: "" },
+  event: { title: "", location: "", start: "", end: "", description: "" },
+  otpauth: { issuer: "", account: "", secret: "", algorithm: "SHA1", digits: 6, period: 30 },
 };
 
 function encodeQR(type: QRType, forms: FormState): string {
@@ -104,6 +111,30 @@ function encodeQR(type: QRType, forms: FormState): string {
       const { lat, lng, label } = forms.location;
       if (!lat.trim() || !lng.trim()) return "";
       return `geo:${lat},${lng}${label ? `?q=${lat},${lng}(${encodeURIComponent(label)})` : ""}`;
+    }
+    case "event": {
+      const { title, location, start, end, description } = forms.event;
+      if (!title.trim()) return "";
+      const fmtDate = (d: string) => d ? d.replace(/[-: ]/g, "").replace(/(\d{8})(\d{4})/, "$1T$2") : "";
+      const lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        `SUMMARY:${title}`,
+      ];
+      if (location) lines.push(`LOCATION:${location}`);
+      if (start) lines.push(`DTSTART:${fmtDate(start)}`);
+      if (end) lines.push(`DTEND:${fmtDate(end)}`);
+      if (description) lines.push(`DESCRIPTION:${description}`);
+      lines.push("END:VEVENT", "END:VCALENDAR");
+      return lines.join("\n");
+    }
+    case "otpauth": {
+      const { issuer, account, secret, algorithm, digits, period } = forms.otpauth;
+      if (!secret.trim()) return "";
+      const label = issuer ? `${encodeURIComponent(issuer)}:${encodeURIComponent(account || issuer)}` : encodeURIComponent(account);
+      const params = new URLSearchParams({ secret, algorithm, digits: String(digits), period: String(period) });
+      return `otpauth://totp/${label}?${params.toString()}`;
     }
     default:
       return "";
@@ -153,6 +184,32 @@ function decodeQR(
     const email = data.match(/EMAIL:(.+)/m)?.[1] ?? "";
     const org = data.match(/ORG:(.+)/m)?.[1] ?? "";
     return { type: "contact", form: { name, phone, email, org } };
+  }
+  if (data.startsWith("BEGIN:VCALENDAR")) {
+    const title = data.match(/SUMMARY:(.+)/m)?.[1] ?? "";
+    const location = data.match(/LOCATION:(.+)/m)?.[1] ?? "";
+    const start = data.match(/DTSTART:(.+)/m)?.[1] ?? "";
+    const end = data.match(/DTEND:(.+)/m)?.[1] ?? "";
+    const description = data.match(/DESCRIPTION:(.+)/m)?.[1] ?? "";
+    return { type: "event", form: { title, location, start, end, description } };
+  }
+  if (data.startsWith("otpauth://")) {
+    const params = new URLSearchParams(data.split("?")[1] ?? "");
+    const label = decodeURIComponent(data.split("?")[0].replace("otpauth://totp/", ""));
+    const colonIdx = label.indexOf(":");
+    const issuer = colonIdx >= 0 ? label.slice(0, colonIdx) : "";
+    const account = colonIdx >= 0 ? label.slice(colonIdx + 1) : label;
+    return {
+      type: "otpauth",
+      form: {
+        issuer,
+        account,
+        secret: params.get("secret") ?? "",
+        algorithm: (params.get("algorithm") ?? "SHA1") as "SHA1" | "SHA256" | "SHA512",
+        digits: Number(params.get("digits") ?? "6") as 6 | 8,
+        period: Number(params.get("period") ?? "30"),
+      },
+    };
   }
   if (data.startsWith("geo:")) {
     const match = data.match(/geo:([^,]+),([^?]+)/);
@@ -233,6 +290,8 @@ const QR_TYPES: { id: QRType; label: string }[] = [
   { id: "sms", label: "SMS" },
   { id: "contact", label: "Contact" },
   { id: "location", label: "Location" },
+  { id: "event", label: "Event" },
+  { id: "otpauth", label: "OTP Auth" },
 ];
 
 // ─── Tab definitions ─────────────────────────────────────────────────────────
@@ -240,6 +299,7 @@ type TabId =
   | "generate"
   | "style"
   | "adjust"
+  | "batch"
   | "templates"
   | "history"
   | "settings"
@@ -251,6 +311,7 @@ const TOP_TABS: { id: TabId; icon: typeof QrCode; label: string }[] = [
   { id: "generate", icon: QrCode, label: "Generate" },
   { id: "style", icon: Palette, label: "Style" },
   { id: "adjust", icon: SlidersHorizontal, label: "Adjust" },
+  { id: "batch", icon: Layers, label: "Batch" },
   { id: "templates", icon: Bookmark, label: "Templates" },
   { id: "history", icon: History, label: "History" },
 ];
@@ -480,6 +541,87 @@ function GeneratePanel({
                 updateForm("location", { label: e.target.value })
               }
             />
+          </div>
+        )}
+        {activeType === "event" && (
+          <div className="input-group">
+            <input
+              className="input"
+              placeholder="Event title"
+              value={forms.event.title}
+              onChange={(e) => updateForm("event", { title: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Location (optional)"
+              value={forms.event.location}
+              onChange={(e) => updateForm("event", { location: e.target.value })}
+            />
+            <input
+              className="input"
+              type="datetime-local"
+              placeholder="Start"
+              value={forms.event.start}
+              onChange={(e) => updateForm("event", { start: e.target.value })}
+            />
+            <input
+              className="input"
+              type="datetime-local"
+              placeholder="End"
+              value={forms.event.end}
+              onChange={(e) => updateForm("event", { end: e.target.value })}
+            />
+            <textarea
+              className="input"
+              placeholder="Description (optional)"
+              value={forms.event.description}
+              onChange={(e) => updateForm("event", { description: e.target.value })}
+              rows={2}
+            />
+          </div>
+        )}
+        {activeType === "otpauth" && (
+          <div className="input-group">
+            <input
+              className="input"
+              placeholder="Issuer (e.g. Google)"
+              value={forms.otpauth.issuer}
+              onChange={(e) => updateForm("otpauth", { issuer: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Account (e.g. user@email.com)"
+              value={forms.otpauth.account}
+              onChange={(e) => updateForm("otpauth", { account: e.target.value })}
+            />
+            <input
+              className="input"
+              placeholder="Secret key (base32)"
+              value={forms.otpauth.secret}
+              onChange={(e) => updateForm("otpauth", { secret: e.target.value })}
+            />
+            <div className="btn-row">
+              {(["SHA1", "SHA256", "SHA512"] as const).map((a) => (
+                <button
+                  key={a}
+                  className={`btn ${forms.otpauth.algorithm === a ? "btn-primary" : ""}`}
+                  onClick={() => updateForm("otpauth", { algorithm: a })}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+            <div className="btn-row">
+              {([6, 8] as const).map((d) => (
+                <button
+                  key={d}
+                  className={`btn ${forms.otpauth.digits === d ? "btn-primary" : ""}`}
+                  onClick={() => updateForm("otpauth", { digits: d })}
+                >
+                  {d} digits
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -1080,6 +1222,125 @@ export default function App() {
   const skipHistorySave = useRef(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  // ── Batch state ────────────────────────────────────────────────────────────
+  const [batchInput, setBatchInput] = useState("");
+  const [batchExporting, setBatchExporting] = useState(false);
+  const [batchStyles, setBatchStyles] = useState<QRStyle[]>([]);
+
+  interface BatchEntry {
+    id: string;
+    name: string;
+    data: string;
+  }
+
+  const batchEntries = useMemo<BatchEntry[]>(() => {
+    const lines = batchInput.split("\n").map((l) => l.trim()).filter(Boolean);
+    return lines.map((data, i) => ({
+      id: `${i}-${data}`,
+      name: `qr-${i + 1}`,
+      data,
+    }));
+  }, [batchInput]);
+
+  const batchSvgs = useMemo(() => {
+    return batchEntries.map((e, i) => ({
+      ...e,
+      svg: e.data
+        ? generateSVG(e.data, batchStyles[i] ?? qrStyle, 256, false)
+        : null,
+    }));
+  }, [batchEntries, qrStyle, batchStyles]);
+
+  const doBatchExport = useCallback(
+    async (format: "svg" | "png") => {
+      if (batchSvgs.length === 0) return;
+      setBatchExporting(true);
+      try {
+        const files: Record<string, Uint8Array> = {};
+        const ts = new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-");
+        const dir = `curium-batch-${ts}`;
+
+        for (const e of batchSvgs) {
+          if (!e.svg) continue;
+          const name = e.name.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 40);
+
+          if (format === "svg") {
+            files[`${dir}/${name}.svg`] = strToU8(e.svg);
+          } else {
+            const canvas = document.createElement("canvas");
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) continue;
+            const img = new Image();
+            const blob = new Blob([e.svg], { type: "image/svg+xml" });
+            const url = URL.createObjectURL(blob);
+            await new Promise<void>((resolve) => {
+              img.onload = () => {
+                ctx.drawImage(img, 0, 0, 512, 512);
+                URL.revokeObjectURL(url);
+                canvas.toBlob((pngBlob) => {
+                  if (pngBlob)
+                    pngBlob.arrayBuffer().then((buf) => {
+                      files[`${dir}/${name}.png`] = new Uint8Array(buf);
+                    });
+                  resolve();
+                }, "image/png");
+              };
+              img.onerror = () => {
+                URL.revokeObjectURL(url);
+                resolve();
+              };
+              img.src = url;
+            });
+          }
+        }
+
+        const zipped = zipSync(files, { level: 0 });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(
+          new Blob([zipped], { type: "application/zip" }),
+        );
+        a.download = `curium-batch-${ts}.zip`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } finally {
+        setBatchExporting(false);
+      }
+    },
+    [batchSvgs],
+  );
+
+  const handleBatchCSVImport = useCallback((imported: BatchEntry[]) => {
+    const lines = imported.map((e) => e.data);
+    setBatchInput(lines.join("\n"));
+  }, []);
+
+  const handleBatchStyleShuffle = useCallback(() => {
+    const count = batchEntries.length;
+    if (count === 0) return;
+    const styles: QRStyle[] = Array.from({ length: count }, () => {
+      const r = QR_COLORS[Math.floor(Math.random() * QR_COLORS.length)];
+      const eye = SHUFFLE_EYES[Math.floor(Math.random() * SHUFFLE_EYES.length)];
+      const pupil =
+        SHUFFLE_PUPILS[Math.floor(Math.random() * SHUFFLE_PUPILS.length)];
+      const pixel =
+        SHUFFLE_PIXELS[Math.floor(Math.random() * SHUFFLE_PIXELS.length)];
+      return {
+        ...qrStyle,
+        colorId: r.id,
+        fgColor: r.fg,
+        bgColor: r.bg,
+        eyeColor: r.fg,
+        pupilColor: r.fg,
+        eyeShape: eye,
+        pupilShape: pupil,
+        pixelShape: pixel,
+      };
+    });
+    setBatchStyles(styles);
+  }, [batchEntries.length, qrStyle]);
+
   const qrValue = useMemo(
     () => encodeQR(activeType, forms),
     [activeType, forms],
@@ -1157,14 +1418,17 @@ export default function App() {
 
     if (historyTimer.current) clearTimeout(historyTimer.current);
 
-    const delay = dataChanged ? 2000 : 5000;
-
     historyTimer.current = setTimeout(() => {
       if (skipHistorySave.current) return;
       const curValue = latestQrValue.current;
       const curStyle = latestQrStyle.current;
       const curSvg = latestSvg.current;
       const curStyleKey = JSON.stringify(curStyle);
+
+      // Update saved markers AFTER dedup check, not before.
+      // This ensures rapid field edits (e.g. filling event form) only
+      // produce one history entry — the timer resets on each keystroke,
+      // and only the final state after the user stops typing is saved.
       if (
         lastSavedData.current === curValue &&
         lastSavedStyleKey.current === curStyleKey
@@ -1172,6 +1436,7 @@ export default function App() {
         return;
       lastSavedData.current = curValue;
       lastSavedStyleKey.current = curStyleKey;
+
       const entry: HistoryEntry = {
         id: Date.now().toString(),
         data: curValue,
@@ -1186,16 +1451,21 @@ export default function App() {
             : "";
         const key = curValue + "|" + curStyleKey;
         if (prevKey === key) return prev;
-        const updated = [entry, ...prev].slice(0, 100);
-        saveHistoryToStorage(updated);
-        return updated;
+        return [entry, ...prev].slice(0, 100);
       });
-    }, delay);
+    }, 5000);
 
     return () => {
       if (historyTimer.current) clearTimeout(historyTimer.current);
     };
   }, [svg, qrValue, qrStyle]);
+
+  // Persist history to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      saveHistoryToStorage(history);
+    } catch {}
+  }, [history]);
 
   const updateStyle = useCallback(
     (partial: Partial<QRStyle>) => setQrStyle((s) => ({ ...s, ...partial })),
@@ -1222,6 +1492,7 @@ export default function App() {
       fgColor: r.fg,
       bgColor: r.bg,
       eyeColor: r.fg,
+      pupilColor: r.fg,
       eyeShape: eye,
       pupilShape: pupil,
       pixelShape: pixel,
@@ -1328,6 +1599,19 @@ export default function App() {
         return (
           <StylePanel style={qrStyle} onUpdate={updateStyle} section="adjust" />
         );
+      case "batch":
+        return (
+          <BatchPanel
+            input={batchInput}
+            onInputChange={setBatchInput}
+            entries={batchEntries}
+            exporting={batchExporting}
+            onExportSVG={() => doBatchExport("svg")}
+            onExportPNG={() => doBatchExport("png")}
+            onImportCSV={handleBatchCSVImport}
+            onShuffleStyles={handleBatchStyleShuffle}
+          />
+        );
       case "templates":
         return (
           <TemplatesPanel
@@ -1428,37 +1712,61 @@ export default function App() {
 
       {/* ── Main Area ── */}
       <div className="main">
-        <div className={`qr-card ${svg ? "qr-animate" : ""}`}>
-          <div className="qr-container">
-            <QRPreview svg={svg} />
-            {qrStyle.logoUri && svg && (
-              <LogoOverlay
-                uri={qrStyle.logoUri}
-                style={qrStyle.logoStyle}
-                bgColor={qrStyle.bgColor}
-                initialPosition={qrStyle.logoPosition}
-                onPositionChange={handleLogoPositionChange}
-              />
+        {activeTab === "batch" ? (
+          batchSvgs.length > 0 ? (
+            <div className="batch-grid">
+              {batchSvgs.map((e) =>
+                e.svg ? (
+                  <div key={e.id} className="batch-item" title={e.data}>
+                    <div
+                      className="batch-qr"
+                      dangerouslySetInnerHTML={{ __html: e.svg }}
+                    />
+                    <div className="batch-label">{e.name}</div>
+                  </div>
+                ) : null,
+              )}
+            </div>
+          ) : (
+            <div className="batch-empty">
+              Enter data in the side panel to generate batch QR codes
+            </div>
+          )
+        ) : (
+          <>
+            <div className={`qr-card ${svg ? "qr-animate" : ""}`}>
+              <div className="qr-container">
+                <QRPreview svg={svg} />
+                {qrStyle.logoUri && svg && (
+                  <LogoOverlay
+                    uri={qrStyle.logoUri}
+                    style={qrStyle.logoStyle}
+                    bgColor={qrStyle.bgColor}
+                    initialPosition={qrStyle.logoPosition}
+                    onPositionChange={handleLogoPositionChange}
+                  />
+                )}
+              </div>
+            </div>
+            {svg && (
+              <div className="action-row">
+                <button
+                  className="btn btn-icon"
+                  ref={shuffleBtnRef}
+                  onClick={handleShuffle}
+                  title="Shuffle"
+                >
+                  <Shuffle size={16} />
+                </button>
+                <ExportBar
+                  svg={exportSvg ?? svg}
+                  input={qrValue}
+                  onExportSVG={doExportSVG}
+                  onExportPNG={doExportPNG}
+                />
+              </div>
             )}
-          </div>
-        </div>
-        {svg && (
-          <div className="action-row">
-            <button
-              className="btn btn-icon"
-              ref={shuffleBtnRef}
-              onClick={handleShuffle}
-              title="Shuffle"
-            >
-              <Shuffle size={16} />
-            </button>
-            <ExportBar
-              svg={exportSvg ?? svg}
-              input={qrValue}
-              onExportSVG={doExportSVG}
-              onExportPNG={doExportPNG}
-            />
-          </div>
+          </>
         )}
       </div>
 
