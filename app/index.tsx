@@ -58,6 +58,8 @@ import {
   WiFiFormView,
   ContactFormView,
   LocationFormView,
+  EventFormView,
+  OTPAuthFormView,
 } from "@/components/qr/InputForms";
 
 import { Fonts, Spacing, Radius, FontSize, QR_COLORS } from "@/constants/theme";
@@ -76,6 +78,8 @@ import {
   WiFiForm,
   ContactForm,
   LocationForm,
+  EventForm,
+  OTPAuthForm,
 } from "@/types/qr";
 
 // ─── Types — module level (NO hooks here) ────────────────────────────────────
@@ -88,6 +92,8 @@ interface FormState {
   wifi: WiFiForm;
   contact: ContactForm;
   location: LocationForm;
+  event: EventForm;
+  otpauth: OTPAuthForm;
 }
 
 type SheetId =
@@ -116,6 +122,8 @@ const DEFAULT_FORMS: FormState = {
   wifi: { ssid: "", password: "", encryption: "WPA" },
   contact: { name: "", phone: "", email: "", org: "" },
   location: { lat: "", lng: "", label: "" },
+  event: { title: "", location: "", start: "", end: "", description: "" },
+  otpauth: { issuer: "", account: "", secret: "", algorithm: "SHA1", digits: 6, period: 30 },
 };
 
 const ECL_OPTIONS: ECL[] = ["L", "M", "Q", "H"];
@@ -212,6 +220,8 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
   { id: "sms", label: "SMS", icon: "chatbubble-outline" },
   { id: "contact", label: "Contact", icon: "person-outline" },
   { id: "location", label: "Location", icon: "location-outline" },
+  { id: "event", label: "Event", icon: "calendar-outline" },
+  { id: "otpauth", label: "OTP Auth", icon: "key-outline" },
 ];
 
   // ─── Animated Form Trigger ────────────────────────────────────────────────────
@@ -341,6 +351,30 @@ function encodeQR(type: QRType, forms: FormState): string {
       if (!lat.trim() || !lng.trim()) return "";
       return `geo:${lat},${lng}${label ? `?q=${lat},${lng}(${encodeURIComponent(label)})` : ""}`;
     }
+    case "event": {
+      const { title, location, start, end, description } = forms.event;
+      if (!title.trim()) return "";
+      const fmtDate = (d: string) => d ? d.replace(/[-: ]/g, "").replace(/(\d{8})(\d{4})/, "$1T$2") : "";
+      const lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        `SUMMARY:${title}`,
+      ];
+      if (location) lines.push(`LOCATION:${location}`);
+      if (start) lines.push(`DTSTART:${fmtDate(start)}`);
+      if (end) lines.push(`DTEND:${fmtDate(end)}`);
+      if (description) lines.push(`DESCRIPTION:${description}`);
+      lines.push("END:VEVENT", "END:VCALENDAR");
+      return lines.join("\n");
+    }
+    case "otpauth": {
+      const { issuer, account, secret, algorithm, digits, period } = forms.otpauth;
+      if (!secret.trim()) return "";
+      const label = issuer ? `${encodeURIComponent(issuer)}:${encodeURIComponent(account || issuer)}` : encodeURIComponent(account);
+      const params = new URLSearchParams({ secret, algorithm, digits: String(digits), period: String(period) });
+      return `otpauth://totp/${label}?${params.toString()}`;
+    }
     default:
       return "";
   }
@@ -420,7 +454,7 @@ export default function CreateScreen() {
         value: qrValue,
         qrStyle: styleNow,
       });
-    }, 2500);
+    }, 5000);
 
     return () => clearTimeout(t);
   }, [qrValue, activeType, qrStyle]);
@@ -479,6 +513,7 @@ export default function CreateScreen() {
       fgColor: r.fg,
       bgColor: r.bg,
       eyeColor: r.fg,
+      pupilColor: r.fg,
       eyeShape: eye,
       pupilShape: pupil,
       pixelShape: pixel,
@@ -603,6 +638,22 @@ export default function CreateScreen() {
             tintColor={tint}
             form={forms.location}
             onChange={(v) => updateForm("location", v)}
+          />
+        );
+      case "event":
+        return (
+          <EventFormView
+            tintColor={tint}
+            form={forms.event}
+            onChange={(v) => updateForm("event", v)}
+          />
+        );
+      case "otpauth":
+        return (
+          <OTPAuthFormView
+            tintColor={tint}
+            form={forms.otpauth}
+            onChange={(v) => updateForm("otpauth", v)}
           />
         );
       default:

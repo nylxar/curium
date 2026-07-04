@@ -299,10 +299,15 @@ export function ColorPicker({
   onClose,
 }: ColorPickerProps) {
   const overlay = useOverlay();
-  const [overlayId, setOverlayId] = useState<number | null>(null);
+  const overlayIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (visible) {
+      // Dismiss any lingering overlay first
+      if (overlayIdRef.current !== null) {
+        overlay.dismiss(overlayIdRef.current);
+        overlayIdRef.current = null;
+      }
       const id = overlay.show(
         <ColorPickerContent
           initialColor={initialColor}
@@ -310,23 +315,23 @@ export function ColorPicker({
           onConfirm={(hex) => {
             onConfirm(hex);
             overlay.dismiss(id);
+            overlayIdRef.current = null;
           }}
           onClose={() => {
             overlay.dismiss(id);
+            overlayIdRef.current = null;
             onClose();
           }}
         />,
       );
-      setOverlayId(id);
+      overlayIdRef.current = id;
       return () => {
-        overlay.dismiss(id);
-        setOverlayId(null);
+        if (overlayIdRef.current !== null) {
+          overlay.dismiss(overlayIdRef.current);
+          overlayIdRef.current = null;
+        }
       };
-    } else if (overlayId !== null) {
-      overlay.dismiss(overlayId);
-      setOverlayId(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   return null;

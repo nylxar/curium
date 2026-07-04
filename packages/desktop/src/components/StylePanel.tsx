@@ -212,6 +212,9 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
         <div style={{ marginTop: 8 }}>
           <ColorPicker label="Eye Color" value={style.eyeColor} onChange={(c) => onUpdate({ eyeColor: c })} />
         </div>
+        <div style={{ marginTop: 8 }}>
+          <ColorPicker label="Pupil Color" value={style.pupilColor} onChange={(c) => onUpdate({ pupilColor: c })} />
+        </div>
       </CollapsibleSection>
 
       <CollapsibleSection title="Logo" defaultOpen={!!style.logoUri}>

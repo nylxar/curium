@@ -14,9 +14,12 @@ import {
   WiFiForm,
   ContactForm,
   LocationForm,
+  EventForm,
+  OTPAuthForm,
 } from "@/types/qr";
 import { Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
 import { ExpandableField } from "./ExpandableField";
+import { DateTimePicker } from "./DateTimePicker";
 import { useTheme } from "@/context/ThemeContext";
 
 // At top of InputForms.tsx — add explicit interfaces:
@@ -66,6 +69,18 @@ interface ContactFormProps {
 interface LocationFormProps {
   form: LocationForm;
   onChange: (f: LocationForm) => void;
+  tintColor: string;
+}
+
+interface EventFormProps {
+  form: EventForm;
+  onChange: (f: EventForm) => void;
+  tintColor: string;
+}
+
+interface OTPAuthFormProps {
+  form: OTPAuthForm;
+  onChange: (f: OTPAuthForm) => void;
   tintColor: string;
 }
 
@@ -351,6 +366,126 @@ export function LocationFormView({
         onChange={(v: string) => onChange({ ...form, label: v })}
         placeholder="New Delhi"
       />
+    </View>
+  );
+}
+
+export function EventFormView({ form, onChange, tintColor }: EventFormProps) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.formGroup}>
+      <ExpandableField
+        label="Event title"
+        tintColor={tintColor}
+        value={form.title}
+        onChange={(v: string) => onChange({ ...form, title: v })}
+        placeholder="Team standup"
+      />
+      <ExpandableField
+        label="Location (optional)"
+        tintColor={tintColor}
+        value={form.location}
+        onChange={(v: string) => onChange({ ...form, location: v })}
+        placeholder="Conference Room A"
+      />
+      <DateTimePicker
+        label="Start"
+        value={form.start}
+        onChange={(v: string) => onChange({ ...form, start: v })}
+      />
+      <DateTimePicker
+        label="End"
+        value={form.end}
+        onChange={(v: string) => onChange({ ...form, end: v })}
+      />
+      <ExpandableField
+        label="Description (optional)"
+        tintColor={tintColor}
+        value={form.description}
+        onChange={(v: string) => onChange({ ...form, description: v })}
+        placeholder="Weekly sync"
+      />
+    </View>
+  );
+}
+
+export function OTPAuthFormView({ form, onChange, tintColor }: OTPAuthFormProps) {
+  const { colors } = useTheme();
+  const algorithms: Array<"SHA1" | "SHA256" | "SHA512"> = ["SHA1", "SHA256", "SHA512"];
+  const digitOptions: Array<6 | 8> = [6, 8];
+  return (
+    <View style={styles.formGroup}>
+      <ExpandableField
+        label="Issuer"
+        tintColor={tintColor}
+        value={form.issuer}
+        onChange={(v: string) => onChange({ ...form, issuer: v })}
+        placeholder="Google"
+      />
+      <ExpandableField
+        label="Account"
+        tintColor={tintColor}
+        value={form.account}
+        onChange={(v: string) => onChange({ ...form, account: v })}
+        placeholder="user@example.com"
+      />
+      <ExpandableField
+        label="Secret (base32)"
+        tintColor={tintColor}
+        value={form.secret}
+        onChange={(v: string) => onChange({ ...form, secret: v.toUpperCase() })}
+        placeholder="JBSWY3DPEHPK3PXP"
+      />
+      <Text style={[styles.label, { color: colors.textMuted }]}>Algorithm</Text>
+      <View style={styles.segRow}>
+        {algorithms.map((a) => (
+          <TouchableOpacity
+            key={a}
+            style={[
+              styles.seg,
+              {
+                borderColor: form.algorithm === a ? tintColor : colors.border,
+                backgroundColor: form.algorithm === a ? tintColor + "18" : "transparent",
+              },
+            ]}
+            onPress={() => onChange({ ...form, algorithm: a })}
+          >
+            <Text
+              style={[
+                styles.segLabel,
+                { color: form.algorithm === a ? tintColor : colors.textMuted },
+              ]}
+            >
+              {a.replace("SHA", "SHA-")}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Text style={[styles.label, { color: colors.textMuted }]}>Digits</Text>
+      <View style={styles.segRow}>
+        {digitOptions.map((d) => (
+          <TouchableOpacity
+            key={d}
+            style={[
+              styles.seg,
+              {
+                borderColor: form.digits === d ? tintColor : colors.border,
+                backgroundColor: form.digits === d ? tintColor + "18" : "transparent",
+              },
+            ]}
+            onPress={() => onChange({ ...form, digits: d })}
+          >
+            <Text
+              style={[
+                styles.segLabel,
+                { color: form.digits === d ? tintColor : colors.textMuted },
+              ]}
+            >
+              {d}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }

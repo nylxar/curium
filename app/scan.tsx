@@ -84,14 +84,37 @@ function detectQRType(data: string): {
     };
   }
 
+  if (/^BEGIN:VCALENDAR/i.test(data)) {
+    const title = data.match(/SUMMARY:([^\n]*)/)?.[1] ?? "";
+    const location = data.match(/LOCATION:([^\n]*)/)?.[1] ?? "";
+    const start = data.match(/DTSTART:([^\n]*)/)?.[1] ?? "";
+    const end = data.match(/DTEND:([^\n]*)/)?.[1] ?? "";
+    return { type: "event", parsed: { title, location, start, end } };
+  }
+
+  if (/^otpauth:\/\//i.test(data)) {
+    const params = new URLSearchParams(data.split("?")[1] ?? "");
+    const label = decodeURIComponent(
+      data.split("?")[0].replace("otpauth://totp/", ""),
+    );
+    const colonIdx = label.indexOf(":");
+    const issuer = colonIdx >= 0 ? label.slice(0, colonIdx) : "";
+    const account = colonIdx >= 0 ? label.slice(colonIdx + 1) : label;
+    return {
+      type: "otpauth",
+      parsed: { issuer, account, secret: params.get("secret") ?? "" },
+    };
+  }
+
   if (/^geo:/i.test(data)) {
     const coords = data.replace(/^geo:/i, "").split(",");
+    const labelMatch = data.match(/\(([^)]+)\)/);
     return {
       type: "location",
       parsed: {
         lat: coords[0] ?? "",
         lng: coords[1]?.split("?")[0] ?? "",
-        label: "",
+        label: labelMatch?.[1] ?? "",
       },
     };
   }
@@ -207,15 +230,104 @@ export default function ScanScreen() {
     if (action === "copy") {
       await Clipboard.setStringAsync(result);
       toast.success("Copied!", "Content copied to clipboard.");
-    } else {
-      const isURL = result.startsWith("http") || result.startsWith("www");
-      if (isURL) {
-        await Linking.openURL(
-          result.startsWith("www") ? `https://${result}` : result,
-        );
-      } else {
-        toast.info("Scanned Content", result);
+      return;
+    }
+
+    const { type, parsed } = detectQRType(result);
+
+    switch (type) {
+      case "url": {
+        const url = parsed.url.startsWith("www")
+          ? `https://${parsed.url}`
+          : parsed.url;
+        await Linking.openURL(url);
+        break;
       }
+      case "email": {
+        const qs = new URLSearchParams();
+        if (parsed.subject) qs.set("subject", parsed.subject);
+        if (parsed.body) qs.set("body", parsed.body);
+        const mailto = `mailto:${parsed.to}${qs.toString() ? `?${qs}` : ""}`;
+        await Linking.openURL(mailto);
+        break;
+      }
+      case "phone":
+        await Linking.openURL(`tel:${parsed.phone}`);
+        break;
+      case "sms": {
+        const qs = new URLSearchParams();
+        if (parsed.message) qs.set("body", parsed.message);
+        const sms = `sms:${parsed.phone}${qs.toString() ? `?${qs}` : ""}`;
+        await Linking.openURL(sms);
+        break;
+      }
+      case "wifi":
+        await Linking.openURL("action:android.settings.WIFI_SETTINGS");
+        break;
+      case "contact": {
+        const vcard = [
+          "BEGIN:VCARD",
+          "VERSION:3.0",
+          `FN:${parsed.name || ""}`,
+          `TEL:${parsed.phone || ""}`,
+          `EMAIL:${parsed.email || ""}`,
+          `ORG:${parsed.org || ""}`,
+          "END:VCARD",
+        ].join("\n");
+        await Clipboard.setStringAsync(vcard);
+        toast.success(
+          "Contact copied",
+          "VCard data copied. Open your contacts app and paste to add.",
+        );
+        break;
+      }
+      case "location": {
+        const lat = parseFloat(parsed.lat);
+        const lng = parseFloat(parsed.lng);
+        if (isNaN(lat) || isNaN(lng)) {
+          toast.error("Invalid coordinates", "Latitude and longitude must be numbers.");
+          break;
+        }
+        const label = parsed.label || `${lat}, ${lng}`;
+        await Linking.openURL(
+          `https://www.google.com/maps?q=${lat},${lng}(${encodeURIComponent(label)})`,
+        );
+        break;
+      }
+      case "event": {
+        const lines = [
+          "BEGIN:VCALENDAR",
+          "VERSION:2.0",
+          "BEGIN:VEVENT",
+        ];
+        if (parsed.title) lines.push(`SUMMARY:${parsed.title}`);
+        if (parsed.start) {
+          const fmt = parsed.start.replace(/[-: ]/g, "").replace(/(\d{8})(\d{4})/, "$1T$2");
+          lines.push(`DTSTART:${fmt}`);
+        }
+        if (parsed.end) {
+          const fmt = parsed.end.replace(/[-: ]/g, "").replace(/(\d{8})(\d{4})/, "$1T$2");
+          lines.push(`DTEND:${fmt}`);
+        }
+        if (parsed.location) lines.push(`LOCATION:${parsed.location}`);
+        lines.push("END:VEVENT", "END:VCALENDAR");
+        const ics = lines.join("\n");
+        await Clipboard.setStringAsync(ics);
+        toast.success(
+          "Calendar event copied",
+          "Open your calendar app and paste to add the event.",
+        );
+        break;
+      }
+      case "otpauth":
+        toast.info(
+          `OTP: ${parsed.issuer || "Unknown"}`,
+          `Account: ${parsed.account || "—"}\nScan this QR with your authenticator app to enroll.`,
+        );
+        break;
+      default:
+        toast.info("Scanned Content", result);
+        break;
     }
   };
 
