@@ -1,9 +1,9 @@
 {
-  "commit": "41dc8483dd3f35a1777150c737cb85cd9139bedc",
-  "shortCommit": "41dc848",
-  "branch": "master",
-  "commitDate": "2026-06-29 15:26:16 +0300",
-  "commitMessage": "tauri.conf.json",
+  "commit": "0ab8a9258aa085ba76e4c5d7c10a2f1ae95d2a04",
+  "shortCommit": "0ab8a92",
+  "branch": "preview",
+  "commitDate": "2026-07-02 22:06:02 +0300",
+  "commitMessage": "up2205020726",
   "isDirty": true,
-  "buildDate": "2026-06-29T19:36:42.640Z"
+  "buildDate": "2026-07-02T19:23:06.187Z"
 }

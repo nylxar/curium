@@ -47,7 +47,7 @@ export function CollapsibleSection({ title, defaultOpen = true, count, children 
           maxHeight,
           opacity: maxHeight === "0px" ? 0 : 1,
           pointerEvents: maxHeight === "0px" ? "none" : "auto",
-          overflow: closing ? "hidden" : "visible",
+          overflow: "hidden",
         }}
       >
         <div style={{ paddingTop: 8 }}>

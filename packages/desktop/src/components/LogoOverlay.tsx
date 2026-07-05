@@ -3,7 +3,6 @@ import { LogoStyleConfig } from "@curium/shared";
 
 interface LogoOverlayProps {
   uri: string;
-  containerSize: number;
   logoSize?: number;
   style?: LogoStyleConfig;
   bgColor?: string;
@@ -13,7 +12,6 @@ interface LogoOverlayProps {
 
 export function LogoOverlay({
   uri,
-  containerSize,
   logoSize = 60,
   style,
   bgColor = "#ffffff",
@@ -26,6 +24,19 @@ export function LogoOverlay({
     border: true,
     shadow: true,
   };
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState(400);
+
+  useEffect(() => {
+    const el = containerRef.current?.parentElement;
+    if (!el) return;
+    const measure = () => setContainerSize(el.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const pad = (cfg.padding / 100) * logoSize;
   const plateSize = logoSize + pad * 2;
@@ -94,17 +105,14 @@ export function LogoOverlay({
 
   return (
     <div
+      ref={containerRef}
       style={{
         position: "absolute",
-        left: 0,
-        top: 0,
-        width: containerSize,
-        height: containerSize,
+        inset: 0,
         zIndex: 10,
         pointerEvents: "auto",
       }}
     >
-      {/* Logo plate */}
       <div
         onMouseDown={handleMouseDown}
         style={{

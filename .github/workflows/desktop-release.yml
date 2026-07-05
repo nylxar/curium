@@ -115,16 +115,71 @@ jobs:
       - name: Install frontend dependencies
         run: corepack pnpm install --frozen-lockfile
 
-      - name: Build and release
+      - name: Build desktop app
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__
-          releaseName: "Curium v__VERSION__"
-          releaseBody: "See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/RELEASE_NOTES.md) for details."
-          releaseDraft: true
-          prerelease: false
+          # Do not create a release — Android workflow handles that
+          releaseId: ""
           projectPath: packages/desktop
           tauriScript: corepack pnpm exec tauri
           args: ${{ matrix.args }}
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-${{ matrix.artifact_suffix }}
+          path: |
+            packages/desktop/src-tauri/target/*/release/bundle/**/*.dmg
+            packages/desktop/src-tauri/target/*/release/bundle/**/*.exe
+            packages/desktop/src-tauri/target/*/release/bundle/**/*.AppImage
+          if-no-files-found: warn
+          retention-days: 14
+
+  upload-to-release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download all desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: desktop-artifacts
+          merge-multiple: true
+
+      - name: Upload to existing release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          TAG="${{ github.ref_name }}"
+
+          # Check if release exists (created by Android workflow)
+          if ! gh release view "$TAG" &>/dev/null; then
+            echo "Release $TAG not found — creating it now"
+            gh release create "$TAG" \
+              --title "Curium $TAG" \
+              --generate-notes \
+              --draft=true
+          fi
+
+          # Upload all desktop artifacts to the release
+          shopt -s nullglob
+          FILES=(
+            desktop-artifacts/**/*.dmg
+            desktop-artifacts/**/*.exe
+            desktop-artifacts/**/*.AppImage
+            desktop-artifacts/**/*.nsis.zip
+            desktop-artifacts/**/*.nsis.zip.sig
+          )
+
+          if [ ${#FILES[@]} -gt 0 ]; then
+            gh release upload "$TAG" "${FILES[@]}" --clobber
+            echo "Uploaded ${#FILES[@]} desktop artifacts to $TAG"
+          else
+            echo "No desktop artifacts found to upload"
+          fi

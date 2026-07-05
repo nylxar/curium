@@ -11,6 +11,19 @@ const PRESET_COLORS = [
   "#5b0f00", "#660000", "#783f04", "#7f6000", "#274e13", "#0c343d", "#1c4587", "#073763", "#20124d", "#4c1130",
 ];
 
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const h = hex.replace("#", "");
+  return {
+    r: parseInt(h.substring(0, 2), 16),
+    g: parseInt(h.substring(2, 4), 16),
+    b: parseInt(h.substring(4, 6), 16),
+  };
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return "#" + [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+}
+
 interface ColorPickerProps {
   value: string;
   onChange: (color: string) => void;
@@ -26,6 +39,7 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
     } catch { return []; }
   });
   const ref = useRef<HTMLDivElement>(null);
+  const rgb = hexToRgb(value);
 
   useEffect(() => { setHex(value); }, [value]);
 
@@ -41,7 +55,6 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
   const select = (c: string) => {
     onChange(c);
     setHex(c);
-    setOpen(false);
     const next = [c, ...recentColors.filter((r) => r !== c)].slice(0, 10);
     setRecentColors(next);
     localStorage.setItem("curium_recent_colors", JSON.stringify(next));
@@ -49,6 +62,13 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
 
   const handleHexSubmit = () => {
     if (/^#[0-9a-fA-F]{6}$/.test(hex)) select(hex);
+  };
+
+  const handleRgbChange = (channel: "r" | "g" | "b", val: number) => {
+    const next = { ...rgb, [channel]: val };
+    const newHex = rgbToHex(next.r, next.g, next.b);
+    onChange(newHex);
+    setHex(newHex);
   };
 
   return (
@@ -86,7 +106,25 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
             </div>
           </div>
           <div className="color-section">
-            <div className="color-section-label">Custom</div>
+            <div className="color-section-label">RGB</div>
+            <div className="rgb-inputs">
+              {(["r", "g", "b"] as const).map((ch) => (
+                <div key={ch} className="rgb-input-row">
+                  <span className="rgb-input-label">{ch.toUpperCase()}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={255}
+                    value={rgb[ch]}
+                    onChange={(e) => handleRgbChange(ch, Number(e.target.value))}
+                    className="rgb-input"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="color-section">
+            <div className="color-section-label">Hex</div>
             <div className="color-hex-row">
               <input
                 className="color-hex-input"
@@ -96,7 +134,6 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
                 onBlur={handleHexSubmit}
                 maxLength={7}
               />
-              <input type="color" value={value} onChange={(e) => select(e.target.value)} className="color-native-trigger" />
             </div>
           </div>
         </div>

@@ -20,7 +20,10 @@ import {
   WiFiForm,
   ContactForm,
   LocationForm,
+  EventForm,
+  OTPAuthForm,
 } from "@/types/qr";
+import { DateTimePicker } from "./DateTimePicker";
 
 type FormState = {
   url: URLForm;
@@ -31,6 +34,8 @@ type FormState = {
   wifi: WiFiForm;
   contact: ContactForm;
   location: LocationForm;
+  event: EventForm;
+  otpauth: OTPAuthForm;
 };
 
 interface Props {
@@ -54,6 +59,8 @@ const TYPE_META: Record<
   wifi: { label: "Wi-Fi", icon: "wifi-outline" },
   contact: { label: "Contact", icon: "person-outline" },
   location: { label: "Location", icon: "location-outline" },
+  event: { label: "Event", icon: "calendar-outline" },
+  otpauth: { label: "OTP Auth", icon: "key-outline" },
 };
 
 function Field({
@@ -393,6 +400,113 @@ export function FormModal({
               }
               placeholder="New Delhi"
             />
+          </View>
+        );
+      case "event":
+        return (
+          <View style={{ gap: Spacing.sm }}>
+            <Field
+              label="Event title"
+              value={forms.event.title}
+              tintColor={tintColor}
+              onChange={(v) => onUpdateForm("event", { ...forms.event, title: v })}
+              placeholder="Team standup"
+              autoFocus
+            />
+            <Field
+              label="Location (optional)"
+              value={forms.event.location}
+              tintColor={tintColor}
+              onChange={(v) => onUpdateForm("event", { ...forms.event, location: v })}
+              placeholder="Conference Room A"
+            />
+            <DateTimePicker
+              label="Start"
+              value={forms.event.start}
+              onChange={(v) => onUpdateForm("event", { ...forms.event, start: v })}
+            />
+            <DateTimePicker
+              label="End"
+              value={forms.event.end}
+              onChange={(v) => onUpdateForm("event", { ...forms.event, end: v })}
+            />
+            <Field
+              label="Description (optional)"
+              value={forms.event.description}
+              tintColor={tintColor}
+              onChange={(v) => onUpdateForm("event", { ...forms.event, description: v })}
+              placeholder="Weekly sync"
+              multiline
+            />
+          </View>
+        );
+      case "otpauth":
+        return (
+          <View style={{ gap: Spacing.sm }}>
+            <Field
+              label="Issuer"
+              value={forms.otpauth.issuer}
+              tintColor={tintColor}
+              onChange={(v) => onUpdateForm("otpauth", { ...forms.otpauth, issuer: v })}
+              placeholder="Google"
+              autoFocus
+            />
+            <Field
+              label="Account"
+              value={forms.otpauth.account}
+              tintColor={tintColor}
+              onChange={(v) => onUpdateForm("otpauth", { ...forms.otpauth, account: v })}
+              placeholder="user@example.com"
+            />
+            <Field
+              label="Secret (base32)"
+              value={forms.otpauth.secret}
+              tintColor={tintColor}
+              onChange={(v) => onUpdateForm("otpauth", { ...forms.otpauth, secret: v.toUpperCase() })}
+              placeholder="JBSWY3DPEHPK3PXP"
+            />
+            <View style={{ flexDirection: "row", gap: Spacing.sm }}>
+              {(["SHA1", "SHA256", "SHA512"] as const).map((a) => (
+                <TouchableOpacity
+                  key={a}
+                  style={{
+                    flex: 1,
+                    paddingVertical: Spacing.sm,
+                    alignItems: "center",
+                    borderRadius: Radius.md,
+                    borderWidth: 1,
+                    borderColor: forms.otpauth.algorithm === a ? tintColor : colors.border,
+                    backgroundColor: forms.otpauth.algorithm === a ? tintColor + "18" : "transparent",
+                  }}
+                  onPress={() => onUpdateForm("otpauth", { ...forms.otpauth, algorithm: a })}
+                >
+                  <Text style={{ fontSize: FontSize.sm, color: forms.otpauth.algorithm === a ? tintColor : colors.textMuted }}>
+                    {a.replace("SHA", "SHA-")}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={{ flexDirection: "row", gap: Spacing.sm }}>
+              {([6, 8] as const).map((d) => (
+                <TouchableOpacity
+                  key={d}
+                  style={{
+                    flex: 1,
+                    paddingVertical: Spacing.sm,
+                    alignItems: "center",
+                    borderRadius: Radius.md,
+                    borderWidth: 1,
+                    borderColor: forms.otpauth.digits === d ? tintColor : colors.border,
+                    backgroundColor: forms.otpauth.digits === d ? tintColor + "18" : "transparent",
+                  }}
+                  onPress={() => onUpdateForm("otpauth", { ...forms.otpauth, digits: d })}
+                >
+                  <Text style={{ fontSize: FontSize.sm, color: forms.otpauth.digits === d ? tintColor : colors.textMuted }}>
+                    {d} digits
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         );
       default:

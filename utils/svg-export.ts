@@ -181,13 +181,14 @@ function flowPath(cx: number, cy: number, hs: number): string {
 }
 
 function blobPath(cx: number, cy: number, hs: number): string {
-  const r = hs * 0.82;
+  const r = hs * 0.78;
   return (
-    `M${cx},${cy - r * 0.92}` +
-    `C${cx + r * 0.62},${cy - r * 0.88} ${cx + r * 0.95},${cy - r * 0.38} ${cx + r * 0.88},${cy + r * 0.12}` +
-    `C${cx + r * 0.82},${cy + r * 0.58} ${cx + r * 0.38},${cy + r * 0.95} ${cx - r * 0.08},${cy + r * 0.92}` +
-    `C${cx - r * 0.52},${cy + r * 0.88} ${cx - r * 0.92},${cy + r * 0.48} ${cx - r * 0.88},${cy - r * 0.05}` +
-    `C${cx - r * 0.85},${cy - r * 0.52} ${cx - r * 0.45},${cy - r * 0.92} ${cx},${cy - r * 0.92}Z`
+    `M${cx + r * 0.12},${cy - r * 0.94}` +
+    `C${cx + r * 0.58},${cy - r * 0.92} ${cx + r * 0.92},${cy - r * 0.62} ${cx + r * 0.96},${cy - r * 0.18}` +
+    `C${cx + r * 0.98},${cy + r * 0.22} ${cx + r * 0.72},${cy + r * 0.72} ${cx + r * 0.28},${cy + r * 0.92}` +
+    `C${cx - r * 0.12},${cy + r * 0.98} ${cx - r * 0.62},${cy + r * 0.82} ${cx - r * 0.88},${cy + r * 0.32}` +
+    `C${cx - r * 0.98},${cy - r * 0.08} ${cx - r * 0.82},${cy - r * 0.68} ${cx - r * 0.42},${cy - r * 0.92}` +
+    `C${cx - r * 0.18},${cy - r * 0.98} ${cx - r * 0.02},${cy - r * 0.96} ${cx + r * 0.12},${cy - r * 0.94}Z`
   );
 }
 
@@ -289,7 +290,7 @@ const PIXEL_CFG: Record<PixelShape, { r: number; inset: number; type: PixelShape
   flow: { r: 0.25, inset: -0.01, type: "flow" },
   // ── Individual shapes ──
   dots: { r: 0.5, inset: 0.1, type: "circle" },
-  blob: { r: 0.35, inset: 0.04, type: "blob" },
+  blob: { r: 0.35, inset: 0.08, type: "blob" },
   diamond: { r: 0, inset: 0.08, type: "diamond" },
   cross: { r: 0, inset: 0.08, type: "cross" },
   star: { r: 0.1, inset: 0.1, type: "star" },
@@ -769,8 +770,8 @@ export function generateSVG(
     `<rect width="${size}" height="${size}" fill="${qrStyle.bgColor}" rx="${cornerR}"/>`,
     `<path d="${pieces.join(" ")}" fill="${fgFill}"/>`,
     `<path d="${eyeRingPath}" fill-rule="evenodd" fill="${qrStyle.eyeColor}"/>`,
-    eyeDotPath ? `<path d="${eyeDotPath}" fill="${qrStyle.fgColor}"/>` : "",
-    pupilPieces.length > 0 ? `<path d="${pupilPieces.join(" ")}" fill="${qrStyle.fgColor}"/>` : "",
+    eyeDotPath ? `<path d="${eyeDotPath}" fill="${qrStyle.pupilColor}"/>` : "",
+    pupilPieces.length > 0 ? `<path d="${pupilPieces.join(" ")}" fill="${qrStyle.pupilColor}"/>` : "",
     `</svg>`,
   ]
     .filter(Boolean)

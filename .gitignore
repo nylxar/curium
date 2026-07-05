@@ -43,4 +43,5 @@ yarn-error.*
 *.keystore
 notes.md
 DO_NOT_TOUCH.md
+TODO.md
 ADDING_STYLES.md

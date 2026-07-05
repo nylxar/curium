@@ -1,21 +1,50 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
     <title>Curium</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+    <style>
+      :root { --font-mono: "IBM Plex Mono", monospace; color-scheme: dark light; }
+      :root, [data-theme="dark"] { --bg: #0d0d0f; --surface: #161618; --surface-offset: #1e1e21; --border: #2a2a2e; --text: #f5f0e8; --text-muted: #b0a99e; --text-faint: #7a756d; --primary: #f5f0e8; --primary-bg: #f5f0e822; --success: #7ad88a; --error: #ff6b6b; --warning: #f5c46a; }
+      @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]):not([data-theme="amoled"]) { --bg: #f5f0e8; --surface: #fbf8f3; --surface-offset: #ebe6dd; --border: #d6cfc1; --text: #1a1a1f; --text-muted: #4a4640; --text-faint: #7a756d; --primary: #1a1a1f; --primary-bg: #1a1a1f18; --success: #2f8a3f; --error: #c43d3d; --warning: #b07a16; } }
+      [data-theme="light"] { --bg: #f5f0e8; --surface: #fbf8f3; --surface-offset: #ebe6dd; --border: #d6cfc1; --text: #1a1a1f; --text-muted: #4a4640; --text-faint: #7a756d; --primary: #1a1a1f; --primary-bg: #1a1a1f18; --success: #2f8a3f; --error: #c43d3d; --warning: #b07a16; }
+      [data-theme="amoled"] { --bg: #000000; --surface: #0a0a0a; --surface-offset: #141414; --border: #1e1e1e; --text: #f5f0e8; --text-muted: #b0a99e; --text-faint: #7a756d; --primary: #f5f0e8; --primary-bg: #f5f0e822; --success: #7ad88a; --error: #ff6b6b; --warning: #f5c46a; }
+      body { margin: 0; padding: 0; font-family: var(--font-mono); background: var(--bg); color: var(--text); }
+      #curium-splash { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg); pointer-events: none; }
+      #curium-splash img { width: 72px; height: 72px; border-radius: 16px; }
+      #curium-splash span { display: block; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: 0.5px; margin-top: 14px; }
+    </style>
     <script>
       (function() {
-        var t = localStorage.getItem('curium_theme') || 'dark';
-        if (t === 'system') t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', t);
+        try {
+          var t = localStorage.getItem('curium_theme');
+          if (!t || t === 'system') {
+            t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          document.documentElement.setAttribute('data-theme', t);
+        } catch(e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
       })();
     </script>
   </head>
   <body>
     <div id="root"></div>
+    <div id="curium-splash">
+      <img src="./src/icon.png" alt="" />
+      <span>Curium</span>
+    </div>
+    <script>
+      // Fallback: if React fails to mount, remove splash after 3s
+      setTimeout(function() {
+        var s = document.getElementById('curium-splash');
+        if (s) { s.style.display = 'none'; s.remove(); }
+      }, 3000);
+    </script>
   </body>
 </html>

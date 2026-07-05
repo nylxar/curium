@@ -38,6 +38,8 @@ const TYPES: {
   { id: "sms", label: "SMS", icon: "chatbubble-outline" },
   { id: "contact", label: "Contact", icon: "person-outline" },
   { id: "location", label: "Location", icon: "location-outline" },
+  { id: "event", label: "Event", icon: "calendar-outline" },
+  { id: "otpauth", label: "OTP Auth", icon: "key-outline" },
 ];
 
 export function TypeSelector({ selected, tintColor, onChange }: Props) {
