@@ -11,9 +11,8 @@
 
 <p align="center">
   <img src="https://badgen.net/github/release/nylxar/curium?labelColor=111&color=555" alt="Latest Release" />
-  <img src="https://badgen.net/badge/platform/Android%20%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20iOS%20%7C%20Web/111?labelColor=111&color=555" alt="Platforms" />
+  <img src="https://badgen.net/badge/platform/Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Web/111?labelColor=111&color=555" alt="Platforms" />
   <img src="https://badgen.net/badge/license/GPL-3.0/111?labelColor=111&color=555" alt="License" />
-  <img src="https://badgen.net/badge/SDK/56/111?labelColor=111&color=555" alt="SDK" />
   <img src="https://api.visitorbadge.io/api/visitors?path=nylxar%2Fcurium&label=downloads&style=flat&countColor=%23555&labelColor=%23111" alt="Downloads" />
 </p>
 
@@ -39,11 +38,11 @@ With official releases for Android, Windows, macOS, Linux, CLI, Web, and eventua
 
 ---
 ### Status
-![Last commit](https://www.shieldcn.dev/github/last-commit/nylxar/curium.svg?variant=secondary&size=sm&mode=light)
-![CI](https://www.shieldcn.dev/github/ci/nylxar/curium.svg?variant=secondary&size=sm&mode=light)
-![Merged PRs](https://www.shieldcn.dev/github/merged-prs/nylxar/curium.svg?variant=secondary&size=sm&mode=light)
-![Open issues](https://www.shieldcn.dev/github/open-issues/nylxar/curium.svg?variant=secondary&size=sm&mode=light)
-![Open PRs](https://www.shieldcn.dev/github/open-prs/nylxar/curium.svg?variant=secondary&size=sm&mode=light)
+<picture><source media="(prefers-color-scheme: light)" srcset="https://www.shieldcn.dev/github/last-commit/nylxar/curium.svg?variant=secondary&amp;size=xs&amp;mode=dark"><img alt="Last commit" src="https://www.shieldcn.dev/github/last-commit/nylxar/curium.svg?variant=secondary&amp;size=xs&amp;mode=light"></picture>
+<picture><source media="(prefers-color-scheme: light)" srcset="https://www.shieldcn.dev/github/ci/nylxar/curium.svg?variant=secondary&amp;size=xs&amp;mode=dark"><img alt="CI" src="https://www.shieldcn.dev/github/ci/nylxar/curium.svg?variant=secondary&amp;size=xs&amp;mode=light"></picture>
+<picture><source media="(prefers-color-scheme: light)" srcset="https://www.shieldcn.dev/github/merged-prs/nylxar/curium.svg?variant=secondary&amp;size=xs&amp;mode=dark"><img alt="Merged PRs" src="https://www.shieldcn.dev/github/merged-prs/nylxar/curium.svg?variant=secondary&amp;size=xs&amp;mode=light"></picture>
+<picture><source media="(prefers-color-scheme: light)" srcset="https://www.shieldcn.dev/github/open-issues/nylxar/curium.svg?variant=secondary&amp;size=xs&amp;mode=dark"><img alt="Open issues" src="https://www.shieldcn.dev/github/open-issues/nylxar/curium.svg?variant=secondary&amp;size=xs&amp;mode=light"></picture>
+<picture><source media="(prefers-color-scheme: light)" srcset="https://www.shieldcn.dev/github/open-prs/nylxar/curium.svg?variant=secondary&amp;size=xs&amp;mode=dark"><img alt="Open PRs" src="https://www.shieldcn.dev/github/open-prs/nylxar/curium.svg?variant=secondary&amp;size=xs&amp;mode=light"></picture>
 
 ---
 
