@@ -9,6 +9,7 @@ import {
 } from "@curium/shared";
 import { CollapsibleSection } from "../components/CollapsibleSection";
 import { ColorPicker } from "../components/ColorPicker";
+import { ModernSwitch } from "../components/ModernSwitch";
 
 const FRAME_OPTIONS: FrameStyle[] = ["none", "thin", "rounded", "thick", "dashed", "dotted", "double"];
 const FRAME_LABELS: Record<FrameStyle, string> = { none: "None", thin: "Thin", rounded: "Round", thick: "Thick", dashed: "Dash", dotted: "Dot", double: "Dbl" };
@@ -68,10 +69,11 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
         </CollapsibleSection>
 
         <CollapsibleSection title="Gradient" defaultOpen={style.gradient.enabled}>
-          <label className="checkbox-wrap">
-            <input type="checkbox" checked={style.gradient.enabled} onChange={(e) => onUpdate({ gradient: { ...style.gradient, enabled: e.target.checked } })} />
-            Enable gradient
-          </label>
+          <ModernSwitch
+            checked={style.gradient.enabled}
+            onChange={(checked) => onUpdate({ gradient: { ...style.gradient, enabled: checked } })}
+            label="Enable gradient"
+          />
           {style.gradient.enabled && (
             <div style={{ marginTop: 8 }}>
               <div className="btn-row">
@@ -121,14 +123,16 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
                 ))}
               </div>
               <div style={{ marginTop: 8, display: "flex", gap: 16 }}>
-                <label className="checkbox-wrap">
-                  <input type="checkbox" checked={style.logoStyle.border} onChange={(e) => onUpdate({ logoStyle: { ...style.logoStyle, border: e.target.checked } })} />
-                  Border
-                </label>
-                <label className="checkbox-wrap">
-                  <input type="checkbox" checked={style.logoStyle.shadow} onChange={(e) => onUpdate({ logoStyle: { ...style.logoStyle, shadow: e.target.checked } })} />
-                  Shadow
-                </label>
+                <ModernSwitch
+                  checked={style.logoStyle.border}
+                  onChange={(checked) => onUpdate({ logoStyle: { ...style.logoStyle, border: checked } })}
+                  label="Border"
+                />
+                <ModernSwitch
+                  checked={style.logoStyle.shadow}
+                  onChange={(checked) => onUpdate({ logoStyle: { ...style.logoStyle, shadow: checked } })}
+                  label="Shadow"
+                />
               </div>
             </div>
           )}
