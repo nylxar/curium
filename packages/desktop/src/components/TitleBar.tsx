@@ -1,5 +1,5 @@
 import { Minus, Square, X, Copy } from "lucide-react";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 function getAppWindow() {
   return (window as any).__TAURI__?.window?.getCurrentWindow?.();
@@ -26,18 +26,21 @@ export function TitleBar() {
   const isMac = useIsMacOS();
   const [isMaximized, setIsMaximized] = useState(false);
 
-  const refreshMaximized = useCallback(async () => {
-    try {
-      const win = getAppWindow();
-      if (win?.isMaximized) setIsMaximized(await win.isMaximized());
-    } catch {}
-  }, []);
-
   useEffect(() => {
-    refreshMaximized();
-    const interval = setInterval(refreshMaximized, 500);
-    return () => clearInterval(interval);
-  }, [refreshMaximized]);
+    const win = getAppWindow();
+    if (!win) return;
+
+    win.isMaximized?.().then(setIsMaximized).catch(() => {});
+
+    const unlisten = win.listen?.("tauri://resize", async () => {
+      try {
+        const maximized = await win.isMaximized?.();
+        setIsMaximized(!!maximized);
+      } catch {}
+    });
+
+    return () => { unlisten?.then?.((fn: () => void) => fn()); };
+  }, []);
 
   const minimize = useCallback(async () => {
     try { await getAppWindow()?.minimize?.(); } catch {}
@@ -51,7 +54,6 @@ export function TitleBar() {
     try { await getAppWindow()?.close?.(); } catch {}
   }, []);
 
-  // macOS: native traffic lights, just a drag region
   if (isMac) {
     return (
       <div data-tauri-drag-region className="titlebar titlebar-mac">
@@ -60,7 +62,6 @@ export function TitleBar() {
     );
   }
 
-  // Linux / Windows: custom window controls
   return (
     <div data-tauri-drag-region className="titlebar">
       <span className="titlebar-title">Curium</span>
