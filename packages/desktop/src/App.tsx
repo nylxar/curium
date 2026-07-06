@@ -103,9 +103,15 @@ export default function App() {
   const [activeType, setActiveType] = useState<QRType>("text");
   const [forms, setForms] = useState<FormState>(DEFAULT_FORMS);
   const [qrStyle, setQrStyle] = useState<QRStyle>(DEFAULT_QR_STYLE);
-  const [templates, setTemplates] = useState<Template[]>(loadTemplates);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [templateName, setTemplateName] = useState("");
-  const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+
+  // Load persisted data on mount
+  useEffect(() => {
+    loadTemplates().then(setTemplates).catch(() => {});
+    loadHistory().then(setHistory).catch(() => {});
+  }, []);
   const skipHistorySave = useRef(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 

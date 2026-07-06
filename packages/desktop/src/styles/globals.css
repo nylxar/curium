@@ -668,6 +668,82 @@ textarea.input {
   color: var(--text);
 }
 
+/* ── URL Presets Dropdown ──────────────────────────────────────────────── */
+
+.presets-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-offset);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+  margin-bottom: 6px;
+}
+
+.presets-trigger:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.presets-chevron {
+  transition: transform 0.15s ease;
+}
+
+.presets-chevron.open {
+  transform: rotate(180deg);
+}
+
+.presets-dropdown {
+  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.presets-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s ease;
+}
+
+.presets-item:hover {
+  background: var(--surface-offset);
+}
+
+.presets-item-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.presets-item-prefix {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .btn-sm {
   padding: 2px 8px;
   font-size: 10px;
@@ -958,51 +1034,52 @@ textarea.input {
   background: var(--text-faint);
 }
 
-/* ── Custom Checkbox ────────────────────────────────────────────────────── */
+/* ── Modern Switch ──────────────────────────────────────────────────────── */
 
-.checkbox-wrap {
+.switch-wrap {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  font-size: 12px;
-  color: var(--text-muted);
   user-select: none;
 }
 
-.checkbox-wrap input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1.5px solid var(--border);
-  background: var(--surface-offset);
-  cursor: pointer;
+.switch {
   position: relative;
-  transition: all 0.15s ease;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--border);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s ease;
   flex-shrink: 0;
 }
 
-.checkbox-wrap input[type="checkbox"]:checked {
+.switch-on {
   background: var(--primary);
-  border-color: var(--primary);
 }
 
-.checkbox-wrap input[type="checkbox"]:checked::after {
-  content: "";
+.switch-thumb {
   position: absolute;
-  left: 4px;
-  top: 1px;
-  width: 5px;
-  height: 9px;
-  border: solid var(--bg);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.checkbox-wrap input[type="checkbox"]:hover {
-  border-color: var(--text-muted);
+.switch-on .switch-thumb {
+  transform: translateX(16px);
+}
+
+.switch-label {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 /* ── Color Preview Box ──────────────────────────────────────────────────── */
