@@ -326,6 +326,8 @@ body {
 
 /* ── Title Bar ─────────────────────────────────────────────────────────── */
 
+/* ── Titlebar ────────────────────────────────────────────────────────────── */
+
 .titlebar {
   position: fixed;
   top: 0;
@@ -340,6 +342,11 @@ body {
   -webkit-app-region: drag;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+}
+
+.titlebar-mac {
+  padding-left: 80px;
+  border-bottom: none;
 }
 
 .titlebar-title {
@@ -557,17 +564,8 @@ body {
 .action-row {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.1);
-}
-
-.action-visible {
-  opacity: 1;
-  transform: translateY(0);
+  gap: 12px;
+  justify-content: center;
 }
 
 /* ── Form Elements ──────────────────────────────────────────────────────── */
@@ -668,6 +666,11 @@ textarea.input {
 
 .btn-icon:hover {
   color: var(--text);
+}
+
+.btn-sm {
+  padding: 2px 8px;
+  font-size: 10px;
 }
 
 /* ── Color Grid ─────────────────────────────────────────────────────────── */
@@ -783,6 +786,30 @@ textarea.input {
 .list-item-date {
   font-size: 10px;
   color: var(--text-muted);
+}
+
+/* ── History Detail Meta ─────────────────────────────────────────────────── */
+
+.history-detail-meta {
+  width: 100%;
+  max-width: 360px;
+  text-align: left;
+}
+
+.history-detail-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-faint);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.history-detail-value {
+  font-size: 12px;
+  color: var(--text);
+  word-break: break-all;
+  line-height: 1.5;
 }
 
 /* ── Settings Row ───────────────────────────────────────────────────────── */
