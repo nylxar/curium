@@ -166,11 +166,11 @@ export default function App() {
                 ctx.drawImage(img, 0, 0, 512, 512);
                 URL.revokeObjectURL(url);
                 canvas.toBlob((pngBlob) => {
-                  if (pngBlob)
-                    pngBlob.arrayBuffer().then((buf) => {
-                      files[`${dir}/${name}.png`] = new Uint8Array(buf);
-                    });
-                  resolve();
+                  if (!pngBlob) { resolve(); return; }
+                  pngBlob.arrayBuffer().then((buf) => {
+                    files[`${dir}/${name}.png`] = new Uint8Array(buf);
+                    resolve();
+                  });
                 }, "image/png");
               };
               img.onerror = () => {

@@ -42,7 +42,7 @@ export function encodeQR(type: QRType, forms: FormState): string {
     case "event": {
       const { title, location, start, end, description } = forms.event;
       if (!title.trim()) return "";
-      const fmtDate = (d: string) => d ? d.replace(/[-: ]/g, "").replace(/(\d{8})(\d{4})/, "$1T$2") : "";
+      const fmtDate = (d: string) => d ? d.replace(/[-: ]/g, "").replace(/(\d{8})T(\d{4})$/, "$1T$200") : "";
       const lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
@@ -115,10 +115,14 @@ export function decodeQR(
   if (data.startsWith("BEGIN:VCALENDAR")) {
     const title = data.match(/SUMMARY:(.+)/m)?.[1] ?? "";
     const location = data.match(/LOCATION:(.+)/m)?.[1] ?? "";
-    const start = data.match(/DTSTART:(.+)/m)?.[1] ?? "";
-    const end = data.match(/DTEND:(.+)/m)?.[1] ?? "";
+    const startRaw = data.match(/DTSTART:(.+)/m)?.[1] ?? "";
+    const endRaw = data.match(/DTEND:(.+)/m)?.[1] ?? "";
     const description = data.match(/DESCRIPTION:(.+)/m)?.[1] ?? "";
-    return { type: "event", form: { title, location, start, end, description } };
+    const parseDate = (s: string) => {
+      const m = s.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/);
+      return m ? `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}` : s;
+    };
+    return { type: "event", form: { title, location, start: parseDate(startRaw), end: parseDate(endRaw), description } };
   }
   if (data.startsWith("otpauth://")) {
     const params = new URLSearchParams(data.split("?")[1] ?? "");
