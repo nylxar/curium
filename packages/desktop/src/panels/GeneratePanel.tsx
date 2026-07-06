@@ -1,6 +1,7 @@
 import type { QRType } from "@curium/shared";
 import type { FormState } from "../types";
 import { QR_TYPES } from "../types";
+import { URLPresets } from "../components/URLPresets";
 
 export function GeneratePanel({
   activeType,
@@ -36,12 +37,15 @@ export function GeneratePanel({
       <div className="section">
         <div className="section-title">Data</div>
         {activeType === "url" && (
-          <input
-            className="input"
-            placeholder="https://example.com"
-            value={forms.url.url}
-            onChange={(e) => updateForm("url", { url: e.target.value })}
-          />
+          <>
+            <URLPresets onSelect={(prefix) => updateForm("url", { url: prefix })} />
+            <input
+              className="input"
+              placeholder="https://example.com"
+              value={forms.url.url}
+              onChange={(e) => updateForm("url", { url: e.target.value })}
+            />
+          </>
         )}
         {activeType === "text" && (
           <textarea
