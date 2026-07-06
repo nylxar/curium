@@ -698,10 +698,12 @@ function HistoryPanel({
   history,
   onClear,
   onLoad,
+  onApply,
 }: {
   history: HistoryEntry[];
   onClear: () => void;
   onLoad: (entry: HistoryEntry) => void;
+  onApply: (entry: HistoryEntry) => void;
 }) {
   return (
     <>
@@ -729,6 +731,13 @@ function HistoryPanel({
                   {new Date(h.createdAt).toLocaleTimeString()}
                 </div>
               </div>
+              <button
+                className="btn btn-sm"
+                title="Load into editor"
+                onClick={(e) => { e.stopPropagation(); onApply(h); }}
+              >
+                Load
+              </button>
             </div>
           ))}
         </div>
@@ -1560,7 +1569,18 @@ export default function App() {
     saveHistoryToStorage([]);
   }, []);
 
+  const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<HistoryEntry | null>(null);
+
+  const switchTab = useCallback((tab: TabId) => {
+    setSelectedHistoryEntry(null);
+    setActiveTab(tab);
+  }, []);
+
   const loadHistoryEntry = useCallback((entry: HistoryEntry) => {
+    setSelectedHistoryEntry(entry);
+  }, []);
+
+  const applyHistoryEntry = useCallback((entry: HistoryEntry) => {
     skipHistorySave.current = true;
     lastSavedData.current = entry.data;
     lastSavedStyleKey.current = JSON.stringify(entry.style);
@@ -1570,6 +1590,8 @@ export default function App() {
       setForms((f) => ({ ...f, [decoded.type]: decoded.form }));
     }
     setQrStyle({ ...entry.style });
+    setSelectedHistoryEntry(null);
+    setActiveTab("generate");
     setTimeout(() => {
       skipHistorySave.current = false;
     }, 500);
@@ -1629,6 +1651,7 @@ export default function App() {
             history={history}
             onClear={clearHistory}
             onLoad={loadHistoryEntry}
+            onApply={applyHistoryEntry}
           />
         );
       case "settings":
@@ -1677,7 +1700,7 @@ export default function App() {
               <button
                 key={tab.id}
                 className={`tab-btn ${activeTab === tab.id ? "active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => switchTab(tab.id)}
                 title={tab.label}
               >
                 <Icon size={18} />
@@ -1692,7 +1715,7 @@ export default function App() {
               <button
                 key={tab.id}
                 className={`tab-btn ${activeTab === tab.id ? "active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => switchTab(tab.id)}
                 title={tab.label}
               >
                 <Icon size={18} />
@@ -1732,6 +1755,30 @@ export default function App() {
               Enter data in the side panel to generate batch QR codes
             </div>
           )
+        ) : selectedHistoryEntry ? (
+          <>
+            <div className="qr-card qr-animate">
+              <div className="qr-container">
+                <QRPreview svg={selectedHistoryEntry.svg ?? ""} />
+              </div>
+            </div>
+            <div className="history-detail-meta">
+              <div className="history-detail-label">Data</div>
+              <div className="history-detail-value">{selectedHistoryEntry.data}</div>
+              <div className="history-detail-label" style={{ marginTop: 12 }}>Created</div>
+              <div className="history-detail-value">
+                {new Date(selectedHistoryEntry.createdAt).toLocaleString()}
+              </div>
+            </div>
+            <div className="action-row">
+              <button
+                className="btn btn-primary"
+                onClick={() => applyHistoryEntry(selectedHistoryEntry)}
+              >
+                Load into Editor
+              </button>
+            </div>
+          </>
         ) : (
           <>
             <div className={`qr-card ${svg ? "qr-animate" : ""}`}>
