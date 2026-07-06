@@ -11,6 +11,9 @@ import {
   PlusCircle,
   List,
   X as XIcon,
+  ArrowLeftRight,
+  TriangleAlert,
+  MinusCircle,
 } from "lucide-react";
 import { parseReleaseNotes, type ReleaseSection } from "../utils/release-notes-parser";
 
@@ -55,8 +58,12 @@ const ICON_MAP: Record<string, typeof Sparkles> = {
   info: Info,
   "alert-circle": AlertCircle,
   "shield-check": ShieldCheck,
+  "shield-checkmark": ShieldCheck,
   zap: Zap,
   "plus-circle": PlusCircle,
+  "swap-horizontal": ArrowLeftRight,
+  "alert-triangle": TriangleAlert,
+  "minus-circle": MinusCircle,
   list: List,
 };
 
