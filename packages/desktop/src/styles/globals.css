@@ -1044,9 +1044,6 @@ textarea.input {
 }
 
 .color-dropdown {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: -2px;
   z-index: 100;
   background: var(--surface);
   border: 1px solid var(--border);
