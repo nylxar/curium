@@ -2,7 +2,8 @@ import { Minus, Square, X, Copy } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 
 function getAppWindow() {
-  return (window as any).__TAURI__?.window?.getCurrentWindow?.();
+  const tauriWindow = (window as any).__TAURI__?.window;
+  return tauriWindow?.appWindow ?? tauriWindow?.getCurrentWindow?.();
 }
 
 export function useIsTauri() {

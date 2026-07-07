@@ -72,7 +72,6 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", resolvedTheme);
     document.body.setAttribute("data-theme", resolvedTheme);
-    document.body.style.background = "";
     localStorage.setItem("curium_theme", theme);
     animateThemeTransition();
   }, [resolvedTheme, theme]);
