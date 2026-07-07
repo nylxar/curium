@@ -1,5 +1,6 @@
 import { Minus, Square, X, Copy } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
+import { TextReveal } from "./TextReveal";
 
 function getAppWindow() {
   const tauriWindow = (window as any).__TAURI__?.window;
@@ -58,14 +59,14 @@ export function TitleBar() {
   if (isMac) {
     return (
       <div data-tauri-drag-region className="titlebar titlebar-mac">
-        <span className="titlebar-title">Curium</span>
+        <span className="titlebar-title"><TextReveal text="Curium" per="char" /></span>
       </div>
     );
   }
 
   return (
     <div data-tauri-drag-region className="titlebar">
-      <span className="titlebar-title">Curium</span>
+      <span className="titlebar-title"><TextReveal text="Curium" per="char" /></span>
       <div className="titlebar-controls">
         <button onClick={minimize} className="titlebar-btn" title="Minimize">
           <Minus size={14} />
