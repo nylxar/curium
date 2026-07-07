@@ -14,7 +14,9 @@ export function HistoryPanel({
   return (
     <>
       <div className="section">
-        <div className="section-title">History ({history.length})</div>
+        <div className="section-title history-title">
+          <span>History ({history.length})</span>
+        </div>
         {history.length > 0 ? (
           <button className="btn btn-danger" onClick={onClear}>
             Clear All
