@@ -795,7 +795,6 @@ textarea.input {
   grid-template-columns: repeat(6, 1fr);
   gap: 6px;
   padding: 8px;
-  margin: -8px;
 }
 
 .color-swatch {
