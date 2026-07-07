@@ -24,6 +24,7 @@ html, body, #root {
   height: 100%;
   width: 100%;
   overflow: hidden;
+  background: var(--bg);
 }
 
 body {
@@ -415,7 +416,6 @@ body {
 
 [data-tauri] .tab-bar {
   height: calc(100vh - 36px);
-  margin-top: -36px;
 }
 
 .tab-bar-top,
@@ -466,7 +466,6 @@ body {
 
 [data-tauri] .side-panel {
   height: calc(100vh - 36px);
-  margin-top: -36px;
 }
 
 /* ── Branding ─────────────────────────────────────────────────────────── */
