@@ -17,6 +17,7 @@ import { ConfirmDialog } from "./components/ConfirmDialog";
 import { Splash } from "./components/Splash";
 import { Welcome } from "./components/Welcome";
 import { WhatsNew } from "./components/WhatsNew";
+import { TextReveal } from "./components/TextReveal";
 import { BatchPanel } from "./panels/BatchPanel";
 import { animateThemeTransition, bounceButton } from "./utils/animations";
 import { gsap } from "gsap";
@@ -600,7 +601,7 @@ export default function App() {
 
       <div className="side-panel" ref={sidePanelRef}>
         <div className="app-brand">
-          <span className="app-brand-name">Curium</span>
+          <span className="app-brand-name"><TextReveal text="Curium" per="char" /></span>
         </div>
         {renderTabContent()}
       </div>
