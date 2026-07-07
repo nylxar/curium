@@ -24,6 +24,40 @@ function useIsMacOS() {
   return isMac;
 }
 
+function MacTrafficLights() {
+  const [hovering, setHovering] = useState(false);
+
+  return (
+    <div
+      className="titlebar-traffic-lights"
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+    >
+      <button
+        className="traffic-light traffic-light-close"
+        onClick={() => getAppWindow()?.close?.()}
+        title="Close"
+      >
+        {hovering && <X size={8} strokeWidth={2.5} />}
+      </button>
+      <button
+        className="traffic-light traffic-light-minimize"
+        onClick={() => getAppWindow()?.minimize?.()}
+        title="Minimize"
+      >
+        {hovering && <Minus size={8} strokeWidth={2.5} />}
+      </button>
+      <button
+        className="traffic-light traffic-light-maximize"
+        onClick={() => getAppWindow()?.toggleMaximize?.()}
+        title="Maximize"
+      >
+        {hovering && <Square size={7} strokeWidth={2.5} />}
+      </button>
+    </div>
+  );
+}
+
 export function TitleBar() {
   const isMac = useIsMacOS();
   const [isMaximized, setIsMaximized] = useState(false);
@@ -59,7 +93,9 @@ export function TitleBar() {
   if (isMac) {
     return (
       <div data-tauri-drag-region className="titlebar titlebar-mac">
+        <MacTrafficLights />
         <span className="titlebar-title"><TextReveal text="Curium" per="char" /></span>
+        <span />
       </div>
     );
   }
