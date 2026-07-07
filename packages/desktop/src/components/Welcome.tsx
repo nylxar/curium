@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { Shield, Palette, Scan, ArrowRight, Heart } from "lucide-react";
 import icon from "../icon.png";
+import { TextReveal } from "./TextReveal";
 
 const FEATURES = [
   { icon: Shield, text: "Fully offline, zero tracking" },
@@ -49,7 +50,7 @@ export function Welcome({ onDone }: WelcomeProps) {
           <img src={icon} alt="Curium" className="welcome-logo" />
         </div>
 
-        <div ref={titleRef} className="welcome-title">Welcome to Curium</div>
+        <div ref={titleRef} className="welcome-title"><TextReveal text="Welcome to Curium" per="word" /></div>
 
         <div ref={descRef} className="welcome-desc">
           A privacy-first QR customizer.<br />
