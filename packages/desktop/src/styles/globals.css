@@ -377,8 +377,61 @@ body {
 }
 
 .titlebar-mac {
-  padding-left: 80px;
+  padding-left: 0;
   border-bottom: none;
+}
+
+.titlebar-traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  -webkit-app-region: no-drag;
+  z-index: 1;
+}
+
+.traffic-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: filter 0.15s ease;
+}
+
+.traffic-light-close {
+  background: #ff5f57;
+}
+
+.traffic-light-minimize {
+  background: #febc2e;
+}
+
+.traffic-light-maximize {
+  background: #28c840;
+}
+
+.traffic-light-close:hover {
+  background: #ff5f57;
+  filter: brightness(0.85);
+}
+
+.traffic-light-minimize:hover {
+  background: #febc2e;
+  filter: brightness(0.85);
+}
+
+.traffic-light-maximize:hover {
+  background: #28c840;
+  filter: brightness(0.85);
+}
+
+.traffic-light:active {
+  filter: brightness(0.7);
 }
 
 .titlebar-title {
@@ -387,6 +440,13 @@ body {
   color: var(--text-muted);
   letter-spacing: 0.3px;
   user-select: none;
+}
+
+.titlebar-mac .titlebar-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
 .titlebar-controls {
