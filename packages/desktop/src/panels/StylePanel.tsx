@@ -214,10 +214,10 @@ export function StylePanel({ style, onUpdate, section = "style" }: StylePanelPro
           <ColorPicker label="Background" value={style.bgColor} onChange={(c) => onUpdate({ bgColor: c })} />
         </div>
         <div style={{ marginTop: 8 }}>
-          <ColorPicker label="Eye Color" value={style.eyeColor} onChange={(c) => onUpdate({ eyeColor: c })} />
+          <ColorPicker label="Eye" value={style.eyeColor} onChange={(c) => onUpdate({ eyeColor: c })} />
         </div>
         <div style={{ marginTop: 8 }}>
-          <ColorPicker label="Pupil Color" value={style.pupilColor} onChange={(c) => onUpdate({ pupilColor: c })} />
+          <ColorPicker label="Pupil" value={style.pupilColor} onChange={(c) => onUpdate({ pupilColor: c })} />
         </div>
       </CollapsibleSection>
 
