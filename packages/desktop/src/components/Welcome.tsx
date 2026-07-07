@@ -69,8 +69,6 @@ export function Welcome({ onDone }: WelcomeProps) {
           ))}
         </div>
 
-        <div className="welcome-spacer" />
-
         <div ref={btnsRef} className="welcome-btns">
           <button className="welcome-btn-primary" onClick={handleDone}>
             Get Started

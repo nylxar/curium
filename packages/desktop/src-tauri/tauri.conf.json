@@ -39,7 +39,8 @@
     ],
     "windows": {
       "nsis": {
-        "installerIcon": "icons/icon.ico"
+        "installerIcon": "icons/icon.ico",
+        "installMode": "both"
       },
       "webviewInstallMode": {
         "type": "embedBootstrapper",

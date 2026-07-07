@@ -565,7 +565,7 @@ export default function App() {
           }}
         />
       )}
-      {isTauri && <TitleBar />}
+      {isTauri && onboarding === "done" && <TitleBar />}
       <div className="tab-bar">
         <div className="tab-bar-top">
           {TOP_TABS.map((tab) => {
