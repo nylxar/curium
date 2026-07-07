@@ -1,0 +1,56 @@
+import type { QRStyle } from "@curium/shared";
+
+export const SHUFFLE_EYES: QRStyle["eyeShape"][] = [
+  "sharp",
+  "soft",
+  "round",
+  "pill",
+  "dot",
+  "shield",
+  "hexagon",
+  "octagon",
+];
+
+export const SHUFFLE_PUPILS: QRStyle["pupilShape"][] = [
+  "dot",
+  "square",
+  "diamond",
+  "cross",
+  "hexagon",
+  "octagon",
+  "shield",
+  "star",
+  "heart",
+  "blob",
+  "dome",
+  "oval",
+  "pentagon",
+  "scallop",
+  "cloud",
+  "droplet",
+];
+
+export const SHUFFLE_PIXELS: QRStyle["pixelShape"][] = [
+  "sharp",
+  "soft",
+  "round",
+  "dots",
+  "liquid",
+  "glued",
+  "smooth",
+  "flow",
+  "blob",
+  "diamond",
+  "cross",
+  "star",
+  "triangle",
+  "hexagon",
+  "plus",
+  "heart",
+  "sparkle",
+  "pinched-square",
+  "circuit-board",
+  "hashtag",
+  "vertical-line",
+  "horizontal-line",
+];

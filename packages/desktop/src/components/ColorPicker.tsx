@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 const PRESET_COLORS = [
   "#000000", "#434343", "#666666", "#999999", "#b7b7b7", "#cccccc", "#d9d9d9", "#efefef", "#f3f3f3", "#ffffff",
@@ -38,7 +39,8 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
       return JSON.parse(localStorage.getItem("curium_recent_colors") || "[]");
     } catch { return []; }
   });
-  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const rgb = hexToRgb(value);
 
   useEffect(() => { setHex(value); }, [value]);
@@ -46,7 +48,13 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (
+        triggerRef.current?.contains(target) ||
+        dropdownRef.current?.contains(target)
+      )
+        return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -71,73 +79,110 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
     setHex(newHex);
   };
 
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const DROPDOWN_WIDTH = 244;
+    const DROPDOWN_HEIGHT = 380;
+    const MARGIN = 6;
+
+    let left = rect.left;
+    if (left + DROPDOWN_WIDTH > window.innerWidth - 8) {
+      left = window.innerWidth - DROPDOWN_WIDTH - 8;
+    }
+    if (left < 8) left = 8;
+
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceAbove > DROPDOWN_HEIGHT + MARGIN && spaceAbove > spaceBelow;
+
+    setDropdownPos({
+      top: openUp ? rect.top - DROPDOWN_HEIGHT - MARGIN : rect.bottom + MARGIN,
+      left,
+    });
+  }, [open]);
+
+  const dropdown = open ? createPortal(
+    <div
+      ref={dropdownRef}
+      className="color-dropdown"
+      style={{
+        position: "fixed",
+        top: dropdownPos.top,
+        left: dropdownPos.left,
+      }}
+    >
+      {recentColors.length > 0 && (
+        <div className="color-section">
+          <div className="color-section-label">Recent</div>
+          <div className="color-row">
+            {recentColors.map((c) => (
+              <button key={c} className="color-dot" style={{ background: c }} onClick={() => select(c)} />
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="color-section">
+        <div className="color-section-label">Palette</div>
+        <div className="color-preset-grid">
+          {PRESET_COLORS.map((c) => (
+            <button
+              key={c}
+              className={`color-dot ${c === value ? "active" : ""}`}
+              style={{ background: c }}
+              onClick={() => select(c)}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="color-section">
+        <div className="color-section-label">RGB</div>
+        <div className="rgb-inputs">
+          {(["r", "g", "b"] as const).map((ch) => (
+            <div key={ch} className="rgb-input-row">
+              <span className="rgb-input-label">{ch.toUpperCase()}</span>
+              <input
+                type="number"
+                min={0}
+                max={255}
+                value={rgb[ch]}
+                onChange={(e) => handleRgbChange(ch, Number(e.target.value))}
+                className="rgb-input"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="color-section">
+        <div className="color-section-label">Hex</div>
+        <div className="color-hex-row">
+          <input
+            className="color-hex-input"
+            value={hex}
+            onChange={(e) => setHex(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleHexSubmit()}
+            onBlur={handleHexSubmit}
+            maxLength={7}
+          />
+        </div>
+      </div>
+    </div>,
+    document.body,
+  ) : null;
+
   return (
-    <div className="color-input-wrap" ref={ref} style={{ position: "relative" }}>
+    <div className="color-input-wrap">
       {label && <span style={{ fontSize: 11, color: "var(--text-muted)", width: 70 }}>{label}</span>}
       <button
+        ref={triggerRef}
         className="color-trigger"
         style={{ background: value }}
         onClick={() => setOpen(!open)}
       />
       <span style={{ fontSize: 11, color: "var(--text-faint)" }}>{value}</span>
-      {open && (
-        <div className="color-dropdown">
-          {recentColors.length > 0 && (
-            <div className="color-section">
-              <div className="color-section-label">Recent</div>
-              <div className="color-row">
-                {recentColors.map((c) => (
-                  <button key={c} className="color-dot" style={{ background: c }} onClick={() => select(c)} />
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="color-section">
-            <div className="color-section-label">Palette</div>
-            <div className="color-preset-grid">
-              {PRESET_COLORS.map((c) => (
-                <button
-                  key={c}
-                  className={`color-dot ${c === value ? "active" : ""}`}
-                  style={{ background: c }}
-                  onClick={() => select(c)}
-                />
-              ))}
-            </div>
-          </div>
-          <div className="color-section">
-            <div className="color-section-label">RGB</div>
-            <div className="rgb-inputs">
-              {(["r", "g", "b"] as const).map((ch) => (
-                <div key={ch} className="rgb-input-row">
-                  <span className="rgb-input-label">{ch.toUpperCase()}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={255}
-                    value={rgb[ch]}
-                    onChange={(e) => handleRgbChange(ch, Number(e.target.value))}
-                    className="rgb-input"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="color-section">
-            <div className="color-section-label">Hex</div>
-            <div className="color-hex-row">
-              <input
-                className="color-hex-input"
-                value={hex}
-                onChange={(e) => setHex(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleHexSubmit()}
-                onBlur={handleHexSubmit}
-                maxLength={7}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {dropdown}
     </div>
   );
 }

@@ -88,8 +88,9 @@ export function BatchPanel({
     <>
       <div className="section">
         <div className="section-header" style={{ marginBottom: 8 }}>
-          <div className="section-title">
-            Batch ({entries.length} {entries.length === 1 ? "entry" : "entries"})
+          <div className="section-title history-title">
+            <span>Batch</span>
+            <span className="history-count">({entries.length})</span>
           </div>
           <button className="btn btn-icon" onClick={onShuffleStyles} title="Shuffle styles">
             <Shuffle size={14} />
