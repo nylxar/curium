@@ -7,6 +7,7 @@ import {
   Pressable,
   TextInput,
   Dimensions,
+  BackHandler,
 } from "react-native";
 import Svg, {
   Defs,
@@ -300,37 +301,66 @@ export function ColorPicker({
 }: ColorPickerProps) {
   const overlay = useOverlay();
   const overlayIdRef = useRef<number | null>(null);
+  const onConfirmRef = useRef(onConfirm);
+  onConfirmRef.current = onConfirm;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (visible) {
-      // Dismiss any lingering overlay first
       if (overlayIdRef.current !== null) {
         overlay.dismiss(overlayIdRef.current);
         overlayIdRef.current = null;
       }
       const id = overlay.show(
         <ColorPickerContent
+          closing={false}
           initialColor={initialColor}
           title={title}
           onConfirm={(hex) => {
-            onConfirm(hex);
-            overlay.dismiss(id);
-            overlayIdRef.current = null;
+            onConfirmRef.current(hex);
+            // Animate out, then dismiss overlay + notify parent.
+            overlay.update(
+              id,
+              <ColorPickerContent
+                closing
+                initialColor={hex}
+                title={title}
+                onConfirm={() => {}}
+                onClose={() => {
+                  overlay.dismiss(id);
+                  overlayIdRef.current = null;
+                  onCloseRef.current();
+                }}
+              />,
+            );
           }}
           onClose={() => {
             overlay.dismiss(id);
             overlayIdRef.current = null;
-            onClose();
+            onCloseRef.current();
           }}
         />,
       );
       overlayIdRef.current = id;
-      return () => {
-        if (overlayIdRef.current !== null) {
-          overlay.dismiss(overlayIdRef.current);
-          overlayIdRef.current = null;
-        }
-      };
+    } else {
+      if (overlayIdRef.current !== null) {
+        // Animate out before dismissing: swap content to closing variant.
+        const id = overlayIdRef.current;
+        overlay.update(
+          id,
+          <ColorPickerContent
+            closing
+            initialColor={initialColor}
+            title={title}
+            onConfirm={() => {}}
+            onClose={() => {
+              overlay.dismiss(id);
+              overlayIdRef.current = null;
+            }}
+          />,
+        );
+      }
     }
   }, [visible]);
 
@@ -338,6 +368,7 @@ export function ColorPicker({
 }
 
 interface ColorPickerContentProps {
+  closing: boolean;
   initialColor: string;
   title: string;
   onConfirm: (hex: string) => void;
@@ -345,6 +376,7 @@ interface ColorPickerContentProps {
 }
 
 function ColorPickerContent({
+  closing,
   initialColor,
   title,
   onConfirm,
@@ -395,7 +427,12 @@ function ColorPickerContent({
   };
 
   const handlePreset = (c: string) => {
-    onConfirm(c);
+    const [h, sv, v] = hexToHsv(c);
+    setHue(h);
+    setSat(sv);
+    setVal(v);
+    setHexInput(c.replace("#", "").toUpperCase());
+    setPickerKey((k) => k + 1);
   };
 
   const handleSV = useCallback((sv: number, v: number) => {
@@ -404,7 +441,7 @@ function ColorPickerContent({
   }, []);
   const handleHue = useCallback((h: number) => setHue(h), []);
 
-  const dismiss = () => {
+  const dismiss = useCallback(() => {
     sheetY.value = withTiming(1200, {
       duration: 180,
       easing: Easing.in(Easing.cubic),
@@ -412,7 +449,21 @@ function ColorPickerContent({
     bgOp.value = withTiming(0, { duration: 140 }, (finished) => {
       if (finished) runOnJS(onClose)();
     });
-  };
+  }, [onClose]);
+
+  // Trigger dismiss animation when closing prop becomes true.
+  useEffect(() => {
+    if (closing) dismiss();
+  }, [closing]);
+
+  // Intercept Android back / gesture back — close the picker, not the app.
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      dismiss();
+      return true;
+    });
+    return () => sub.remove();
+  }, []);
 
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: sheetY.value }],
