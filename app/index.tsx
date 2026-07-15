@@ -100,6 +100,8 @@ type SheetId =
   | "color"
   | "fgColor"
   | "bgColor"
+  | "eyeColor"
+  | "pupilColor"
   | "eye"
   | "pupil"
   | "pixel"
@@ -867,6 +869,68 @@ export default function CreateScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: Spacing.sm,
+                marginTop: Spacing.sm,
+              }}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.customBtn,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.surfaceOffset,
+                  },
+                ]}
+                onPress={() => openSheet("eyeColor")}
+              >
+                <View
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: qrStyle.eyeColor,
+                  }}
+                />
+                <Text
+                  style={[
+                    styles.customBtnText,
+                    { color: colors.textMuted, fontFamily: Fonts.mono },
+                  ]}
+                >
+                  Eye
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.customBtn,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: colors.surfaceOffset,
+                  },
+                ]}
+                onPress={() => openSheet("pupilColor")}
+              >
+                <View
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: qrStyle.pupilColor,
+                  }}
+                />
+                <Text
+                  style={[
+                    styles.customBtnText,
+                    { color: colors.textMuted, fontFamily: Fonts.mono },
+                  ]}
+                >
+                  Pupil
+                </Text>
+              </TouchableOpacity>
+            </View>
           </OptionRow>
 
           <OptionRow
@@ -1220,6 +1284,24 @@ export default function CreateScreen() {
         title="Background Color"
         onConfirm={(c) =>
           setQrStyle((p) => ({ ...p, bgColor: c, colorId: "custom" }))
+        }
+        onClose={closeSheet}
+      />
+      <ColorPicker
+        visible={activeSheet === "eyeColor"}
+        initialColor={qrStyle.eyeColor}
+        title="Eye Color"
+        onConfirm={(c) =>
+          setQrStyle((p) => ({ ...p, eyeColor: c }))
+        }
+        onClose={closeSheet}
+      />
+      <ColorPicker
+        visible={activeSheet === "pupilColor"}
+        initialColor={qrStyle.pupilColor}
+        title="Pupil Color"
+        onConfirm={(c) =>
+          setQrStyle((p) => ({ ...p, pupilColor: c }))
         }
         onClose={closeSheet}
       />
