@@ -159,6 +159,8 @@ export default function AboutScreen() {
   const GITHUB_URL = "https://github.com/nylxar/curium";
   const X_URL = "https://x.com/nylxar";
   const ISSUES_URL = "https://github.com/nylxar/curium/issues";
+  const WEB_URL = "https://curium.design";
+  const DOWNLOAD_URL = "https://curium.design/downloads";
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -389,12 +391,28 @@ export default function AboutScreen() {
             index={2}
           />
           <ActionRow
+            icon="download"
+            label="Other Downloads"
+            sub={DOWNLOAD_URL.replace("https://", "")}
+            onPress={() => openLink(DOWNLOAD_URL, "X")}
+            tintColor={colors.primary}
+            index={3}
+          />
+          <ActionRow
+            icon="globe-outline"
+            label="Visit Website"
+            sub={WEB_URL.replace("https://", "")}
+            onPress={() => openLink(WEB_URL, "X")}
+            tintColor={colors.primary}
+            index={4}
+          />
+          <ActionRow
             icon="heart-outline"
             label="Support Development"
             sub="Ko-fi, Gumroad, and more"
             onPress={() => router.push("/support")}
             tintColor={colors.error}
-            index={3}
+            index={5}
           />
           <ActionRow
             icon="logo-x"
