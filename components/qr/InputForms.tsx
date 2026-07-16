@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import {
   URLForm,
   TextForm,
@@ -22,6 +21,7 @@ import {
 import { Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
 import { ExpandableField } from "./ExpandableField";
 import { DateTimePicker } from "./DateTimePicker";
+import { URLPresets } from "./URLPresets";
 import { useTheme } from "@/context/ThemeContext";
 
 // At top of InputForms.tsx — add explicit interfaces:
@@ -150,29 +150,8 @@ function Field({
 
 // components/qr/InputForms.tsx — ALL forms use ExpandableField only
 
-const URL_PRESETS = [
-  { label: "YouTube", prefix: "https://youtube.com/" },
-  { label: "Instagram", prefix: "https://instagram.com/" },
-  { label: "TikTok", prefix: "https://tiktok.com/@" },
-  { label: "Facebook", prefix: "https://facebook.com/" },
-  { label: "X", prefix: "https://x.com/" },
-  { label: "LinkedIn", prefix: "https://linkedin.com/in/" },
-  { label: "Spotify", prefix: "https://open.spotify.com/" },
-  { label: "Telegram", prefix: "https://t.me/" },
-  { label: "WhatsApp", prefix: "https://wa.me/" },
-  { label: "GitHub", prefix: "https://github.com/" },
-  { label: "Twitch", prefix: "https://twitch.tv/" },
-  { label: "Discord", prefix: "https://discord.gg/" },
-  { label: "Pinterest", prefix: "https://pinterest.com/" },
-  { label: "Reddit", prefix: "https://reddit.com/u/" },
-  { label: "Snapchat", prefix: "https://snapchat.com/add/" },
-  { label: "SoundCloud", prefix: "https://soundcloud.com/" },
-];
-
 // Single-field forms — one ExpandableField:
 export function URLFormView({ form, onChange, tintColor }: URLFormProps) {
-  const { colors } = useTheme();
-  const [open, setOpen] = React.useState(false);
   return (
     <View style={{ gap: Spacing.sm }}>
       <ExpandableField
@@ -183,65 +162,13 @@ export function URLFormView({ form, onChange, tintColor }: URLFormProps) {
         placeholder="https://example.com"
         keyboardType="url"
       />
-      <TouchableOpacity
-        activeOpacity={0.7}
-        style={[urlStyles.trigger, { borderColor: tintColor + "40", backgroundColor: tintColor + "10" }]}
-        onPress={() => setOpen((o) => !o)}
-      >
-        <Text style={[urlStyles.triggerText, { color: tintColor }]}>
-          Quick fill
-        </Text>
-        <Ionicons
-          name={open ? "chevron-up" : "chevron-down"}
-          size={14}
-          color={tintColor}
-        />
-      </TouchableOpacity>
-      {open && (
-        <View style={urlStyles.grid}>
-          {URL_PRESETS.map((p) => (
-            <TouchableOpacity
-              key={p.label}
-              activeOpacity={0.6}
-              style={[urlStyles.pill, { borderColor: tintColor + "30", backgroundColor: tintColor + "08" }]}
-              onPress={() => {
-                onChange({ url: p.prefix });
-                setOpen(false);
-              }}
-            >
-              <Text style={[urlStyles.pillText, { color: colors.text, fontFamily: Fonts.mono }]}>{p.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      <URLPresets
+        tintColor={tintColor}
+        onSelect={(prefix) => onChange({ url: prefix })}
+      />
     </View>
   );
 }
-
-const urlStyles = StyleSheet.create({
-  trigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-  },
-  triggerText: { fontSize: FontSize.xs, fontFamily: Fonts.monoMedium },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  pill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-  },
-  pillText: { fontSize: 11 },
-});
 
 export function TextFormView({ form, onChange, tintColor }: TextFormProps) {
   return (
@@ -429,7 +356,7 @@ export function LocationFormView({
         tintColor={tintColor}
         value={form.lat}
         onChange={(v: string) => onChange({ ...form, lat: v })}
-        placeholder="28.6139"
+        placeholder="33.5246"
         keyboardType="decimal-pad"
       />
       <ExpandableField
@@ -437,7 +364,7 @@ export function LocationFormView({
         tintColor={tintColor}
         value={form.lng}
         onChange={(v: string) => onChange({ ...form, lng: v })}
-        placeholder="77.2090"
+        placeholder="151.1220"
         keyboardType="decimal-pad"
       />
       <ExpandableField
@@ -445,7 +372,7 @@ export function LocationFormView({
         tintColor={tintColor}
         value={form.label}
         onChange={(v: string) => onChange({ ...form, label: v })}
-        placeholder="New Delhi"
+        placeholder="Friendly Orange Cat"
       />
     </View>
   );
