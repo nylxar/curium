@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Keyboard,
+  Platform,
+  BackHandler,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
@@ -45,10 +48,86 @@ function pad(n: number) {
   return n.toString().padStart(2, "0");
 }
 
+function ScrollColumn({
+  items,
+  selected,
+  onSelect,
+  formatItem,
+  colors,
+}: {
+  items: number[];
+  selected: number;
+  onSelect: (v: number) => void;
+  formatItem: (v: number) => string;
+  colors: any;
+}) {
+  const ref = useRef<ScrollView>(null);
+  const CELL_H = 32;
+
+  useEffect(() => {
+    const idx = items.indexOf(selected);
+    if (idx >= 0 && ref.current) {
+      setTimeout(() => {
+        ref.current?.scrollTo({ y: idx * CELL_H, animated: false });
+      }, 50);
+    }
+  }, []);
+
+  return (
+    <ScrollView
+      ref={ref}
+      style={styles.scroll}
+      showsVerticalScrollIndicator={false}
+      snapToInterval={CELL_H}
+      decelerationRate="fast"
+    >
+      <View style={{ height: CELL_H * 2 }} />
+      {items.map((v) => (
+        <TouchableOpacity
+          key={v}
+          activeOpacity={0.6}
+          onPress={() => onSelect(v)}
+          style={[
+            styles.cell,
+            {
+              height: CELL_H,
+              backgroundColor: v === selected ? colors.primary + "18" : "transparent",
+            },
+          ]}
+        >
+          <Text
+            style={{
+              fontSize: FontSize.sm,
+              fontFamily: v === selected ? Fonts.monoBold : Fonts.mono,
+              color: v === selected ? colors.primary : colors.textMuted,
+            }}
+          >
+            {formatItem(v)}
+          </Text>
+        </TouchableOpacity>
+      ))}
+      <View style={{ height: CELL_H * 2 }} />
+    </ScrollView>
+  );
+}
+
 export function DateTimePicker({ value, onChange, label }: Props) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const dt = parseDateTime(value);
+
+  useEffect(() => {
+    if (open) Keyboard.dismiss();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      setOpen(false);
+      return true;
+    });
+    return () => sub.remove();
+  }, [open]);
 
   const display = value
     ? `${dt.year}-${pad(dt.month)}-${pad(dt.day)} ${pad(dt.hour)}:${pad(dt.minute)}`
@@ -61,10 +140,12 @@ export function DateTimePicker({ value, onChange, label }: Props) {
     );
   };
 
-  const months = [
-    "Jan","Feb","Mar","Apr","May","Jun",
-    "Jul","Aug","Sep","Oct","Nov","Dec",
-  ];
+  const months = [1,2,3,4,5,6,7,8,9,10,11,12];
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  const years = Array.from({ length: 25 }, (_, i) => new Date().getFullYear() - 1 + i);
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const minutes = [0,5,10,15,20,25,30,35,40,45,50,55];
 
   return (
     <>
@@ -72,28 +153,14 @@ export function DateTimePicker({ value, onChange, label }: Props) {
         onPress={() => setOpen(true)}
         style={[
           styles.trigger,
-          {
-            backgroundColor: colors.surfaceOffset,
-            borderColor: colors.border,
-          },
+          { backgroundColor: colors.surfaceOffset, borderColor: colors.border },
         ]}
       >
-        <Text
-          style={[
-            styles.triggerLabel,
-            { color: colors.textMuted, fontFamily: Fonts.mono },
-          ]}
-        >
+        <Text style={[styles.triggerLabel, { color: colors.textMuted, fontFamily: Fonts.mono }]}>
           {label}
         </Text>
         <Text
-          style={[
-            styles.triggerValue,
-            {
-              color: value ? colors.text : colors.textFaint,
-              fontFamily: Fonts.mono,
-            },
-          ]}
+          style={[styles.triggerValue, { color: value ? colors.text : colors.textFaint, fontFamily: Fonts.mono }]}
         >
           {display || "Tap to select"}
         </Text>
@@ -106,212 +173,84 @@ export function DateTimePicker({ value, onChange, label }: Props) {
         bgColor={colors.surface}
         borderColor={colors.border}
       >
-        <Text
-          style={[
-            styles.sheetTitle,
-            { color: colors.text, fontFamily: Fonts.monoBold },
-          ]}
-        >
+        <Text style={[styles.sheetTitle, { color: colors.text, fontFamily: Fonts.monoBold }]}>
           {label}
         </Text>
 
-        {/* Date section */}
-        <View style={styles.section}>
-          <Text
-            style={[styles.sectionLabel, { color: colors.textMuted, fontFamily: Fonts.mono }]}
-          >
-            Date
-          </Text>
-          <View style={styles.row}>
-            {/* Month */}
-            <View style={styles.col}>
-              <Text style={[styles.colLabel, { color: colors.textFaint }]}>Month</Text>
-              <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-                {months.map((m, i) => (
-                  <TouchableOpacity
-                    key={m}
-                    onPress={() => update({ month: i + 1 })}
-                    style={[
-                      styles.cell,
-                      {
-                        backgroundColor:
-                          dt.month === i + 1 ? colors.primary + "18" : "transparent",
-                        borderColor: dt.month === i + 1 ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        fontSize: FontSize.sm,
-                        fontFamily: dt.month === i + 1 ? Fonts.monoBold : Fonts.mono,
-                        color: dt.month === i + 1 ? colors.primary : colors.textMuted,
-                      }}
-                    >
-                      {m}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            {/* Day */}
-            <View style={styles.col}>
-              <Text style={[styles.colLabel, { color: colors.textFaint }]}>Day</Text>
-              <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                  <TouchableOpacity
-                    key={d}
-                    onPress={() => update({ day: d })}
-                    style={[
-                      styles.cell,
-                      {
-                        backgroundColor:
-                          dt.day === d ? colors.primary + "18" : "transparent",
-                        borderColor: dt.day === d ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        fontSize: FontSize.sm,
-                        fontFamily: dt.day === d ? Fonts.monoBold : Fonts.mono,
-                        color: dt.day === d ? colors.primary : colors.textMuted,
-                      }}
-                    >
-                      {d}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-
-            {/* Year */}
-            <View style={styles.col}>
-              <Text style={[styles.colLabel, { color: colors.textFaint }]}>Year</Text>
-              <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-                {Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 1 + i).map(
-                  (y) => (
-                    <TouchableOpacity
-                      key={y}
-                      onPress={() => update({ year: y })}
-                      style={[
-                        styles.cell,
-                        {
-                          backgroundColor:
-                            dt.year === y ? colors.primary + "18" : "transparent",
-                          borderColor: dt.year === y ? colors.primary : colors.border,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={{
-                          fontSize: FontSize.sm,
-                          fontFamily: dt.year === y ? Fonts.monoBold : Fonts.mono,
-                          color: dt.year === y ? colors.primary : colors.textMuted,
-                        }}
-                      >
-                        {y}
-                      </Text>
-                    </TouchableOpacity>
-                  ),
-                )}
-              </ScrollView>
-            </View>
+        <Text style={[styles.sectionLabel, { color: colors.textMuted, fontFamily: Fonts.monoMedium }]}>
+          Date
+        </Text>
+        <View style={styles.row}>
+          <View style={styles.col}>
+            <Text style={[styles.colLabel, { color: colors.textFaint }]}>Month</Text>
+            <ScrollColumn
+              items={months}
+              selected={dt.month}
+              onSelect={(v) => update({ month: v })}
+              formatItem={(v) => monthNames[v - 1]}
+              colors={colors}
+            />
+          </View>
+          <View style={styles.col}>
+            <Text style={[styles.colLabel, { color: colors.textFaint }]}>Day</Text>
+            <ScrollColumn
+              items={days}
+              selected={dt.day}
+              onSelect={(v) => update({ day: v })}
+              formatItem={(v) => `${v}`}
+              colors={colors}
+            />
+          </View>
+          <View style={styles.col}>
+            <Text style={[styles.colLabel, { color: colors.textFaint }]}>Year</Text>
+            <ScrollColumn
+              items={years}
+              selected={dt.year}
+              onSelect={(v) => update({ year: v })}
+              formatItem={(v) => `${v}`}
+              colors={colors}
+            />
           </View>
         </View>
 
-        {/* Time section */}
-        <View style={styles.section}>
-          <Text
-            style={[styles.sectionLabel, { color: colors.textMuted, fontFamily: Fonts.mono }]}
-          >
-            Time
-          </Text>
-          <View style={styles.row}>
-            {/* Hour */}
-            <View style={styles.col}>
-              <Text style={[styles.colLabel, { color: colors.textFaint }]}>Hour</Text>
-              <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-                {Array.from({ length: 24 }, (_, i) => i).map((h) => (
-                  <TouchableOpacity
-                    key={h}
-                    onPress={() => update({ hour: h })}
-                    style={[
-                      styles.cell,
-                      {
-                        backgroundColor:
-                          dt.hour === h ? colors.primary + "18" : "transparent",
-                        borderColor: dt.hour === h ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        fontSize: FontSize.sm,
-                        fontFamily: dt.hour === h ? Fonts.monoBold : Fonts.mono,
-                        color: dt.hour === h ? colors.primary : colors.textMuted,
-                      }}
-                    >
-                      {pad(h)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            <Text
-              style={[
-                styles.colon,
-                { color: colors.textMuted, fontFamily: Fonts.monoBold },
-              ]}
-            >
-              :
-            </Text>
-
-            {/* Minute */}
-            <View style={styles.col}>
-              <Text style={[styles.colLabel, { color: colors.textFaint }]}>Min</Text>
-              <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-                {Array.from({ length: 12 }, (_, i) => i * 5).map((m) => (
-                  <TouchableOpacity
-                    key={m}
-                    onPress={() => update({ minute: m })}
-                    style={[
-                      styles.cell,
-                      {
-                        backgroundColor:
-                          dt.minute === m ? colors.primary + "18" : "transparent",
-                        borderColor: dt.minute === m ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        fontSize: FontSize.sm,
-                        fontFamily: dt.minute === m ? Fonts.monoBold : Fonts.mono,
-                        color: dt.minute === m ? colors.primary : colors.textMuted,
-                      }}
-                    >
-                      {pad(m)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+        <Text style={[styles.sectionLabel, { color: colors.textMuted, fontFamily: Fonts.monoMedium }]}>
+          Time
+        </Text>
+        <View style={styles.row}>
+          <View style={styles.col}>
+            <Text style={[styles.colLabel, { color: colors.textFaint }]}>Hour</Text>
+            <ScrollColumn
+              items={hours}
+              selected={dt.hour}
+              onSelect={(v) => update({ hour: v })}
+              formatItem={(v) => pad(v)}
+              colors={colors}
+            />
+          </View>
+          <Text style={[styles.colon, { color: colors.textMuted, fontFamily: Fonts.monoBold }]}>:</Text>
+          <View style={styles.col}>
+            <Text style={[styles.colLabel, { color: colors.textFaint }]}>Min</Text>
+            <ScrollColumn
+              items={minutes}
+              selected={dt.minute}
+              onSelect={(v) => update({ minute: v })}
+              formatItem={(v) => pad(v)}
+              colors={colors}
+            />
           </View>
         </View>
 
-        {/* Done */}
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
         <TouchableOpacity
           onPress={() => setOpen(false)}
           style={[styles.doneBtn, { backgroundColor: colors.primary }]}
         >
-          <Text
-            style={[
-              styles.doneLabel,
-              { color: colors.bg, fontFamily: Fonts.monoBold },
-            ]}
-          >
+          <Text style={[styles.doneLabel, { color: colors.bg, fontFamily: Fonts.monoBold }]}>
             Done
           </Text>
         </TouchableOpacity>
@@ -319,6 +258,8 @@ export function DateTimePicker({ value, onChange, label }: Props) {
     </>
   );
 }
+
+const CELL_H = 32;
 
 const styles = StyleSheet.create({
   trigger: {
@@ -335,13 +276,18 @@ const styles = StyleSheet.create({
   sheetTitle: {
     fontSize: FontSize.md,
     textAlign: "center",
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
-  section: { marginBottom: Spacing.md },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: Spacing.sm,
+  },
   sectionLabel: {
     fontSize: FontSize.xs,
     marginBottom: Spacing.xs,
     marginLeft: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   row: { flexDirection: "row", gap: Spacing.xs, alignItems: "stretch" },
   col: { flex: 1 },
@@ -351,13 +297,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontFamily: Fonts.mono,
   },
-  scroll: { maxHeight: 140 },
+  scroll: { maxHeight: CELL_H * 5 },
   cell: {
-    paddingVertical: 6,
     alignItems: "center",
+    justifyContent: "center",
     borderRadius: Radius.sm,
-    borderWidth: 1,
-    marginBottom: 2,
   },
   colon: {
     fontSize: FontSize.lg,
@@ -368,7 +312,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderRadius: Radius.lg,
     alignItems: "center",
-    marginTop: Spacing.sm,
+    marginTop: Spacing.xs,
   },
   doneLabel: { fontSize: FontSize.base },
 });
