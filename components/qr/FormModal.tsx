@@ -11,25 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
-
-const URL_PRESETS = [
-  { label: "YouTube", prefix: "https://youtube.com/" },
-  { label: "Instagram", prefix: "https://instagram.com/" },
-  { label: "TikTok", prefix: "https://tiktok.com/@" },
-  { label: "Facebook", prefix: "https://facebook.com/" },
-  { label: "X", prefix: "https://x.com/" },
-  { label: "LinkedIn", prefix: "https://linkedin.com/in/" },
-  { label: "Spotify", prefix: "https://open.spotify.com/" },
-  { label: "Telegram", prefix: "https://t.me/" },
-  { label: "WhatsApp", prefix: "https://wa.me/" },
-  { label: "GitHub", prefix: "https://github.com/" },
-  { label: "Twitch", prefix: "https://twitch.tv/" },
-  { label: "Discord", prefix: "https://discord.gg/" },
-  { label: "Pinterest", prefix: "https://pinterest.com/" },
-  { label: "Reddit", prefix: "https://reddit.com/u/" },
-  { label: "Snapchat", prefix: "https://snapchat.com/add/" },
-  { label: "SoundCloud", prefix: "https://soundcloud.com/" },
-];
+import { URLPresets } from "./URLPresets";
 
 import {
   QRType,
@@ -162,8 +144,6 @@ function URLField({
   onUpdateForm: <K extends keyof FormState>(key: K, val: FormState[K]) => void;
   tintColor: string;
 }) {
-  const { colors } = useTheme();
-  const [open, setOpen] = React.useState(false);
   return (
     <View style={{ gap: Spacing.sm }}>
       <Field
@@ -175,37 +155,10 @@ function URLField({
         keyboardType="url"
         autoFocus
       />
-      <TouchableOpacity
-        activeOpacity={0.7}
-        style={[mStyles.trigger, { borderColor: tintColor + "40", backgroundColor: tintColor + "10" }]}
-        onPress={() => setOpen((o) => !o)}
-      >
-        <Text style={[mStyles.triggerText, { color: tintColor }]}>
-          Quick fill
-        </Text>
-        <Ionicons
-          name={open ? "chevron-up" : "chevron-down"}
-          size={14}
-          color={tintColor}
-        />
-      </TouchableOpacity>
-      {open && (
-        <View style={mStyles.grid}>
-          {URL_PRESETS.map((p) => (
-            <TouchableOpacity
-              key={p.label}
-              activeOpacity={0.6}
-              style={[mStyles.pill, { borderColor: tintColor + "30", backgroundColor: tintColor + "08" }]}
-              onPress={() => {
-                onUpdateForm("url", { url: p.prefix });
-                setOpen(false);
-              }}
-            >
-              <Text style={[mStyles.pillText, { color: colors.text, fontFamily: Fonts.mono }]}>{p.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      <URLPresets
+        tintColor={tintColor}
+        onSelect={(prefix) => onUpdateForm("url", { url: prefix })}
+      />
     </View>
   );
 }
@@ -222,13 +175,8 @@ export function FormModal({
   const meta = TYPE_META[activeType];
 
   const handleDone = () => {
-    // Wait for the keyboard to fully dismiss before closing the sheet,
-    // so the two animations don't fight each other and cause a shutter.
-    const sub = Keyboard.addListener("keyboardDidHide", () => {
-      sub.remove();
-      onClose();
-    });
     Keyboard.dismiss();
+    onClose();
   };
 
   const renderFields = () => {
@@ -640,26 +588,4 @@ const mStyles = StyleSheet.create({
     borderWidth: 1,
   },
   segText: { fontSize: FontSize.sm },
-  trigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-  },
-  triggerText: { fontSize: FontSize.xs, fontFamily: Fonts.monoMedium },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  pill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-  },
-  pillText: { fontSize: 11 },
 });
