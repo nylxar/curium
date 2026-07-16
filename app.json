@@ -2,7 +2,7 @@
   "expo": {
     "name": "Curium",
     "slug": "Curium",
-    "version": "0.5.8",
+    "version": "0.5.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "curium",

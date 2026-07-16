@@ -1,6 +1,6 @@
 {
   "name": "curium",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "packageManager": "pnpm@11.11.0",
   "main": "expo-router/entry",
   "scripts": {
