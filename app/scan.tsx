@@ -16,6 +16,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useIsFocused } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import Animated, {
   useSharedValue,
   withRepeat,
@@ -107,13 +109,15 @@ function detectQRType(data: string): {
   }
 
   if (/^geo:/i.test(data)) {
-    const coords = data.replace(/^geo:/i, "").split(",");
-    const labelMatch = data.match(/\(([^)]+)\)/);
+    const withoutGeo = data.replace(/^geo:/i, "");
+    const [coordPart, queryPart] = withoutGeo.split("?");
+    const [lat, lng] = (coordPart ?? "").split(",");
+    const labelMatch = queryPart?.match(/\(([^)]+)\)/);
     return {
       type: "location",
       parsed: {
-        lat: coords[0] ?? "",
-        lng: coords[1]?.split("?")[0] ?? "",
+        lat: lat ?? "",
+        lng: lng ?? "",
         label: labelMatch?.[1] ?? "",
       },
     };
@@ -134,6 +138,11 @@ export default function ScanScreen() {
   const isFocused = useIsFocused();
   const { colors, isDark } = useTheme();
   const toast = useToast();
+
+  const detectedType = useMemo(
+    () => (result ? detectQRType(result).type : null),
+    [result],
+  );
 
   const onBarcodeScanned = useCallback(
     (barcodes: Array<{ rawValue?: string }>) => {
@@ -288,9 +297,8 @@ export default function ScanScreen() {
           toast.error("Invalid coordinates", "Latitude and longitude must be numbers.");
           break;
         }
-        const label = parsed.label || `${lat}, ${lng}`;
         await Linking.openURL(
-          `https://www.google.com/maps?q=${lat},${lng}(${encodeURIComponent(label)})`,
+          `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
         );
         break;
       }
@@ -312,11 +320,12 @@ export default function ScanScreen() {
         if (parsed.location) lines.push(`LOCATION:${parsed.location}`);
         lines.push("END:VEVENT", "END:VCALENDAR");
         const ics = lines.join("\n");
-        await Clipboard.setStringAsync(ics);
-        toast.success(
-          "Calendar event copied",
-          "Open your calendar app and paste to add the event.",
-        );
+        const file = new File(Paths.cache, "event.ics");
+        file.write(ics);
+        await Sharing.shareAsync(file.uri, {
+          mimeType: "text/calendar",
+          UTI: "com.apple.ics",
+        });
         break;
       }
       case "otpauth":
@@ -596,14 +605,19 @@ export default function ScanScreen() {
                 ]}
                 onPress={() => handleAction("open")}
               >
-                <Ionicons name="open-outline" size={16} color={colors.text} />
+                <Ionicons
+                  name={detectedType === "event" ? "calendar-outline" : "open-outline"}
+                  size={16}
+                  color={colors.text}
+                />
                 <Text
                   style={[
                     styles.resultBtnLabel,
                     { color: colors.text, fontFamily: Fonts.monoMedium },
                   ]}
+                  numberOfLines={1}
                 >
-                  Open
+                  {detectedType === "event" ? "Calendar" : "Open"}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
