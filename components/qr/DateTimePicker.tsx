@@ -9,7 +9,7 @@ import {
   Platform,
   BackHandler,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "../ui/Icon";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
@@ -164,7 +164,7 @@ export function DateTimePicker({ value, onChange, label }: Props) {
         >
           {display || "Tap to select"}
         </Text>
-        <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+        <Icon name="chevron-forward" size={14} color={colors.textMuted} />
       </TouchableOpacity>
 
       <AnimatedSheet
