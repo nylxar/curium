@@ -17,7 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import Constants from "expo-constants";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
@@ -27,7 +27,7 @@ import { setStringAsync } from "expo-clipboard";
 import AppIcon from "@/assets/icon.png";
 
 interface InfoRowProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   label: string;
   value: string;
   index: number;
@@ -46,7 +46,7 @@ function InfoRow({ icon, label, value, index, colors, last }: InfoRowProps) {
       <View
         style={[styles.infoIcon, { backgroundColor: colors.primary + "18" }]}
       >
-        <Ionicons name={icon} size={15} color={colors.primary} />
+        <Icon name={icon} size={15} color={colors.primary} />
       </View>
       <Text
         style={[
@@ -70,7 +70,7 @@ function InfoRow({ icon, label, value, index, colors, last }: InfoRowProps) {
 }
 
 interface ActionRowProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   label: string;
   sub: string;
   onPress: () => void;
@@ -103,7 +103,7 @@ function ActionRow({
         <View
           style={[styles.actionIcon, { backgroundColor: tintColor + "18" }]}
         >
-          <Ionicons name={icon} size={18} color={tintColor} />
+          <Icon name={icon} size={18} color={tintColor} />
         </View>
         <View style={styles.actionText}>
           <Text
@@ -123,7 +123,7 @@ function ActionRow({
             {sub}
           </Text>
         </View>
-        <Ionicons name="open-outline" size={14} color={tintColor + "60"} />
+        <Icon name="open-outline" size={14} color={tintColor + "60"} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -175,7 +175,7 @@ export default function AboutScreen() {
         ]}
       >
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text
           style={[
@@ -334,7 +334,7 @@ export default function AboutScreen() {
             onPress={copyCommit}
             activeOpacity={0.6}
           >
-            <Ionicons name="copy-outline" size={14} color={colors.textMuted} />
+            <Icon name="copy-outline" size={14} color={colors.textMuted} />
             <Text
               style={[
                 styles.copyRowText,
@@ -442,7 +442,7 @@ export default function AboutScreen() {
           ]}
         >
           <View style={styles.privacyItem}>
-            <Ionicons
+            <Icon
               name="shield-checkmark-outline"
               size={16}
               color={colors.success}
@@ -457,7 +457,7 @@ export default function AboutScreen() {
             </Text>
           </View>
           <View style={styles.privacyItem}>
-            <Ionicons name="eye-off-outline" size={16} color={colors.success} />
+            <Icon name="eye-off-outline" size={16} color={colors.success} />
             <Text
               style={[
                 styles.privacyText,
@@ -468,7 +468,7 @@ export default function AboutScreen() {
             </Text>
           </View>
           <View style={styles.privacyItem}>
-            <Ionicons
+            <Icon
               name="lock-closed-outline"
               size={16}
               color={colors.success}
