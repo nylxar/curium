@@ -15,7 +15,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
@@ -94,7 +94,7 @@ export default function WhatsNewScreen() {
       >
         {isForced ? (
           <TouchableOpacity onPress={dismiss} hitSlop={12}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+            <Icon name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         ) : (
           <View style={{ width: 24 }} />
@@ -175,8 +175,8 @@ export default function WhatsNewScreen() {
                     { backgroundColor: colors.primary + "15" },
                   ]}
                 >
-                  <Ionicons
-                    name={section.icon as keyof typeof Ionicons.glyphMap}
+                  <Icon
+                    name={section.icon as IconName}
                     size={16}
                     color={colors.primary}
                   />
