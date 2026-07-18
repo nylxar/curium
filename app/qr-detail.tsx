@@ -17,7 +17,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
 import { File } from "expo-file-system";
@@ -40,7 +40,7 @@ function ActionChip({
   variant = "default",
   colors,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   label: string;
   onPress: () => void;
   variant?: "default" | "danger";
@@ -75,7 +75,7 @@ function ActionChip({
           },
         ]}
       >
-        <Ionicons name={icon} size={16} color={accent} />
+        <Icon name={icon} size={16} color={accent} />
         <Text
           style={[
             styles.chipLabel,
@@ -355,7 +355,7 @@ export default function QRDetailScreen() {
               },
             ]}
           >
-            <Ionicons
+            <Icon
               name={copied ? "checkmark" : "copy-outline"}
               size={11}
               color={copied ? colors.success : colors.textMuted}
@@ -385,7 +385,7 @@ export default function QRDetailScreen() {
         <View
           style={[styles.valueFooter, { borderTopColor: colors.border }]}
         >
-          <Ionicons
+          <Icon
             name="time-outline"
             size={12}
             color={colors.textFaint}
@@ -424,7 +424,7 @@ export default function QRDetailScreen() {
             { backgroundColor: colors.surface, borderColor: colors.border },
           ]}
         >
-          <Ionicons name="chevron-back" size={20} color={colors.text} />
+          <Icon name="chevron-back" size={20} color={colors.text} />
         </TouchableOpacity>
 
         <View style={styles.topCenter}>
