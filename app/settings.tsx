@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import * as Haptics from "expo-haptics";
 import { clearHistory } from "@/services/history";
 import { loadSettings, saveSettings, AppSettings } from "@/services/settings";
@@ -21,7 +21,7 @@ import { ModernSwitch } from "@/components/ui/ModernSwitch";
 const THEME_OPTIONS: {
   id: AppTheme;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
 }[] = [
   { id: "dark", label: "Dark", icon: "moon-outline" },
   { id: "light", label: "Light", icon: "sunny-outline" },
@@ -63,7 +63,7 @@ function ThemeBtn({
   active: boolean;
   colors: any;
   onPress: () => void;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   label: string;
 }) {
   return (
@@ -78,7 +78,7 @@ function ThemeBtn({
         },
       ]}
     >
-      <Ionicons
+      <Icon
         name={icon}
         size={20}
         color={active ? colors.primary : colors.textMuted}
@@ -106,7 +106,7 @@ function Row({
   last,
   colors,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   label: string;
   sub?: string;
   right?: React.ReactNode;
@@ -133,7 +133,7 @@ function Row({
           },
         ]}
       >
-        <Ionicons
+        <Icon
           name={icon}
           size={17}
           color={danger ? colors.error : colors.primary}
@@ -165,7 +165,7 @@ function Row({
       <View>
         {right ??
           (onPress && (
-            <Ionicons
+            <Icon
               name="chevron-forward"
               size={14}
               color={colors.textFaint}
@@ -285,7 +285,7 @@ export default function SettingsScreen() {
     <View style={S.screen}>
       <View style={S.header}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Icon name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={S.title}>Settings</Text>
         <View style={{ width: 24 }} />
@@ -328,7 +328,7 @@ export default function SettingsScreen() {
               },
             ]}
           >
-            <Ionicons
+            <Icon
               name="information-circle-outline"
               size={14}
               color={colors.primary}
