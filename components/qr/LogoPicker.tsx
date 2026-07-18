@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "../ui/Icon";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -195,7 +195,7 @@ export function LogoPicker({
               onPress={pick}
               activeOpacity={0.75}
             >
-              <Ionicons name="refresh-outline" size={16} color={colors.text} />
+              <Icon name="refresh-outline" size={16} color={colors.text} />
               <Text style={[styles.actionLabel, { color: colors.text }]}>
                 Replace
               </Text>
@@ -211,7 +211,7 @@ export function LogoPicker({
               onPress={remove}
               activeOpacity={0.75}
             >
-              <Ionicons name="trash-outline" size={16} color={colors.error} />
+              <Icon name="trash-outline" size={16} color={colors.error} />
               <Text style={[styles.actionLabel, { color: colors.error }]}>
                 Remove
               </Text>
@@ -231,7 +231,7 @@ export function LogoPicker({
             onPress={pick}
             activeOpacity={0.75}
           >
-            <Ionicons name="image-outline" size={18} color={colors.text} />
+            <Icon name="image-outline" size={18} color={colors.text} />
             <Text style={[styles.pickLabel, { color: colors.text }]}>
               Pick Logo
             </Text>
@@ -240,7 +240,7 @@ export function LogoPicker({
       )}
       {logoUri && onSizeChange && (
         <View style={styles.sizeRow}>
-          <Ionicons name="resize-outline" size={14} color={colors.textMuted} />
+          <Icon name="resize-outline" size={14} color={colors.textMuted} />
           <LogoSizeControl
             size={logoSize}
             onSizeChange={handleSizeChange}
