@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "../ui/Icon";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
@@ -73,7 +73,7 @@ export function ExpandableField({
             {hasValue ? value : (placeholder ?? "Tap to enter...")}
           </Text>
         </View>
-        <Ionicons
+        <Icon
           name={hasValue ? "create-outline" : "add-circle-outline"}
           size={16}
           color={tintColor}

@@ -24,7 +24,7 @@ import {
 } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import * as Haptics from "expo-haptics";
 import {
   loadHistory,
@@ -185,7 +185,7 @@ function AnimatedHistoryCard({
 
   const composed = Gesture.Simultaneous(pan, singleTap);
 
-  const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  const TYPE_ICONS: Record<string, IconName> = {
     url: "link-outline",
     text: "text-outline",
     wifi: "wifi-outline",
@@ -193,7 +193,7 @@ function AnimatedHistoryCard({
     phone: "call-outline",
     sms: "chatbubble-outline",
     contact: "person-outline",
-    location: "location-outline",
+    location: "globe-outline",
   };
 
   return (
@@ -208,7 +208,7 @@ function AnimatedHistoryCard({
           activeOpacity={0.7}
           style={styles.deleteBtnInner}
         >
-          <Ionicons name="trash-outline" size={18} color="#fff" />
+          <Icon name="trash-outline" size={18} color="#fff" />
         </TouchableOpacity>
       </Animated.View>
 
@@ -221,7 +221,7 @@ function AnimatedHistoryCard({
             ]}
           >
             <View style={[styles.iconBox, { backgroundColor: colors.surfaceOffset }]}>
-              <Ionicons
+              <Icon
                 name={TYPE_ICONS[item.type] ?? "qr-code-outline"}
                 size={22}
                 color={colors.primary}
@@ -375,7 +375,7 @@ export default function HistoryScreen() {
         </Text>
         {items.length > 0 && (
           <TouchableOpacity onPress={handleClear} hitSlop={12}>
-            <Ionicons name="trash-outline" size={20} color={colors.error} />
+            <Icon name="trash-outline" size={20} color={colors.error} />
           </TouchableOpacity>
         )}
       </View>
@@ -388,7 +388,7 @@ export default function HistoryScreen() {
             { backgroundColor: colors.surface, borderColor: colors.border },
           ]}
         >
-          <Ionicons name="search-outline" size={16} color={colors.textMuted} />
+          <Icon name="search-outline" size={16} color={colors.textMuted} />
           <TextInput
             style={[
               styles.searchInput,
@@ -402,7 +402,7 @@ export default function HistoryScreen() {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => setQuery("")}>
-              <Ionicons
+              <Icon
                 name="close-circle"
                 size={16}
                 color={colors.textMuted}
@@ -426,7 +426,7 @@ export default function HistoryScreen() {
         </View>
       ) : filtered.length === 0 ? (
         <View style={styles.empty}>
-          <Ionicons name="albums-outline" size={52} color={colors.textFaint} />
+          <Icon name="albums-outline" size={52} color={colors.textFaint} />
           <Text
             style={[
               styles.emptyTitle,

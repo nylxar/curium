@@ -1,6 +1,9 @@
 packages:
   - "packages/*"
 
+overrides:
+  "@expo/dom-webview": "^56.0.6"
+
 allowBuilds:
   esbuild: true
   unrs-resolver: true
@@ -9,3 +12,32 @@ peerDependencyRules:
   allowedVersions:
     "eslint-plugin-import>eslint": "^10"
     "eslint-plugin-react>eslint": "^10"
+  ignoreMissing:
+    - "expo-modules-core>react-native-worklets"
+minimumReleaseAgeExclude:
+  - '@expo/cli@56.1.20 || 57.0.9'
+  - '@expo/config-plugins@56.0.13'
+  - '@expo/config@56.0.12'
+  - '@expo/fingerprint@0.19.8'
+  - '@expo/image-utils@0.10.3'
+  - '@expo/inline-modules@0.0.14'
+  - '@expo/local-build-cache-provider@56.0.10'
+  - '@expo/metro-config@56.0.17 || 57.0.6'
+  - '@expo/prebuild-config@56.0.20 || 57.0.8'
+  - '@expo/require-utils@56.1.5'
+  - expo-asset@56.0.20 || 57.0.6
+  - expo-constants@56.0.21 || 57.0.6
+  - expo-modules-autolinking@56.0.20 || 57.0.8
+  - expo-modules-core@56.0.21 || 57.0.6
+  - expo@56.0.16 || 57.0.7
+  - '@expo/metro-runtime@56.0.17 || 57.0.6'
+  - '@expo/ui@56.0.22 || 57.0.7'
+  - expo-image-manipulator@56.0.22 || 57.0.5
+  - expo-image-picker@56.0.21 || 57.0.5
+  - expo-router@56.2.15 || 57.0.7
+  - expo-sharing@56.0.22 || 57.0.6
+  - expo-splash-screen@56.0.13
+  - expo-dev-client@56.0.23 || 57.0.7
+  - expo-dev-launcher@56.0.24 || 57.0.7
+  - expo-dev-menu@56.0.20 || 57.0.7
+  - expo-media-library@57.0.3

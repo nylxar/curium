@@ -1,20 +1,35 @@
-const { withAndroidManifest } = require("expo/config-plugins");
+const {
+  withDangerousMod,
+  AndroidConfig: { Manifest },
+} = require("expo/config-plugins");
+const path = require("path");
+
+const REMOVE_PERMISSIONS = [
+  "android.permission.INTERNET",
+  "android.permission.ACCESS_NETWORK_STATE",
+  "android.permission.ACCESS_WIFI_STATE",
+];
 
 module.exports = function withNoInternet(config) {
-  return withAndroidManifest(config, (cfg) => {
-    const manifest = cfg.modResults.manifest;
-    if (manifest?.["uses-permission"]) {
-      manifest["uses-permission"] = manifest["uses-permission"].filter(
-        (perm) => {
-          const name = perm.$?.["android:name"] ?? "";
-          return (
-            name !== "android.permission.INTERNET" &&
-            name !== "android.permission.ACCESS_NETWORK_STATE" &&
-            name !== "android.permission.ACCESS_WIFI_STATE"
-          );
-        },
+  return withDangerousMod(config, [
+    "android",
+    async (cfg) => {
+      const manifestPath = path.join(
+        cfg.modRequest.platformProjectRoot,
+        "app",
+        "src",
+        "main",
+        "AndroidManifest.xml",
       );
-    }
-    return cfg;
-  });
+      const manifest = await Manifest.readAndroidManifestAsync(manifestPath);
+
+      const permissions = manifest.manifest["uses-permission"] ?? [];
+      manifest.manifest["uses-permission"] = permissions.filter(
+        (perm) => !REMOVE_PERMISSIONS.includes(perm.$?.["android:name"]),
+      );
+
+      await Manifest.writeAndroidManifestAsync(manifestPath, manifest);
+      return cfg;
+    },
+  ]);
 };

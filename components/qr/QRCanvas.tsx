@@ -805,6 +805,7 @@ export function QRCanvas({
   const fgFill = qrStyle.fgColor;
   const bgFill = qrStyle.bgColor;
   const eyeFill = qrStyle.eyeColor;
+  const pupilFill = qrStyle.pupilColor;
   const gradStartFill = qrStyle.gradient.startColor;
   const gradEndFill = qrStyle.gradient.endColor;
 
@@ -1338,10 +1339,10 @@ export function QRCanvas({
               fill={eyeFill}
             />
             {hasPupil && eyeDotPath.length > 0 && (
-              <Path d={eyeDotPath} fill={fgFill} />
+              <Path d={eyeDotPath} fill={pupilFill} />
             )}
             {hasPupil && pupilPieces.length > 0 && (
-              <Path d={pupilPieces.join(" ")} fill={fgFill} />
+              <Path d={pupilPieces.join(" ")} fill={pupilFill} />
             )}
 
             {/* ── Logo (inside SVG for captureRef compatibility) ──

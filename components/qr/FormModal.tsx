@@ -1,3 +1,4 @@
+import React from "react";
 import {
   View,
   Text,
@@ -6,10 +7,12 @@ import {
   TouchableOpacity,
   Keyboard,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
+import { URLPresets } from "./URLPresets";
+
 import {
   QRType,
   URLForm,
@@ -49,7 +52,7 @@ interface Props {
 
 const TYPE_META: Record<
   QRType,
-  { label: string; icon: keyof typeof Ionicons.glyphMap }
+  { label: string; icon: IconName }
 > = {
   url: { label: "URL", icon: "link-outline" },
   text: { label: "Text", icon: "text-outline" },
@@ -58,7 +61,7 @@ const TYPE_META: Record<
   sms: { label: "SMS", icon: "chatbubble-outline" },
   wifi: { label: "Wi-Fi", icon: "wifi-outline" },
   contact: { label: "Contact", icon: "person-outline" },
-  location: { label: "Location", icon: "location-outline" },
+  location: { label: "Location", icon: "globe-outline" },
   event: { label: "Event", icon: "calendar-outline" },
   otpauth: { label: "OTP Auth", icon: "key-outline" },
 };
@@ -132,6 +135,34 @@ const fStyles = StyleSheet.create({
   },
 });
 
+function URLField({
+  forms,
+  onUpdateForm,
+  tintColor,
+}: {
+  forms: FormState;
+  onUpdateForm: <K extends keyof FormState>(key: K, val: FormState[K]) => void;
+  tintColor: string;
+}) {
+  return (
+    <View style={{ gap: Spacing.sm }}>
+      <Field
+        label="URL"
+        value={forms.url.url}
+        tintColor={tintColor}
+        onChange={(v) => onUpdateForm("url", { url: v })}
+        placeholder="https://example.com"
+        keyboardType="url"
+        autoFocus
+      />
+      <URLPresets
+        tintColor={tintColor}
+        onSelect={(prefix) => onUpdateForm("url", { url: prefix })}
+      />
+    </View>
+  );
+}
+
 export function FormModal({
   visible,
   onClose,
@@ -144,29 +175,14 @@ export function FormModal({
   const meta = TYPE_META[activeType];
 
   const handleDone = () => {
-    // Wait for the keyboard to fully dismiss before closing the sheet,
-    // so the two animations don't fight each other and cause a shutter.
-    const sub = Keyboard.addListener("keyboardDidHide", () => {
-      sub.remove();
-      onClose();
-    });
     Keyboard.dismiss();
+    onClose();
   };
 
   const renderFields = () => {
     switch (activeType) {
       case "url":
-        return (
-          <Field
-            label="URL"
-            value={forms.url.url}
-            tintColor={tintColor}
-            onChange={(v) => onUpdateForm("url", { url: v })}
-            placeholder="https://example.com"
-            keyboardType="url"
-            autoFocus
-          />
-        );
+        return <URLField forms={forms} onUpdateForm={onUpdateForm} tintColor={tintColor} />;
       case "text":
         return (
           <Field
@@ -524,7 +540,7 @@ export function FormModal({
     >
       <View style={mStyles.header}>
         <View style={[mStyles.iconBox, { backgroundColor: tintColor + "18" }]}>
-          <Ionicons name={meta.icon} size={18} color={tintColor} />
+          <Icon name={meta.icon} size={18} color={tintColor} />
         </View>
         <Text
           style={[

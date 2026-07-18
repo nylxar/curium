@@ -6,7 +6,7 @@ import {
   Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,7 +16,7 @@ const GUMROAD_URL = "https://nylxar.gumroad.com/coffee";
 const PAYPAL_URL = "https://www.paypal.com/ncp/payment/DUAR5EJ7A3RV8";
 
 interface SupportOption {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   title: string;
   desc: string;
   url: string;
@@ -71,7 +71,7 @@ export default function SupportScreen() {
             { backgroundColor: colors.surface, borderColor: colors.border },
           ]}
         >
-          <Ionicons name="chevron-back" size={20} color={colors.text} />
+          <Icon name="chevron-back" size={20} color={colors.text} />
         </TouchableOpacity>
         <Text
           style={[
@@ -92,7 +92,7 @@ export default function SupportScreen() {
               { backgroundColor: colors.primary + "15" },
             ]}
           >
-            <Ionicons name="heart" size={28} color={colors.primary} />
+            <Icon name="heart" size={28} color={colors.primary} />
           </View>
           <Text
             style={[
@@ -133,7 +133,7 @@ export default function SupportScreen() {
                   { backgroundColor: opt.color + "18" },
                 ]}
               >
-                <Ionicons name={opt.icon} size={22} color={opt.color} />
+                <Icon name={opt.icon} size={22} color={opt.color} />
               </View>
               <View style={styles.optionText}>
                 <Text
@@ -145,7 +145,7 @@ export default function SupportScreen() {
                   {opt.title}
                 </Text>
               </View>
-              <Ionicons
+              <Icon
                 name="open-outline"
                 size={16}
                 color={colors.textFaint}

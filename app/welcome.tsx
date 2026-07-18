@@ -14,7 +14,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
@@ -112,7 +112,7 @@ export default function WelcomeScreen() {
           ].map((f, i) => (
             <View key={i} style={[styles.featureRow, { borderColor: colors.border }]}>
               <View style={[styles.featureIcon, { backgroundColor: colors.primary + "15" }]}>
-                <Ionicons name={f.icon as any} size={18} color={colors.primary} />
+                <Icon name={f.icon as any} size={18} color={colors.primary} />
               </View>
               <Text style={[styles.featureText, { color: colors.text, fontFamily: Fonts.mono }]}>
                 {f.text}
@@ -139,7 +139,7 @@ export default function WelcomeScreen() {
             onPress={handleSupport}
             activeOpacity={0.7}
           >
-            <Ionicons name="heart-outline" size={16} color={colors.textMuted} />
+            <Icon name="heart-outline" size={16} color={colors.textMuted} />
             <Text style={[styles.supportLabel, { color: colors.textMuted, fontFamily: Fonts.mono }]}>
               Support the project
             </Text>

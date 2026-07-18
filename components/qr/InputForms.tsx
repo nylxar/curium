@@ -1,3 +1,4 @@
+import React from "react";
 import {
   View,
   Text,
@@ -20,6 +21,7 @@ import {
 import { Radius, FontSize, Spacing, Fonts } from "@/constants/theme";
 import { ExpandableField } from "./ExpandableField";
 import { DateTimePicker } from "./DateTimePicker";
+import { URLPresets } from "./URLPresets";
 import { useTheme } from "@/context/ThemeContext";
 
 // At top of InputForms.tsx — add explicit interfaces:
@@ -151,14 +153,20 @@ function Field({
 // Single-field forms — one ExpandableField:
 export function URLFormView({ form, onChange, tintColor }: URLFormProps) {
   return (
-    <ExpandableField
-      label="URL"
-      tintColor={tintColor}
-      value={form.url}
-      onChange={(v: string) => onChange({ url: v })}
-      placeholder="https://example.com"
-      keyboardType="url"
-    />
+    <View style={{ gap: Spacing.sm }}>
+      <ExpandableField
+        label="URL"
+        tintColor={tintColor}
+        value={form.url}
+        onChange={(v: string) => onChange({ url: v })}
+        placeholder="https://example.com"
+        keyboardType="url"
+      />
+      <URLPresets
+        tintColor={tintColor}
+        onSelect={(prefix) => onChange({ url: prefix })}
+      />
+    </View>
   );
 }
 
@@ -348,7 +356,7 @@ export function LocationFormView({
         tintColor={tintColor}
         value={form.lat}
         onChange={(v: string) => onChange({ ...form, lat: v })}
-        placeholder="28.6139"
+        placeholder="33.5246"
         keyboardType="decimal-pad"
       />
       <ExpandableField
@@ -356,7 +364,7 @@ export function LocationFormView({
         tintColor={tintColor}
         value={form.lng}
         onChange={(v: string) => onChange({ ...form, lng: v })}
-        placeholder="77.2090"
+        placeholder="151.1220"
         keyboardType="decimal-pad"
       />
       <ExpandableField
@@ -364,7 +372,7 @@ export function LocationFormView({
         tintColor={tintColor}
         value={form.label}
         onChange={(v: string) => onChange({ ...form, label: v })}
-        placeholder="New Delhi"
+        placeholder="Friendly Orange Cat"
       />
     </View>
   );

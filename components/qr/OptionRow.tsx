@@ -6,14 +6,14 @@ import {
   ScrollView,
   Pressable,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
 
 interface OptionRowProps {
   label: string;
-  iconName: keyof typeof Ionicons.glyphMap;
+  iconName: IconName;
   preview?: ReactNode;
   tintColor: string;
   bgColor?: string;
@@ -80,7 +80,7 @@ export function OptionRow({
               { backgroundColor: colors.surfaceOffset },
             ]}
           >
-            <Ionicons name={iconName} size={18} color={colors.text} />
+            <Icon name={iconName} size={18} color={colors.text} />
           </View>
           <Text
             style={[
@@ -114,7 +114,7 @@ export function OptionRow({
               { backgroundColor: tintColor + "12" },
             ]}
           >
-            <Ionicons name={iconName} size={20} color={colors.text} />
+            <Icon name={iconName} size={20} color={colors.text} />
           </View>
           <View style={styles.sheetTitles}>
             <Text
@@ -149,7 +149,7 @@ export function OptionRow({
               },
             ]}
           >
-            <Ionicons name="close" size={16} color={colors.textMuted} />
+            <Icon name="close" size={16} color={colors.textMuted} />
           </Pressable>
         </View>
 

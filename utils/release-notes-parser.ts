@@ -17,6 +17,7 @@ const ICON_MAP: Record<string, string> = {
   "removed": "remove-circle-outline",
   "deprecated": "warning-outline",
   "added": "add-circle-outline",
+  "list": "list-outline",
 };
 
 export interface ReleaseSection {

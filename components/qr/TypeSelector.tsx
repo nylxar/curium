@@ -6,7 +6,7 @@ import {
   Pressable,
   StyleSheet,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import * as Haptics from "expo-haptics";
 import { QRType } from "@/types/qr";
 import { useTheme } from "@/context/ThemeContext";
@@ -28,7 +28,7 @@ interface Props {
 const TYPES: {
   id: QRType;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
 }[] = [
   { id: "url", label: "URL", icon: "link-outline" },
   { id: "text", label: "Text", icon: "text-outline" },
@@ -37,7 +37,7 @@ const TYPES: {
   { id: "phone", label: "Phone", icon: "call-outline" },
   { id: "sms", label: "SMS", icon: "chatbubble-outline" },
   { id: "contact", label: "Contact", icon: "person-outline" },
-  { id: "location", label: "Location", icon: "location-outline" },
+  { id: "location", label: "Location", icon: "globe-outline" },
   { id: "event", label: "Event", icon: "calendar-outline" },
   { id: "otpauth", label: "OTP Auth", icon: "key-outline" },
 ];
@@ -78,7 +78,7 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
               { backgroundColor: colors.surfaceOffset },
             ]}
           >
-            <Ionicons name={current.icon} size={18} color={colors.text} />
+            <Icon name={current.icon} size={18} color={colors.text} />
           </View>
           <View style={styles.rowText}>
             <Text
@@ -107,7 +107,7 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
               { backgroundColor: colors.surfaceOffset },
             ]}
           >
-            <Ionicons
+            <Icon
               name="chevron-forward"
               size={14}
               color={colors.textMuted}
@@ -156,7 +156,7 @@ export function TypeSelector({ selected, tintColor, onChange }: Props) {
                 }}
                 activeOpacity={0.6}
               >
-                <Ionicons
+                <Icon
                   name={t.icon}
                   size={22}
                   color={active ? tintColor : colors.textMuted}

@@ -13,7 +13,7 @@ import {
   View,
   Pressable,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "../ui/Icon";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -85,7 +85,7 @@ export function useToast() {
 
 const VARIANT_META: Record<
   ToastVariant,
-  { icon: keyof typeof Ionicons.glyphMap }
+  { icon: IconName }
 > = {
   success: { icon: "checkmark-circle" },
   error: { icon: "close-circle" },
@@ -236,7 +236,7 @@ function ToastView({
     >
       <View style={styles.card}>
         {/* Icon */}
-        <Ionicons name={meta.icon} size={20} color={iconColor} />
+        <Icon name={meta.icon} size={20} color={iconColor} />
 
         {/* Text block */}
         <View style={styles.text}>
@@ -267,7 +267,7 @@ function ToastView({
           </Pressable>
         ) : (
           <Pressable onPress={handleDismiss} hitSlop={8} style={styles.dismissBtn}>
-            <Ionicons name="close" size={16} color="rgba(255,255,255,0.5)" />
+            <Icon name="close" size={16} color="rgba(255,255,255,0.5)" />
           </Pressable>
         )}
       </View>
@@ -483,7 +483,7 @@ function ConfirmDialog({
               { backgroundColor: accent + "18" },
             ]}
           >
-            <Ionicons
+            <Icon
               name={entry.danger ? "warning" : "help"}
               size={22}
               color={accent}

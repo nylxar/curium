@@ -11,7 +11,7 @@ import {
   UIManager,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Radius, Spacing, FontSize, Fonts } from "@/constants/theme";
@@ -59,7 +59,7 @@ export function NavMenu({ tintColor, bgColor }: Props) {
         onPress={openMenu}
         activeOpacity={0.85}
       >
-        <Ionicons name="menu" size={20} color={bgColor} />
+        <Icon name="menu" size={20} color={bgColor} />
         <Text style={[styles.pillLabel, { color: bgColor }]}>Menu</Text>
       </TouchableOpacity>
 
@@ -108,8 +108,8 @@ export function NavMenu({ tintColor, bgColor }: Props) {
                     { backgroundColor: tintColor + "18" },
                   ]}
                 >
-                  <Ionicons
-                    name={item.icon as any}
+                  <Icon
+                    name={item.icon as IconName}
                     size={20}
                     color={tintColor}
                   />
@@ -117,7 +117,7 @@ export function NavMenu({ tintColor, bgColor }: Props) {
                 <Text style={[styles.navLabel, { color: tintColor }]}>
                   {item.label}
                 </Text>
-                <Ionicons
+                <Icon
                   name="chevron-forward"
                   size={16}
                   color={tintColor + "50"}

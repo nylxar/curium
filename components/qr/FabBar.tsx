@@ -15,7 +15,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Radius, Spacing, FontSize, Fonts } from "@/constants/theme";
@@ -30,7 +30,7 @@ const NAV_ITEMS = [
 ] as const;
 
 interface NavRowProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   label: string;
   onPress: () => void;
   isLast: boolean;
@@ -92,12 +92,12 @@ function NavRow({
             { backgroundColor: colors.surfaceOffset },
           ]}
         >
-          <Ionicons name={icon} size={20} color={colors.text} />
+          <Icon name={icon} size={20} color={colors.text} />
         </View>
         <Text style={[styles.navLabel, { color: colors.text }]}>
           {label}
         </Text>
-        <Ionicons
+        <Icon
           name="chevron-forward"
           size={16}
           color={colors.textFaint}
@@ -108,7 +108,7 @@ function NavRow({
 }
 
 interface BtnProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   label: string;
   onPress: () => void;
   primary?: boolean;
@@ -160,7 +160,7 @@ function Btn({ icon, label, onPress, primary, disabled }: BtnProps) {
                   },
             ]}
           >
-            <Ionicons
+            <Icon
               name={icon}
               size={20}
               color={primary ? colors.bg : colors.text}
@@ -301,7 +301,7 @@ export function FabBar({
         {NAV_ITEMS.map((item, i) => (
           <NavRow
             key={item.route}
-            icon={item.icon as any}
+            icon={item.icon as IconName}
             label={item.label}
             isLast={i === NAV_ITEMS.length - 1}
             index={i}

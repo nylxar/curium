@@ -6,7 +6,7 @@ import {
   StyleSheet,
   Pressable,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { Radius, Spacing, FontSize, Fonts } from "@/constants/theme";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
 import { useTheme } from "@/context/ThemeContext";
@@ -16,7 +16,7 @@ interface Props {
   onClose: () => void;
   title: string;
   subtitle?: string;
-  iconName?: keyof typeof Ionicons.glyphMap;
+  iconName?: IconName;
   children: ReactNode;
 }
 
@@ -41,7 +41,7 @@ export function OptionSheet({
           style={[s.iconCircle, { backgroundColor: colors.primary + "18" }]}
         >
           {iconName && (
-            <Ionicons name={iconName} size={18} color={colors.primary} />
+            <Icon name={iconName} size={18} color={colors.primary} />
           )}
         </View>
         <View style={s.titles}>
@@ -79,7 +79,7 @@ export function OptionSheet({
             },
           ]}
         >
-          <Ionicons name="close" size={16} color={colors.textMuted} />
+          <Icon name="close" size={16} color={colors.textMuted} />
         </Pressable>
       </View>
 
