@@ -12,7 +12,7 @@ import { useBarcodeScannerOutput, createBarcodeScanner } from "react-native-visi
 import { loadImage } from "react-native-nitro-image";
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { useRouter, useIsFocused } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
@@ -351,7 +351,7 @@ export default function ScanScreen() {
             { backgroundColor: colors.surface, borderColor: colors.border },
           ]}
         >
-          <Ionicons name="camera-outline" size={36} color={colors.primary} />
+          <Icon name="camera-outline" size={36} color={colors.primary} />
         </View>
         <Text
           style={[
@@ -437,7 +437,7 @@ export default function ScanScreen() {
             hitSlop={12}
             style={styles.topBtn}
           >
-            <Ionicons name="close" size={24} color="#fff" />
+            <Icon name="close" size={24} color="#fff" />
           </TouchableOpacity>
           <Text
             style={[
@@ -453,14 +453,14 @@ export default function ScanScreen() {
               hitSlop={12}
               style={styles.topBtn}
             >
-              <Ionicons name="images-outline" size={22} color="#fff" />
+              <Icon name="images-outline" size={22} color="#fff" />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setTorch((t) => !t)}
               hitSlop={12}
               style={styles.topBtn}
             >
-              <Ionicons
+              <Icon
                 name={torch ? "flash" : "flash-outline"}
                 size={22}
                 color={torch ? "#facc15" : "#fff"}
@@ -504,7 +504,7 @@ export default function ScanScreen() {
           <View
             style={[styles.hintPill, { backgroundColor: "rgba(0,0,0,0.55)" }]}
           >
-            <Ionicons name="scan-outline" size={14} color="#fff" />
+            <Icon name="scan-outline" size={14} color="#fff" />
             <Text
               style={[
                 styles.hintText,
@@ -543,7 +543,7 @@ export default function ScanScreen() {
                   { backgroundColor: colors.primary + "20" },
                 ]}
               >
-                <Ionicons
+                <Icon
                   name="checkmark-circle"
                   size={14}
                   color={colors.primary}
@@ -585,7 +585,7 @@ export default function ScanScreen() {
                 ]}
                 onPress={() => handleAction("copy")}
               >
-                <Ionicons name="copy-outline" size={16} color={colors.text} />
+                <Icon name="copy-outline" size={16} color={colors.text} />
                 <Text
                   style={[
                     styles.resultBtnLabel,
@@ -605,7 +605,7 @@ export default function ScanScreen() {
                 ]}
                 onPress={() => handleAction("open")}
               >
-                <Ionicons
+                <Icon
                   name={detectedType === "event" ? "calendar-outline" : "open-outline"}
                   size={16}
                   color={colors.text}
@@ -633,7 +633,7 @@ export default function ScanScreen() {
                   setResult(null);
                 }}
               >
-                <Ionicons
+                <Icon
                   name="refresh-outline"
                   size={16}
                   color={colors.text}
@@ -665,7 +665,7 @@ export default function ScanScreen() {
                 });
               }}
             >
-              <Ionicons
+              <Icon
                 name="create-outline"
                 size={17}
                 color={isDark ? "#000" : "#fff"}
@@ -681,7 +681,7 @@ export default function ScanScreen() {
               >
                 Load into Generator
               </Text>
-              <Ionicons
+              <Icon
                 name="arrow-forward"
                 size={16}
                 color={isDark ? "#000" : "#fff"}
