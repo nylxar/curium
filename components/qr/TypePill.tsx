@@ -5,7 +5,7 @@ import Animated, {
   withSpring,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { QRType } from "@/types/qr";
 import { FontSize, Spacing, Radius, Fonts } from "@/constants/theme";
 import * as Haptics from "expo-haptics";
@@ -13,7 +13,7 @@ import * as Haptics from "expo-haptics";
 const TYPES: {
   type: QRType;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
 }[] = [
   { type: "url", label: "URL", icon: "link-outline" },
   { type: "text", label: "Text", icon: "text-outline" },
@@ -22,7 +22,7 @@ const TYPES: {
   { type: "phone", label: "Phone", icon: "call-outline" },
   { type: "sms", label: "SMS", icon: "chatbubble-outline" },
   { type: "contact", label: "Contact", icon: "person-outline" },
-  { type: "location", label: "Location", icon: "location-outline" },
+  { type: "location", label: "Location", icon: "globe-outline" },
 ];
 
 function Chip({
@@ -63,7 +63,7 @@ function Chip({
               },
         ]}
       >
-        <Ionicons
+        <Icon
           name={item.icon}
           size={13}
           color={selected ? "#080810" : tintColor}
