@@ -24,7 +24,7 @@ import * as Sharing from "expo-sharing";
 import { useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { Pressable } from "react-native";
 
 import { QRCanvas } from "@/components/qr/QRCanvas";
@@ -221,7 +221,7 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
   { id: "phone", label: "Phone", icon: "call-outline" },
   { id: "sms", label: "SMS", icon: "chatbubble-outline" },
   { id: "contact", label: "Contact", icon: "person-outline" },
-  { id: "location", label: "Location", icon: "location-outline" },
+  { id: "location", label: "Location", icon: "globe-outline" },
   { id: "event", label: "Event", icon: "calendar-outline" },
   { id: "otpauth", label: "OTP Auth", icon: "key-outline" },
 ];
@@ -268,8 +268,8 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
               { backgroundColor: colors.surfaceOffset },
             ]}
           >
-            <Ionicons
-              name={(currentType?.icon as any) ?? "create-outline"}
+            <Icon
+              name={(currentType?.icon as IconName) ?? "create-outline"}
               size={18}
               color={colors.text}
             />
@@ -303,7 +303,7 @@ const QR_TYPES: { id: QRType; label: string; icon: string }[] = [
               { backgroundColor: colors.surfaceOffset },
             ]}
           >
-            <Ionicons
+            <Icon
               name="chevron-forward"
               size={14}
               color={colors.textMuted}
@@ -942,7 +942,7 @@ export default function CreateScreen() {
             onOpen={() => openSheet("templates")}
             onClose={closeSheet}
             preview={
-              <Ionicons name="bookmark-outline" size={15} color={tint + "90"} />
+              <Icon name="bookmark-outline" size={15} color={tint + "90"} />
             }
           >
             <TemplateSelector
@@ -966,7 +966,7 @@ export default function CreateScreen() {
             onOpen={() => openSheet("eye")}
             onClose={closeSheet}
             preview={
-              <Ionicons name="scan-outline" size={15} color={tint + "90"} />
+              <Icon name="scan-outline" size={15} color={tint + "90"} />
             }
           >
             <EyeShapeSelector
@@ -987,7 +987,7 @@ export default function CreateScreen() {
             onOpen={() => openSheet("pupil")}
             onClose={closeSheet}
             preview={
-              <Ionicons
+              <Icon
                 name="ellipse-outline"
                 size={15}
                 color={tint + "90"}
@@ -1012,7 +1012,7 @@ export default function CreateScreen() {
             onOpen={() => openSheet("pixel")}
             onClose={closeSheet}
             preview={
-              <Ionicons name="apps-outline" size={15} color={tint + "90"} />
+              <Icon name="apps-outline" size={15} color={tint + "90"} />
             }
           >
             <PixelShapeSelector
@@ -1033,7 +1033,7 @@ export default function CreateScreen() {
             onOpen={() => openSheet("frame")}
             onClose={closeSheet}
             preview={
-              <Ionicons
+              <Icon
                 name="crop-outline"
                 size={15}
                 color={tint + "90"}
@@ -1058,7 +1058,7 @@ export default function CreateScreen() {
             onOpen={() => openSheet("corners")}
             onClose={closeSheet}
             preview={
-              <Ionicons
+              <Icon
                 name="square-outline"
                 size={15}
                 color={tint + "90"}
@@ -1083,7 +1083,7 @@ export default function CreateScreen() {
             onOpen={() => openSheet("gradient")}
             onClose={closeSheet}
             preview={
-              <Ionicons
+              <Icon
                 name={
                   qrStyle.gradient.enabled
                     ? "color-filter"
@@ -1114,9 +1114,9 @@ export default function CreateScreen() {
             onClose={closeSheet}
             preview={
               qrStyle.logoUri ? (
-                <Ionicons name="checkmark-circle" size={15} color={tint} />
+                <Icon name="checkmark-circle" size={15} color={tint} />
               ) : (
-                <Ionicons
+                <Icon
                   name="add-circle-outline"
                   size={15}
                   color={tint + "80"}
@@ -1142,7 +1142,7 @@ export default function CreateScreen() {
             onOpen={() => openSheet("logoStyle")}
             onClose={closeSheet}
             preview={
-              <Ionicons
+              <Icon
                 name="shapes-outline"
                 size={15}
                 color={tint + "90"}
@@ -1199,7 +1199,7 @@ export default function CreateScreen() {
                   ]}
                 >
                   {qrStyle.ecl === e && (
-                    <Ionicons
+                    <Icon
                       name="checkmark"
                       size={14}
                       color={colors.bg}
