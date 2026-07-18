@@ -6,7 +6,7 @@ import * as Sharing from "expo-sharing";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { OptionSheet } from "./OptionSheet";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { useTheme } from "@/context/ThemeContext";
@@ -15,7 +15,7 @@ import { generateSVG } from "@/utils/svg-export";
 import { QRStyle } from "@/types/qr";
 
 interface ExportAction {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconName;
   label: string;
   sub: string;
   onPress: () => void;
@@ -167,7 +167,7 @@ export function ExportSheet({
               { backgroundColor: colors.primary + "18" },
             ]}
           >
-            <Ionicons name={action.icon} size={20} color={colors.primary} />
+            <Icon name={action.icon} size={20} color={colors.primary} />
           </View>
           <View style={styles.text}>
             <Text style={[styles.label, { color: colors.text }]}>
@@ -177,7 +177,7 @@ export function ExportSheet({
               {action.sub}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          <Icon name="chevron-forward" size={16} color={colors.textMuted} />
         </TouchableOpacity>
       ))}
     </OptionSheet>
