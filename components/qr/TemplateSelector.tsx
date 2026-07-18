@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { View, Text, StyleSheet, TextInput, Keyboard } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "../ui/Icon";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import {
@@ -119,7 +119,7 @@ export function TemplateSelector({ currentStyle, onLoad }: Props) {
               }, 250);
             }}
           >
-            <Ionicons name="close" size={16} color={colors.textMuted} />
+            <Icon name="close" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
       ) : (
@@ -127,7 +127,7 @@ export function TemplateSelector({ currentStyle, onLoad }: Props) {
           style={[styles.addRow, { borderColor: colors.border }]}
           onPress={() => setSaving(true)}
         >
-          <Ionicons
+          <Icon
             name="add-circle-outline"
             size={18}
             color={colors.primary}
@@ -182,7 +182,7 @@ export function TemplateSelector({ currentStyle, onLoad }: Props) {
                 </Text>
               </View>
             </View>
-            <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
+            <Icon name="arrow-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         ))
       )}
