@@ -14,7 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/ui/Icon";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 
@@ -53,7 +53,7 @@ export default function AboutScreen() {
         ]}
       >
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text
           style={[
@@ -162,7 +162,7 @@ export default function AboutScreen() {
             ]}
           >
             <View style={styles.pointRow}>
-              <Ionicons
+              <Icon
                 name="close-circle-outline"
                 size={16}
                 color={colors.error}
@@ -177,7 +177,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons
+              <Icon
                 name="close-circle-outline"
                 size={16}
                 color={colors.error}
@@ -192,7 +192,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons
+              <Icon
                 name="close-circle-outline"
                 size={16}
                 color={colors.error}
@@ -207,7 +207,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons
+              <Icon
                 name="close-circle-outline"
                 size={16}
                 color={colors.error}
@@ -222,7 +222,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons
+              <Icon
                 name="close-circle-outline"
                 size={16}
                 color={colors.error}
@@ -257,7 +257,7 @@ export default function AboutScreen() {
             ]}
           >
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark" size={16} color={colors.text} />
+              <Icon name="checkmark" size={16} color={colors.text} />
               <Text
                 style={[
                   styles.pointText,
@@ -268,7 +268,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark" size={16} color={colors.text} />
+              <Icon name="checkmark" size={16} color={colors.text} />
               <Text
                 style={[
                   styles.pointText,
@@ -279,7 +279,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark" size={16} color={colors.text} />
+              <Icon name="checkmark" size={16} color={colors.text} />
               <Text
                 style={[
                   styles.pointText,
@@ -290,7 +290,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark" size={16} color={colors.text} />
+              <Icon name="checkmark" size={16} color={colors.text} />
               <Text
                 style={[
                   styles.pointText,
@@ -301,7 +301,7 @@ export default function AboutScreen() {
               </Text>
             </View>
             <View style={styles.pointRow}>
-              <Ionicons name="checkmark" size={16} color={colors.text} />
+              <Icon name="checkmark" size={16} color={colors.text} />
               <Text
                 style={[
                   styles.pointText,
