@@ -10,7 +10,7 @@ import {
   Dimensions,
   BackHandler,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "../ui/Icon";
 import { useOverlay } from "@/components/ui/Overlay";
 import { useTheme } from "@/context/ThemeContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -73,7 +73,7 @@ export function URLPresets({
       onPress={handleOpen}
     >
       <Text style={[styles.triggerText, { color: tintColor }]}>Quick fill</Text>
-      <Ionicons
+      <Icon
         name="chevron-down"
         size={14}
         color={tintColor}
