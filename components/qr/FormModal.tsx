@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Keyboard,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts } from "@/constants/theme";
 import { AnimatedSheet } from "@/components/ui/AnimatedSheet";
@@ -52,7 +52,7 @@ interface Props {
 
 const TYPE_META: Record<
   QRType,
-  { label: string; icon: keyof typeof Ionicons.glyphMap }
+  { label: string; icon: IconName }
 > = {
   url: { label: "URL", icon: "link-outline" },
   text: { label: "Text", icon: "text-outline" },
@@ -61,7 +61,7 @@ const TYPE_META: Record<
   sms: { label: "SMS", icon: "chatbubble-outline" },
   wifi: { label: "Wi-Fi", icon: "wifi-outline" },
   contact: { label: "Contact", icon: "person-outline" },
-  location: { label: "Location", icon: "location-outline" },
+  location: { label: "Location", icon: "globe-outline" },
   event: { label: "Event", icon: "calendar-outline" },
   otpauth: { label: "OTP Auth", icon: "key-outline" },
 };
@@ -540,7 +540,7 @@ export function FormModal({
     >
       <View style={mStyles.header}>
         <View style={[mStyles.iconBox, { backgroundColor: tintColor + "18" }]}>
-          <Ionicons name={meta.icon} size={18} color={tintColor} />
+          <Icon name={meta.icon} size={18} color={tintColor} />
         </View>
         <Text
           style={[
