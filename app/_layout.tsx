@@ -17,6 +17,8 @@ import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/ui/Toast";
 import { OverlayProvider, OverlayHost } from "@/components/ui/Overlay";
 import { CustomSplash } from "@/components/ui/CustomSplash";
+import { useShareIntent } from "@/hooks/useShareIntent";
+import { ShareOverlay } from "@/components/qr/ShareOverlay";
 
 const LAST_SEEN_KEY = "curium_last_seen_version";
 const UPGRADE_WELCOME_KEY = "curium_upgrade_welcome_seen";
@@ -53,6 +55,7 @@ export default function RootLayout() {
   const appStyle = useAnimatedStyle(() => ({ opacity: appOp.value }));
 
   const [splashHidden, setSplashHidden] = useState(false);
+  const sharedContent = useShareIntent();
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -178,6 +181,12 @@ export default function RootLayout() {
                       />
                     </Stack>
                     <OverlayHost />
+                    {sharedContent && (
+                      <ShareOverlay
+                        content={sharedContent}
+                        onDismiss={() => {}}
+                      />
+                    )}
                   </SafeAreaProvider>
                 </ToastProvider>
               </ThemedBackground>
