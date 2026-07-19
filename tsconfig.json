@@ -6,5 +6,5 @@
       "@/*": ["./*"],
     },
   },
-  "exclude": ["packages"]
+  "exclude": ["packages", "modules"]
 }
