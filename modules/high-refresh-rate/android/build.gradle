@@ -6,11 +6,11 @@ version = '0.1.0'
 
 android {
   namespace "expo.modules.highrefreshrate"
-  compileSdkVersion safeExtGet("compileSdkVersion", 37)
+  compileSdkVersion safeExtGet("compileSdkVersion", 36)
 
   defaultConfig {
     minSdkVersion safeExtGet("minSdkVersion", 24)
-    targetSdkVersion safeExtGet("targetSdkVersion", 37)
+    targetSdkVersion safeExtGet("targetSdkVersion", 36)
   }
 
   compileOptions {
