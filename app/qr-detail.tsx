@@ -264,143 +264,146 @@ export default function QRDetailScreen() {
     })} · ${time}`;
   };
 
-  const renderItem = ({ item }: { item: HistoryItem }) => (
-    <View style={[styles.page, { width, paddingTop: Spacing.lg }]}>
-      {/* Bare QR — no card wrapper, matches index.tsx.  The wrapper's
-          borderRadius is driven by the saved `qrCorners` so the outer
-          frame matches the inner QR's rounded corners (sharp = 0, soft
-          = 8, round = 16, very round = 24, pill = 32).  This is the
-          same value QRCanvas uses internally for its inner View, so
-          a 32-corner QR shows identical 32 corners in both screens. */}
-      <View
-        ref={(r) => {
-          qrRefs.current[item.id] = r;
-        }}
-        collapsable={false}
-        style={[
-          styles.qrBare,
-          {
-            width: QR_SIZE,
-            height: QR_SIZE,
-            backgroundColor: item.qrStyle?.bgColor ?? colors.surface,
-            borderRadius: item.qrStyle?.qrCorners ?? 20,
-          },
-        ]}
-      >
-        <QRCanvas
-          value={item.value}
-          size={QR_SIZE}
-          qrStyle={item.qrStyle}
-          skipAnimation
-          logoUri={item.qrStyle?.logoUri}
-          logoSize={60}
-          logoStyle={item.qrStyle?.logoStyle}
-          logoBgColor={item.qrStyle?.bgColor}
-          logoPosition={item.qrStyle?.logoPosition}
-        />
-      </View>
-
-      {/* Type label */}
-      <View
-        style={[
-          styles.typeLabel,
-          { backgroundColor: colors.primary + "12" },
-        ]}
-      >
-        <Text
+  const renderItem = useCallback(
+    ({ item }: { item: HistoryItem }) => (
+      <View style={[styles.page, { width, paddingTop: Spacing.lg }]}>
+        {/* Bare QR — no card wrapper, matches index.tsx.  The wrapper's
+            borderRadius is driven by the saved `qrCorners` so the outer
+            frame matches the inner QR's rounded corners (sharp = 0, soft
+            = 8, round = 16, very round = 24, pill = 32).  This is the
+            same value QRCanvas uses internally for its inner View, so
+            a 32-corner QR shows identical 32 corners in both screens. */}
+        <View
+          ref={(r) => {
+            qrRefs.current[item.id] = r;
+          }}
+          collapsable={false}
           style={[
-            styles.typeLabelText,
-            { color: colors.primary, fontFamily: Fonts.monoBold },
+            styles.qrBare,
+            {
+              width: QR_SIZE,
+              height: QR_SIZE,
+              backgroundColor: item.qrStyle?.bgColor ?? colors.surface,
+              borderRadius: item.qrStyle?.qrCorners ?? 20,
+            },
           ]}
         >
-          {item.type.toUpperCase()}
-        </Text>
-      </View>
+          <QRCanvas
+            value={item.value}
+            size={QR_SIZE}
+            qrStyle={item.qrStyle}
+            skipAnimation
+            logoUri={item.qrStyle?.logoUri}
+            logoSize={60}
+            logoStyle={item.qrStyle?.logoStyle}
+            logoBgColor={item.qrStyle?.bgColor}
+            logoPosition={item.qrStyle?.logoPosition}
+          />
+        </View>
 
-      {/* Value block */}
-      <View
-        style={[
-          styles.valueCard,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        <View style={styles.valueHeader}>
+        {/* Type label */}
+        <View
+          style={[
+            styles.typeLabel,
+            { backgroundColor: colors.primary + "12" },
+          ]}
+        >
           <Text
             style={[
-              styles.valueLabel,
-              { color: colors.textFaint, fontFamily: Fonts.mono },
+              styles.typeLabelText,
+              { color: colors.primary, fontFamily: Fonts.monoBold },
             ]}
           >
-            CONTENT
+            {item.type.toUpperCase()}
           </Text>
-          <Pressable
-            onPress={() => copyValue(item.value)}
-            hitSlop={6}
-            style={({ pressed }) => [
-              styles.copyBadge,
-              {
-                backgroundColor: pressed
-                  ? colors.primary + "22"
-                  : copied
-                    ? colors.success + "22"
-                    : colors.surfaceOffset,
-                borderColor: pressed
-                  ? colors.primary + "60"
-                  : copied
-                    ? colors.success + "50"
-                    : colors.border,
-              },
-            ]}
-          >
-            <Icon
-              name={copied ? "checkmark" : "copy-outline"}
-              size={11}
-              color={copied ? colors.success : colors.textMuted}
-            />
+        </View>
+
+        {/* Value block */}
+        <View
+          style={[
+            styles.valueCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View style={styles.valueHeader}>
             <Text
               style={[
-                styles.copyBadgeText,
+                styles.valueLabel,
+                { color: colors.textFaint, fontFamily: Fonts.mono },
+              ]}
+            >
+              CONTENT
+            </Text>
+            <Pressable
+              onPress={() => copyValue(item.value)}
+              hitSlop={6}
+              style={({ pressed }) => [
+                styles.copyBadge,
                 {
-                  color: copied ? colors.success : colors.textMuted,
-                  fontFamily: Fonts.monoBold,
+                  backgroundColor: pressed
+                    ? colors.primary + "22"
+                    : copied
+                      ? colors.success + "22"
+                      : colors.surfaceOffset,
+                  borderColor: pressed
+                    ? colors.primary + "60"
+                    : copied
+                      ? colors.success + "50"
+                      : colors.border,
                 },
               ]}
             >
-              {copied ? "COPIED" : "TAP TO COPY"}
-            </Text>
-          </Pressable>
-        </View>
-        <Text
-          style={[
-            styles.valueText,
-            { color: colors.text, fontFamily: Fonts.mono },
-          ]}
-          numberOfLines={3}
-        >
-          {item.value}
-        </Text>
-        <View
-          style={[styles.valueFooter, { borderTopColor: colors.border }]}
-        >
-          <Icon
-            name="time-outline"
-            size={12}
-            color={colors.textFaint}
-          />
+              <Icon
+                name={copied ? "checkmark" : "copy-outline"}
+                size={11}
+                color={copied ? colors.success : colors.textMuted}
+              />
+              <Text
+                style={[
+                  styles.copyBadgeText,
+                  {
+                    color: copied ? colors.success : colors.textMuted,
+                    fontFamily: Fonts.monoBold,
+                  },
+                ]}
+              >
+                {copied ? "COPIED" : "TAP TO COPY"}
+              </Text>
+            </Pressable>
+          </View>
           <Text
             style={[
-              styles.dateText,
-              { color: colors.textMuted, fontFamily: Fonts.mono },
+              styles.valueText,
+              { color: colors.text, fontFamily: Fonts.mono },
             ]}
+            numberOfLines={3}
           >
-            {formatDate(item.createdAt)}
+            {item.value}
           </Text>
+          <View
+            style={[styles.valueFooter, { borderTopColor: colors.border }]}
+          >
+            <Icon
+              name="time-outline"
+              size={12}
+              color={colors.textFaint}
+            />
+            <Text
+              style={[
+                styles.dateText,
+                { color: colors.textMuted, fontFamily: Fonts.mono },
+              ]}
+            >
+              {formatDate(item.createdAt)}
+            </Text>
+          </View>
         </View>
       </View>
-    </View>
+    ),
+    [width, QR_SIZE, colors, copied, copyValue, formatDate],
   );
 
   return (
