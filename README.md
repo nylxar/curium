@@ -146,7 +146,7 @@ With official releases for Android, Windows, macOS, Linux, CLI, Web, and eventua
 
 | Layer | Mobile | Desktop |
 |-------|--------|---------|
-| Framework | Expo SDK 56, React Native 0.85 | Tauri (Rust and React) |
+| Framework | Expo SDK 57, React Native 0.86 | Tauri (Rust and React) |
 | Navigation | Expo Router | React Router |
 | Animations | React Native Reanimated 4 | GSAP |
 | Gestures | react-native-gesture-handler | Native events |
