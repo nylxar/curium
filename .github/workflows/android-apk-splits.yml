@@ -14,8 +14,6 @@ on:
   push:
     tags:
       - "v*"
-  schedule:
-    - cron: "0 3 * * *"
 
 permissions:
   contents: write
@@ -27,7 +25,6 @@ concurrency:
 jobs:
   build-apk-splits:
     if: |
-      github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     runs-on: ubuntu-latest
@@ -37,10 +34,7 @@ jobs:
       - name: Resolve flavor and ref
         id: resolve
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "flavor=preview" >> "$GITHUB_OUTPUT"
-            echo "ref=preview" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "push" ]; then
+          if [ "${{ github.event_name }}" = "push" ]; then
             echo "flavor=stable" >> "$GITHUB_OUTPUT"
             echo "ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           else
