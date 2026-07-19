@@ -9,6 +9,7 @@ import {
   Platform,
   LayoutAnimation,
   UIManager,
+  InteractionManager,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Icon, type IconName } from "@/components/ui/Icon";
@@ -44,7 +45,9 @@ export function NavMenu({ tintColor, bgColor }: Props) {
 
   const navigate = (route: string) => {
     setOpen(false);
-    setTimeout(() => router.push(route as any), 80);
+    InteractionManager.runAfterInteractions(() => {
+      router.push(route as any);
+    });
     Haptics.selectionAsync();
   };
 
