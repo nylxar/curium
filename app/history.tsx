@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { InteractionManager } from "react-native";
 import {
   View,
   Text,
@@ -295,12 +294,12 @@ export default function HistoryScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      const task = InteractionManager.runAfterInteractions(() => {
+      const id = requestIdleCallback(() => {
         loadHistory().then((data) => {
           setItems(data);
         });
       });
-      return () => task.cancel();
+      return () => (globalThis as any).cancelIdleCallback(id);
     }, []),
   );
 
