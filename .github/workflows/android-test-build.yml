@@ -120,12 +120,10 @@ jobs:
                           f"{' '*(ind+8)}stable {{\n"
                           f"{' '*(ind+12)}dimension \"default\"\n"
                           f"{' '*(ind+12)}applicationIdSuffix \".stable\"\n"
-                          f"{' '*(ind+12)}versionNameSuffix \"-stable\"\n"
                           f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+8)}preview {{\n"
                           f"{' '*(ind+12)}dimension \"default\"\n"
                           f"{' '*(ind+12)}applicationIdSuffix \".preview\"\n"
-                          f"{' '*(ind+12)}versionNameSuffix \"-preview\"\n"
                           f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+4)}}}\n"
                       )
