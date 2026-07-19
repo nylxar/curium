@@ -11,6 +11,11 @@ on:
         options:
           - stable
           - preview
+          - nightly
+      branch:
+        description: "Branch to build from (stable defaults to master, preview to preview)"
+        required: false
+        type: string
   push:
     tags:
       - "v*"
@@ -40,10 +45,15 @@ jobs:
           else
             FLAVOR="${{ inputs.flavor || 'stable' }}"
             echo "flavor=$FLAVOR" >> "$GITHUB_OUTPUT"
-            case "$FLAVOR" in
-              stable)  echo "ref=master" >> "$GITHUB_OUTPUT" ;;
-              preview) echo "ref=preview" >> "$GITHUB_OUTPUT" ;;
-            esac
+            if [ -n "${{ inputs.branch }}" ]; then
+              echo "ref=${{ inputs.branch }}" >> "$GITHUB_OUTPUT"
+            else
+              case "$FLAVOR" in
+                stable)  echo "ref=master" >> "$GITHUB_OUTPUT" ;;
+                preview) echo "ref=preview" >> "$GITHUB_OUTPUT" ;;
+                nightly) echo "ref=master" >> "$GITHUB_OUTPUT" ;;
+              esac
+            fi
           fi
 
       - uses: actions/checkout@v6
@@ -144,6 +154,10 @@ jobs:
                           f"{' '*(ind+12)}dimension \"default\"\n"
                           f"{' '*(ind+12)}applicationIdSuffix \".preview\"\n"
                           f"{' '*(ind+8)}}}\n"
+                          f"{' '*(ind+8)}nightly {{\n"
+                          f"{' '*(ind+12)}dimension \"default\"\n"
+                          f"{' '*(ind+12)}applicationIdSuffix \".nightly\"\n"
+                          f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+4)}}}\n"
                       )
                       out.append(flavors)
@@ -171,7 +185,7 @@ jobs:
                   block, i = read_block(lines, i)
                   if "debuggableVariants" not in "".join(block):
                       ind = indent_of(block[0])
-                      block.insert(-1, f"{' '*(ind+4)}debuggableVariants = [\"stableDebug\", \"previewDebug\"]\n")
+                      block.insert(-1, f"{' '*(ind+4)}debuggableVariants = [\"stableDebug\", \"previewDebug\", \"nightlyDebug\"]\n")
                   out.extend(block)
 
               else:
