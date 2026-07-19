@@ -3,7 +3,6 @@ package expo.modules.highrefreshrate
 import android.app.Activity
 import android.content.Context
 import android.os.Build
-import android.view.Window
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -41,20 +40,20 @@ class HighRefreshRateModule : Module() {
 
   private fun applyRefreshRate(activity: Activity) {
     val display = activity.display ?: return
-    val modeId = display.supportedModes
-      .filter { it.refreshRate >= 119.0f }
-      .maxByOrNull { it.physicalHeight }
-      ?.modeId
-    if (modeId != null) {
-      activity.window.attributes = activity.window.attributes.apply {
-        preferredDisplayModeId = modeId
-      }
-    }
+    val highRefreshRate = display.supportedModes.maxOfOrNull { it.refreshRate } ?: return
+    updateRefreshRate(activity, highRefreshRate)
   }
 
   private fun resetRefreshRate(activity: Activity) {
+    updateRefreshRate(activity, 60.0f)
+  }
+
+  private fun updateRefreshRate(activity: Activity, refreshRate: Float) {
     activity.window.attributes = activity.window.attributes.apply {
+      // A refresh-rate preference allows Android to retain adaptive display
+      // behavior instead of pinning the app to one physical display mode.
       preferredDisplayModeId = 0
+      preferredRefreshRate = refreshRate
     }
   }
 }
