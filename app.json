@@ -25,7 +25,7 @@
       "backgroundColor": "#0d0d0f",
       "predictiveBackGestureEnabled": false,
       "package": "com.nylxar.curium",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES"
