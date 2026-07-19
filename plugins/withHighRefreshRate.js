@@ -8,17 +8,19 @@ const path = require("path");
 const REFRESH_RATE_CODE = `
   private fun applyRefreshRate() {
     val prefs = getSharedPreferences("curium_settings", MODE_PRIVATE)
-    if (!prefs.getBoolean("high_refresh_rate", false)) return
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-      val display = display ?: return
-      val modeId = display.supportedModes
-        .filter { it.refreshRate >= 119.0f }
-        .maxByOrNull { it.physicalHeight }
-        ?.modeId
-      if (modeId != null) {
-        window.attributes = window.attributes.apply {
-          preferredDisplayModeId = modeId
-        }
+    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) return
+
+    val display = display ?: return
+    val refreshRate = if (prefs.getBoolean("high_refresh_rate", false)) {
+      display.supportedModes.maxOfOrNull { it.refreshRate }
+    } else {
+      60.0f
+    }
+    if (refreshRate != null) {
+      window.attributes = window.attributes.apply {
+        // Prefer a rate while letting Android retain adaptive display behavior.
+        preferredDisplayModeId = 0
+        preferredRefreshRate = refreshRate
       }
     }
   }
@@ -30,10 +32,10 @@ const REFRESH_RATE_CODE = `
 `;
 
 /**
- * Injects 120 Hz display mode logic into MainActivity.kt.
+ * Injects refresh-rate preference logic into MainActivity.kt.
  *
  * Reads from SharedPreferences "curium_settings" key "high_refresh_rate".
- * Default is false (off) — users with high-end screens can enable from settings.
+ * Default is false (60 Hz) — users can enable their display's highest rate.
  * The native module (modules/high-refresh-rate) writes to the same prefs
  * and calls applyRefreshRate() at runtime.
  */
