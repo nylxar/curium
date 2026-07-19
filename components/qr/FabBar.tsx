@@ -5,11 +5,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  InteractionManager,
 } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSpring,
   withDelay,
   withSequence,
   Easing,
@@ -127,8 +129,8 @@ function Btn({ icon, label, onPress, primary, disabled }: BtnProps) {
     if (disabled) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     scale.value = withSequence(
-      withTiming(0.9, { duration: 80, easing: Easing.out(Easing.quad) }),
-      withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) }),
+      withSpring(0.9, { damping: 15, stiffness: 400 }),
+      withSpring(1, { damping: 15, stiffness: 300 }),
     );
     onPress();
   };
@@ -224,7 +226,7 @@ export function FabBar({
 
   const go = (route: string) => {
     setMenuOpen(false);
-    setTimeout(() => {
+    InteractionManager.runAfterInteractions(() => {
       if (route === "/") {
         // Pop every pushed screen so the existing CreateScreen instance
         // (with its form data and QR style) is revealed instead of
@@ -236,7 +238,7 @@ export function FabBar({
       } else {
         router.push(route as any);
       }
-    }, 80);
+    });
   };
 
   return (
