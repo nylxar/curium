@@ -1,0 +1,7 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": {},
+  "android": {
+    "modules": ["expo.modules.highrefreshrate.HighRefreshRateModule"]
+  }
+}
