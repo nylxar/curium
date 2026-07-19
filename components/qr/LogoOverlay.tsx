@@ -1,10 +1,14 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
+import { View, Image, StyleSheet } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  runOnJS,
+} from "react-native-reanimated";
 import {
-  View,
-  Image,
-  PanResponder,
-  StyleSheet,
-} from "react-native";
+  Gesture,
+  GestureDetector,
+} from "react-native-gesture-handler";
 import { LogoStyleConfig } from "@/types/qr";
 
 interface Props {
@@ -45,46 +49,43 @@ export function LogoOverlay({
   const cx = (containerSize - plateSize) / 2;
   const cy = (containerSize - plateSize) / 2;
 
-  const [pos, setPos] = useState(
-    initialPosition ?? { x: cx, y: cy },
-  );
-  const posRef = useRef(initialPosition ?? { x: cx, y: cy });
-  const panOrigin = useRef({ x: 0, y: 0 });
+  const initPos = initialPosition ?? { x: cx, y: cy };
+  const posX = useSharedValue(initPos.x);
+  const posY = useSharedValue(initPos.y);
+  const panOriginX = useSharedValue(initPos.x);
+  const panOriginY = useSharedValue(initPos.y);
 
   const MAX_X = containerSize - plateSize;
   const MAX_Y = containerSize - plateSize;
 
-  // PanResponder handles dragging via a transparent full-coverage
-  // overlay.  The actual logo View is a pure visual element with NO
-  // touch handlers — this is critical for captureRef (react-native-
-  // view-shot) on Android, which cannot capture absolutely-positioned
-  // children that have PanResponder attached.
-  const pan = useRef(
-    draggable
-      ? PanResponder.create({
-          onStartShouldSetPanResponder: () => true,
-          onMoveShouldSetPanResponder: () => true,
-          onPanResponderGrant: () => {
-            panOrigin.current = { ...posRef.current };
-          },
-          onPanResponderMove: (_, g) => {
-            const nx = Math.max(
-              0,
-              Math.min(MAX_X, panOrigin.current.x + g.dx),
-            );
-            const ny = Math.max(
-              0,
-              Math.min(MAX_Y, panOrigin.current.y + g.dy),
-            );
-            posRef.current = { x: nx, y: ny };
-            setPos({ x: nx, y: ny });
-          },
-          onPanResponderRelease: () => {
-            onPositionChange?.(posRef.current);
-          },
-        })
-      : { panHandlers: {} as any },
-  ).current;
+  const onPositionChangeRef = useRef(onPositionChange ?? (() => {}));
+  onPositionChangeRef.current = onPositionChange ?? (() => {});
+
+  const pan = Gesture.Pan()
+    .enabled(draggable)
+    .onStart(() => {
+      panOriginX.value = posX.value;
+      panOriginY.value = posY.value;
+    })
+    .onUpdate((e) => {
+      "worklet";
+      posX.value = Math.max(0, Math.min(MAX_X, panOriginX.value + e.translationX));
+      posY.value = Math.max(0, Math.min(MAX_Y, panOriginY.value + e.translationY));
+    })
+    .onEnd(() => {
+      "worklet";
+      runOnJS(onPositionChangeRef.current)({
+        x: posX.value,
+        y: posY.value,
+      });
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: posX.value },
+      { translateY: posY.value },
+    ],
+  }));
 
   const plateRadius = (() => {
     switch (cfg.background) {
@@ -114,20 +115,20 @@ export function LogoOverlay({
 
   return (
     <View style={{ position: "absolute", left: 0, top: 0, width: containerSize, height: containerSize }}>
-      {/* Visual logo — NO touch handlers, pure rendering.
-          captureRef on Android can see this because there's no
-          PanResponder intercepting the native view. */}
-      <View
+      {/* Visual logo — animated on UI thread via shared values.
+          No React state updates during drag. */}
+      <Animated.View
         collapsable={false}
         renderToHardwareTextureAndroid
-        style={{
-          position: "absolute",
-          left: pos.x,
-          top: pos.y,
-          width: plateSize,
-          height: plateSize,
-          zIndex: 10,
-        }}
+        style={[
+          {
+            position: "absolute",
+            width: plateSize,
+            height: plateSize,
+            zIndex: 10,
+          },
+          animatedStyle,
+        ]}
       >
         {cfg.background !== "none" && (
           <View
@@ -174,21 +175,21 @@ export function LogoOverlay({
             resizeMode="contain"
           />
         )}
-      </View>
-      {/* Touch overlay — transparent, full-size, handles dragging.
-          This View is where PanResponder lives.  It covers the
-          entire QR area so drag works even outside the logo bounds. */}
+      </Animated.View>
+      {/* Touch overlay — Gesture Handler runs on UI thread.
+          No JS bridge crossings during drag (120Hz safe). */}
       {draggable && (
-        <View
-          {...pan.panHandlers}
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: containerSize,
-            height: containerSize,
-          }}
-        />
+        <GestureDetector gesture={pan}>
+          <View
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: containerSize,
+              height: containerSize,
+            }}
+          />
+        </GestureDetector>
       )}
     </View>
   );
