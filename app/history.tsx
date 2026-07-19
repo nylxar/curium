@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { InteractionManager } from "react-native";
 import {
   View,
   Text,
@@ -194,6 +195,8 @@ function AnimatedHistoryCard({
     sms: "chatbubble-outline",
     contact: "person-outline",
     location: "globe-outline",
+    event: "calendar-outline",
+    otpauth: "lock-closed-outline",
   };
 
   return (
@@ -278,24 +281,26 @@ export default function HistoryScreen() {
   const router = useRouter();
   const toast = useToast();
 
-  // Reload history on every screen focus so new entries created elsewhere
-  // appear immediately.  The skeleton placeholder only shows on the very
-  // first load — subsequent focuses silently refresh the list.
-  const firstLoad = useRef(true);
+  // Load once on mount (shows skeleton while loading), then silently
+  // refresh every time the screen regains focus.  The useFocusEffect
+  // callback never aborts — if the promise settles after a blur the
+  // write is harmless (AsyncStorage is the source of truth and the
+  // next focus will overwrite anyway).
+  useEffect(() => {
+    loadHistory().then((data) => {
+      setItems(data);
+      setLoading(false);
+    });
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      let aborted = false;
-      loadHistory().then((data) => {
-        if (aborted) return;
-        setItems(data);
-        if (firstLoad.current) {
-          firstLoad.current = false;
-          setLoading(false);
-        }
+      const task = InteractionManager.runAfterInteractions(() => {
+        loadHistory().then((data) => {
+          setItems(data);
+        });
       });
-      return () => {
-        aborted = true;
-      };
+      return () => task.cancel();
     }, []),
   );
 
