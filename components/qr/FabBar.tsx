@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
-  InteractionManager,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -226,7 +225,7 @@ export function FabBar({
 
   const go = (route: string) => {
     setMenuOpen(false);
-    InteractionManager.runAfterInteractions(() => {
+    requestIdleCallback(() => {
       if (route === "/") {
         // Pop every pushed screen so the existing CreateScreen instance
         // (with its form data and QR style) is revealed instead of
