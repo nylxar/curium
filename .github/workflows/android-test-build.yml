@@ -11,7 +11,6 @@ on:
         options:
           - master
           - preview
-          - nightly
       flavor:
         description: "Build variant"
         required: true
@@ -20,7 +19,6 @@ on:
         options:
           - stable
           - preview
-          - nightly
 
 permissions:
   contents: read
@@ -129,11 +127,6 @@ jobs:
                           f"{' '*(ind+12)}applicationIdSuffix \".preview\"\n"
                           f"{' '*(ind+12)}versionNameSuffix \"-preview\"\n"
                           f"{' '*(ind+8)}}}\n"
-                          f"{' '*(ind+8)}nightly {{\n"
-                          f"{' '*(ind+12)}dimension \"default\"\n"
-                          f"{' '*(ind+12)}applicationIdSuffix \".nightly\"\n"
-                          f"{' '*(ind+12)}versionNameSuffix \"-nightly\"\n"
-                          f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+4)}}}\n"
                       )
                       out.append(flavors)
@@ -149,7 +142,7 @@ jobs:
                   block, i = read_block(lines, i)
                   if "debuggableVariants" not in "".join(block):
                       ind = indent_of(block[0])
-                      block.insert(-1, f"{' '*(ind+4)}debuggableVariants = [\"stableDebug\", \"previewDebug\", \"nightlyDebug\"]\n")
+                      block.insert(-1, f"{' '*(ind+4)}debuggableVariants = [\"stableDebug\", \"previewDebug\"]\n")
                   out.extend(block)
 
               else:
