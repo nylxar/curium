@@ -1,7 +1,12 @@
 {
-  "platforms": ["ios", "android"],
-  "ios": {},
+  "platforms": ["apple", "android"],
   "android": {
-    "modules": ["expo.modules.highrefreshrate.HighRefreshRateModule"]
+    "modules": ["expo.modules.highrefreshrate.HighRefreshRateModule"],
+    "publication": {
+      "groupId": "expo.modules.highrefreshrate",
+      "artifactId": "high-refresh-rate",
+      "version": "0.1.0",
+      "repository": "local-maven-repo"
+    }
   }
 }
