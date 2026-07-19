@@ -8,7 +8,7 @@ import {
   useRef,
   ReactNode,
 } from "react";
-import { Appearance, InteractionManager, StyleSheet, useColorScheme } from "react-native";
+import { Appearance, StyleSheet, useColorScheme } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -165,7 +165,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const oldBg = colors.bg;
     overlayBg.value = oldBg;
     overlayOpacity.value = 1;
-    InteractionManager.runAfterInteractions(() => {
+    requestIdleCallback(() => {
       setThemeState(t);
       overlayOpacity.value = withTiming(0, {
         duration: 260,
@@ -196,7 +196,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
     overlayBg.value = oldBg;
     overlayOpacity.value = 1;
-    InteractionManager.runAfterInteractions(() => {
+    requestIdleCallback(() => {
       setPureDarkState(v);
       overlayOpacity.value = withTiming(0, {
         duration: 260,
