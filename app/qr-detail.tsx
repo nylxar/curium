@@ -267,12 +267,6 @@ export default function QRDetailScreen() {
   const renderItem = useCallback(
     ({ item }: { item: HistoryItem }) => (
       <View style={[styles.page, { width, paddingTop: Spacing.lg }]}>
-        {/* Bare QR — no card wrapper, matches index.tsx.  The wrapper's
-            borderRadius is driven by the saved `qrCorners` so the outer
-            frame matches the inner QR's rounded corners (sharp = 0, soft
-            = 8, round = 16, very round = 24, pill = 32).  This is the
-            same value QRCanvas uses internally for its inner View, so
-            a 32-corner QR shows identical 32 corners in both screens. */}
         <View
           ref={(r) => {
             qrRefs.current[item.id] = r;
