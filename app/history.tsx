@@ -342,20 +342,23 @@ export default function HistoryScreen() {
     });
   };
 
-  const renderItem = ({
-    item,
-    index,
-  }: {
-    item: HistoryItem;
-    index: number;
-  }) => (
-    <AnimatedHistoryCard
-      item={item}
-      index={index}
-      colors={colors}
-      onSelect={() => openDetail(index)}
-      onDelete={() => handleDelete(item.id)}
-    />
+  const renderItem = useCallback(
+    ({
+      item,
+      index,
+    }: {
+      item: HistoryItem;
+      index: number;
+    }) => (
+      <AnimatedHistoryCard
+        item={item}
+        index={index}
+        colors={colors}
+        onSelect={() => openDetail(index)}
+        onDelete={() => handleDelete(item.id)}
+      />
+    ),
+    [colors, openDetail, handleDelete],
   );
 
   return (
@@ -459,6 +462,7 @@ export default function HistoryScreen() {
           initialNumToRender={20}
           maxToRenderPerBatch={20}
           windowSize={10}
+          removeClippedSubviews
           getItemLayout={(_, i) => ({
             length: 80 + Spacing.sm,
             offset: (80 + Spacing.sm) * i,
