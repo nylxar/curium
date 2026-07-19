@@ -1,0 +1,7 @@
+{
+  "name": "high-refresh-rate",
+  "version": "0.1.0",
+  "description": "High refresh rate toggle for Android 120 Hz displays",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
