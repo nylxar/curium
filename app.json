@@ -78,6 +78,12 @@
       "./plugins/withNoInternet",
       "./plugins/withShareIntent",
       "./plugins/withHighRefreshRate",
+      [
+        "react-native-permissions",
+        {
+          "iosPermissions": ["Camera"]
+        }
+      ],
       "expo-status-bar"
     ],
     "extra": {
