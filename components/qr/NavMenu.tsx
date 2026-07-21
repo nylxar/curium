@@ -44,7 +44,9 @@ export function NavMenu({ tintColor, bgColor }: Props) {
 
   const navigate = (route: string) => {
     setOpen(false);
-    setTimeout(() => router.push(route as any), 80);
+    requestIdleCallback(() => {
+      router.push(route as any);
+    });
     Haptics.selectionAsync();
   };
 

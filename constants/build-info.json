@@ -1,9 +1,9 @@
 {
-  "commit": "a67dd56cd76bcf38453d999df812d4551e8b3cfd",
-  "shortCommit": "a67dd56",
+  "commit": "52e26d5b3a2fabeb4de1215a65062f805b309cbd",
+  "shortCommit": "52e26d5",
   "branch": "preview",
-  "commitDate": "2026-07-16 22:35:43 +0300",
-  "commitMessage": "up2235160726",
+  "commitDate": "2026-07-19 16:42:57 +0300",
+  "commitMessage": "new: ShareOverlay.tsx",
   "isDirty": true,
-  "buildDate": "2026-07-17T17:09:47.442Z"
+  "buildDate": "2026-07-19T14:36:59.081Z"
 }

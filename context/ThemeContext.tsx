@@ -165,13 +165,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const oldBg = colors.bg;
     overlayBg.value = oldBg;
     overlayOpacity.value = 1;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setThemeState(t);
-        overlayOpacity.value = withTiming(0, {
-          duration: 260,
-          easing: Easing.out(Easing.cubic),
-        });
+    requestIdleCallback(() => {
+      setThemeState(t);
+      overlayOpacity.value = withTiming(0, {
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
       });
     });
   }, [colors.bg]);
@@ -198,13 +196,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
     overlayBg.value = oldBg;
     overlayOpacity.value = 1;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setPureDarkState(v);
-        overlayOpacity.value = withTiming(0, {
-          duration: 260,
-          easing: Easing.out(Easing.cubic),
-        });
+    requestIdleCallback(() => {
+      setPureDarkState(v);
+      overlayOpacity.value = withTiming(0, {
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
       });
     });
   }, [colors.bg, theme, effectiveSystem, qrBg]);

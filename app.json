@@ -2,13 +2,15 @@
   "expo": {
     "name": "Curium",
     "slug": "Curium",
-    "version": "0.5.9",
+    "version": "0.6.0",
+    "description": "Privacy-first QR code generator, customizer, and scanner. No analytics. No network. Just your codes.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "curium",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.nylxar.curium",
       "infoPlist": {
         "NSCameraUsageDescription": "Curium uses the camera to scan QR codes."
       }
@@ -23,6 +25,7 @@
       "backgroundColor": "#0d0d0f",
       "predictiveBackGestureEnabled": false,
       "package": "com.nylxar.curium",
+      "versionCode": 3,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES"
@@ -73,6 +76,14 @@
         }
       ],
       "./plugins/withNoInternet",
+      "./plugins/withShareIntent",
+      "./plugins/withHighRefreshRate",
+      [
+        "react-native-permissions",
+        {
+          "iosPermissions": ["Camera"]
+        }
+      ],
       "expo-status-bar"
     ],
     "extra": {

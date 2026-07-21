@@ -17,6 +17,8 @@ import { useTheme } from "@/context/ThemeContext";
 import { Spacing, Radius, FontSize, Fonts, AppTheme } from "@/constants/theme";
 import { useToast } from "@/components/ui/Toast";
 import { ModernSwitch } from "@/components/ui/ModernSwitch";
+import { useHighRefreshRate } from "@/hooks/useHighRefreshRate";
+
 
 const THEME_OPTIONS: {
   id: AppTheme;
@@ -182,9 +184,12 @@ export default function SettingsScreen() {
   const [soundOnScan, setSoundOnScan] = useState(false);
   const [autoCopy, setAutoCopy] = useState(false);
   const [keepScreenOn, setKeepScreenOn] = useState(false);
+  const [highRefreshRate, setHighRefreshRate] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const toast = useToast();
+
+  useHighRefreshRate(highRefreshRate);
 
   useEffect(() => {
     loadSettings().then((s) => {
@@ -192,6 +197,7 @@ export default function SettingsScreen() {
       setSoundOnScan(s.soundOnScan);
       setAutoCopy(s.autoCopy);
       setKeepScreenOn(s.keepScreenOn);
+      setHighRefreshRate(s.highRefreshRate);
     });
   }, []);
 
@@ -419,6 +425,25 @@ export default function SettingsScreen() {
               onChange={(v) => {
                 setKeepScreenOn(v);
                 update({ keepScreenOn: v });
+                Haptics.selectionAsync();
+              }}
+              activeColor={colors.primary}
+              inactiveColor={colors.surfaceOffset}
+            />
+          }
+        />
+        <Row
+          icon="speedometer-outline"
+          label="High Refresh Rate"
+          sub="Smoother animations on 120 Hz displays"
+          colors={colors}
+          last
+          right={
+            <ModernSwitch
+              value={highRefreshRate}
+              onChange={(v) => {
+                setHighRefreshRate(v);
+                update({ highRefreshRate: v });
                 Haptics.selectionAsync();
               }}
               activeColor={colors.primary}

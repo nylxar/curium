@@ -1,5 +1,6 @@
 packages:
   - "packages/*"
+  - "modules/*"
 
 overrides:
   "@expo/dom-webview": "^56.0.6"

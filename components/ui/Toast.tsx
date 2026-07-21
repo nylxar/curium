@@ -212,7 +212,7 @@ function ToastView({
 
   const handleDismiss = () => {
     enterY.value = withTiming(-100, { duration: 200, easing: Easing.in(Easing.cubic) });
-    enterOpacity.value = withTiming(0, { duration: 160 }, (f) => {
+    enterOpacity.value = withTiming(0, { duration: 200 }, (f) => {
       if (f) runOnJS(onDismiss)();
     });
   };
@@ -410,17 +410,17 @@ function ConfirmDialog({
   const cardOpacity = useSharedValue(0);
 
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 100 });
+    opacity.value = withTiming(1, { duration: 160 });
     cardY.value = withTiming(0, {
-      duration: 150,
+      duration: 180,
       easing: Easing.out(Easing.cubic),
     });
-    cardOpacity.value = withTiming(1, { duration: 120 });
+    cardOpacity.value = withTiming(1, { duration: 160 });
   }, []);
 
   const handleClose = (run: boolean) => {
     pendingConfirmRef.current = run;
-    opacity.value = withTiming(0, { duration: 100 }, (f) => {
+    opacity.value = withTiming(0, { duration: 180 }, (f) => {
       if (f) {
         if (pendingConfirmRef.current) {
           runOnJS(entry.onConfirm)();
@@ -428,8 +428,8 @@ function ConfirmDialog({
         runOnJS(onDismiss)();
       }
     });
-    cardY.value = withTiming(8, { duration: 120, easing: Easing.in(Easing.cubic) });
-    cardOpacity.value = withTiming(0, { duration: 100 });
+    cardY.value = withTiming(8, { duration: 160, easing: Easing.in(Easing.cubic) });
+    cardOpacity.value = withTiming(0, { duration: 180 });
   };
 
   const backdropStyle = useAnimatedStyle(() => ({

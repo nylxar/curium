@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -7,13 +7,17 @@ import {
   Linking,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
-import { Camera, useCameraDevice, useCameraPermission } from "react-native-vision-camera";
-import { useBarcodeScannerOutput, createBarcodeScanner } from "react-native-vision-camera-barcode-scanner";
-import { loadImage } from "react-native-nitro-image";
-import * as ImagePicker from "expo-image-picker";
+import { Camera, CameraType } from "react-native-camera-kit";
+import {
+  check,
+  request,
+  PERMISSIONS,
+  RESULTS,
+} from "react-native-permissions";
+
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Icon, type IconName } from "@/components/ui/Icon";
-import { useRouter, useIsFocused } from "expo-router";
+import { Icon } from "@/components/ui/Icon";
+import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { File, Paths } from "expo-file-system";
@@ -29,8 +33,8 @@ import Animated, {
 import { Fonts, Spacing, Radius, FontSize } from "@/constants/theme";
 import { useToast } from "@/components/ui/Toast";
 
-const BARCODE_FORMATS = [
-  "qr-code",
+const BARCODE_TYPES = [
+  "qr",
   "ean-13",
   "ean-8",
   "code-128",
@@ -127,46 +131,43 @@ function detectQRType(data: string): {
 }
 
 export default function ScanScreen() {
-  const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice("back");
+  const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
   const [torch, setTorch] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [cameraReady, setCameraReady] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const isFocused = useIsFocused();
   const { colors, isDark } = useTheme();
   const toast = useToast();
+  const scannedRef = useRef(false);
 
-  const detectedType = useMemo(
-    () => (result ? detectQRType(result).type : null),
-    [result],
-  );
+  // Check camera permission on mount
+  useEffect(() => {
+    check(PERMISSIONS.ANDROID.CAMERA).then(setPermissionStatus);
+  }, []);
 
-  const onBarcodeScanned = useCallback(
-    (barcodes: Array<{ rawValue?: string }>) => {
-      if (scanned) return;
-      const value = barcodes[0]?.rawValue;
+  const requestPermission = useCallback(async () => {
+    const status = await request(PERMISSIONS.ANDROID.CAMERA);
+    setPermissionStatus(status);
+  }, []);
+
+  const onCodeRead = useCallback(
+    (event: { nativeEvent: { codeStringValue: string } }) => {
+      if (scannedRef.current) return;
+      const value = event.nativeEvent.codeStringValue;
       if (!value) return;
+      scannedRef.current = true;
       setScanned(true);
       setResult(value);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
-    [scanned],
+    [],
   );
 
-  const barcodeFormats = useMemo(() => [...BARCODE_FORMATS], []);
-  const scannerOutput = useBarcodeScannerOutput({
-    barcodeFormats,
-    onBarcodeScanned,
-    onError: () => {},
-  });
-
-  // Reset camera readiness when camera deactivates
+  // Reset ref when scanned resets
   useEffect(() => {
-    if (!isFocused || scanned) setCameraReady(false);
-  }, [isFocused, scanned]);
+    if (!scanned) scannedRef.current = false;
+  }, [scanned]);
 
   // Corner breathing animation
   const breathe = useSharedValue(0.4);
@@ -201,38 +202,10 @@ export default function ScanScreen() {
   }));
 
   const handleGalleryScan = useCallback(async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        toast.warning("Permission needed", "Allow photo library access to scan QR codes from images.");
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        quality: 1,
-      });
-      if (result.canceled || !result.assets?.[0]) return;
-
-      const uri = result.assets[0].uri;
-      const image = await loadImage({ filePath: uri });
-      const scanner = createBarcodeScanner({ barcodeFormats: ["all-formats"] });
-      try {
-        const barcodes = await scanner.scanCodesInImageAsync(image);
-        if (barcodes.length > 0) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setResult(barcodes[0].rawValue ?? "");
-          setScanned(true);
-        } else {
-          toast.warning("No QR code found", "The selected image does not contain a readable QR or barcode.");
-        }
-      } finally {
-        image.dispose();
-        scanner.dispose();
-      }
-    } catch (err) {
-      toast.error("Scan failed", "Could not read the image. Try a clearer photo.");
-    }
+    toast.info("Coming soon", "Gallery scanning will be available in a future update.");
   }, [toast]);
+
+  const detectedType = result ? detectQRType(result).type : null;
 
   const handleAction = async (action: "open" | "copy") => {
     if (!result) return;
@@ -340,7 +313,11 @@ export default function ScanScreen() {
     }
   };
 
-  if (!hasPermission) {
+  if (permissionStatus === null) {
+    return <View style={styles.screen} />;
+  }
+
+  if (permissionStatus !== RESULTS.GRANTED) {
     return (
       <View
         style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}
@@ -396,20 +373,16 @@ export default function ScanScreen() {
     );
   }
 
-  if (!device) {
-    return <View style={styles.screen} />;
-  }
-
   return (
     <View style={styles.screen}>
       <Camera
         style={StyleSheet.absoluteFill}
-        device={device}
-        isActive={isFocused && !scanned}
-        torchMode={cameraReady && torch ? "on" : undefined}
-        outputs={[scannerOutput]}
-        onPreviewStarted={() => setCameraReady(true)}
-        onError={() => {}}
+        cameraType={CameraType.Back}
+        torchMode={torch ? "on" : "off"}
+        scanBarcode
+        allowedBarcodeTypes={[...BARCODE_TYPES]}
+        onReadCode={scanned ? undefined : onCodeRead}
+        scanThrottleDelay={2000}
       />
 
       {/* Dim overlay so the camera feed is not blindingly bright */}
@@ -723,7 +696,6 @@ const styles = StyleSheet.create({
   },
   topTitle: {
     fontSize: FontSize.base,
-    fontWeight: "600",
     letterSpacing: 0.3,
   },
 
@@ -795,7 +767,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  resultBtnLabel: { fontSize: FontSize.xs, fontWeight: "600" },
+  resultBtnLabel: { fontSize: FontSize.xs },
   resultPrimary: {
     flexDirection: "row",
     alignItems: "center",

@@ -8,6 +8,7 @@ import {
 import Animated, {
   useSharedValue,
   withTiming,
+  withSpring,
   useAnimatedStyle,
   interpolate,
 } from "react-native-reanimated";
@@ -44,10 +45,10 @@ function ColorSwatch({
   return (
     <TouchableOpacity
       onPressIn={() => {
-        press.value = withTiming(1, { duration: 80 });
+        press.value = withSpring(1, { damping: 15, stiffness: 400 });
       }}
       onPressOut={() => {
-        press.value = withTiming(0, { duration: 140 });
+        press.value = withSpring(0, { damping: 15, stiffness: 400 });
       }}
       onPress={onPress}
       activeOpacity={1}

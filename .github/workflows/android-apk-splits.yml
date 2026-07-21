@@ -11,11 +11,14 @@ on:
         options:
           - stable
           - preview
+          - nightly
+      branch:
+        description: "Branch to build from (stable defaults to master, preview to preview)"
+        required: false
+        type: string
   push:
     tags:
       - "v*"
-  schedule:
-    - cron: "0 3 * * *"
 
 permissions:
   contents: write
@@ -27,7 +30,6 @@ concurrency:
 jobs:
   build-apk-splits:
     if: |
-      github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     runs-on: ubuntu-latest
@@ -37,19 +39,21 @@ jobs:
       - name: Resolve flavor and ref
         id: resolve
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "flavor=preview" >> "$GITHUB_OUTPUT"
-            echo "ref=preview" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "push" ]; then
+          if [ "${{ github.event_name }}" = "push" ]; then
             echo "flavor=stable" >> "$GITHUB_OUTPUT"
             echo "ref=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           else
             FLAVOR="${{ inputs.flavor || 'stable' }}"
             echo "flavor=$FLAVOR" >> "$GITHUB_OUTPUT"
-            case "$FLAVOR" in
-              stable)  echo "ref=master" >> "$GITHUB_OUTPUT" ;;
-              preview) echo "ref=preview" >> "$GITHUB_OUTPUT" ;;
-            esac
+            if [ -n "${{ inputs.branch }}" ]; then
+              echo "ref=${{ inputs.branch }}" >> "$GITHUB_OUTPUT"
+            else
+              case "$FLAVOR" in
+                stable)  echo "ref=master" >> "$GITHUB_OUTPUT" ;;
+                preview) echo "ref=preview" >> "$GITHUB_OUTPUT" ;;
+                nightly) echo "ref=master" >> "$GITHUB_OUTPUT" ;;
+              esac
+            fi
           fi
 
       - uses: actions/checkout@v6
@@ -60,7 +64,7 @@ jobs:
 
       - uses: pnpm/action-setup@v6
         with:
-          version: 10
+          version: 11.11.0
           run_install: false
 
       - uses: actions/setup-node@v6
@@ -145,12 +149,14 @@ jobs:
                           f"{' '*(ind+8)}stable {{\n"
                           f"{' '*(ind+12)}dimension \"default\"\n"
                           f"{' '*(ind+12)}applicationIdSuffix \".stable\"\n"
-                          f"{' '*(ind+12)}versionNameSuffix \"-stable\"\n"
                           f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+8)}preview {{\n"
                           f"{' '*(ind+12)}dimension \"default\"\n"
                           f"{' '*(ind+12)}applicationIdSuffix \".preview\"\n"
-                          f"{' '*(ind+12)}versionNameSuffix \"-preview\"\n"
+                          f"{' '*(ind+8)}}}\n"
+                          f"{' '*(ind+8)}nightly {{\n"
+                          f"{' '*(ind+12)}dimension \"default\"\n"
+                          f"{' '*(ind+12)}applicationIdSuffix \".nightly\"\n"
                           f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+4)}}}\n"
                       )
@@ -179,7 +185,7 @@ jobs:
                   block, i = read_block(lines, i)
                   if "debuggableVariants" not in "".join(block):
                       ind = indent_of(block[0])
-                      block.insert(-1, f"{' '*(ind+4)}debuggableVariants = [\"stableDebug\", \"previewDebug\"]\n")
+                      block.insert(-1, f"{' '*(ind+4)}debuggableVariants = [\"stableDebug\", \"previewDebug\", \"nightlyDebug\"]\n")
                   out.extend(block)
 
               else:
@@ -194,6 +200,7 @@ jobs:
 
       - name: Build release APKs
         env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m"
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}

@@ -1,8 +1,6 @@
 const {
-  withDangerousMod,
-  AndroidConfig: { Manifest },
+  withAndroidManifest,
 } = require("expo/config-plugins");
-const path = require("path");
 
 const REMOVE_PERMISSIONS = [
   "android.permission.INTERNET",
@@ -11,25 +9,30 @@ const REMOVE_PERMISSIONS = [
 ];
 
 module.exports = function withNoInternet(config) {
-  return withDangerousMod(config, [
-    "android",
-    async (cfg) => {
-      const manifestPath = path.join(
-        cfg.modRequest.platformProjectRoot,
-        "app",
-        "src",
-        "main",
-        "AndroidManifest.xml",
-      );
-      const manifest = await Manifest.readAndroidManifestAsync(manifestPath);
+  return withAndroidManifest(config, (cfg) => {
+    const manifest = cfg.modResults.manifest;
+    manifest.$ = {
+      ...manifest.$,
+      "xmlns:tools": "http://schemas.android.com/tools",
+    };
 
-      const permissions = manifest.manifest["uses-permission"] ?? [];
-      manifest.manifest["uses-permission"] = permissions.filter(
-        (perm) => !REMOVE_PERMISSIONS.includes(perm.$?.["android:name"]),
+    const permissions = manifest["uses-permission"] ?? [];
+    for (const permission of REMOVE_PERMISSIONS) {
+      const existing = permissions.find(
+        (entry) => entry.$?.["android:name"] === permission,
       );
-
-      await Manifest.writeAndroidManifestAsync(manifestPath, manifest);
-      return cfg;
-    },
-  ]);
+      if (existing) {
+        existing.$["tools:node"] = "remove";
+      } else {
+        permissions.push({
+          $: {
+            "android:name": permission,
+            "tools:node": "remove",
+          },
+        });
+      }
+    }
+    manifest["uses-permission"] = permissions;
+    return cfg;
+  });
 };

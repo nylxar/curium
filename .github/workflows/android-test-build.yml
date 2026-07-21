@@ -11,7 +11,6 @@ on:
         options:
           - master
           - preview
-          - nightly
       flavor:
         description: "Build variant"
         required: true
@@ -122,17 +121,14 @@ jobs:
                           f"{' '*(ind+8)}stable {{\n"
                           f"{' '*(ind+12)}dimension \"default\"\n"
                           f"{' '*(ind+12)}applicationIdSuffix \".stable\"\n"
-                          f"{' '*(ind+12)}versionNameSuffix \"-stable\"\n"
                           f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+8)}preview {{\n"
                           f"{' '*(ind+12)}dimension \"default\"\n"
                           f"{' '*(ind+12)}applicationIdSuffix \".preview\"\n"
-                          f"{' '*(ind+12)}versionNameSuffix \"-preview\"\n"
                           f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+8)}nightly {{\n"
                           f"{' '*(ind+12)}dimension \"default\"\n"
                           f"{' '*(ind+12)}applicationIdSuffix \".nightly\"\n"
-                          f"{' '*(ind+12)}versionNameSuffix \"-nightly\"\n"
                           f"{' '*(ind+8)}}}\n"
                           f"{' '*(ind+4)}}}\n"
                       )
@@ -164,6 +160,7 @@ jobs:
 
       - name: Build arm64-v8a APK
         env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m"
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}

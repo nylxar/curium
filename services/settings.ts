@@ -7,6 +7,7 @@ export interface AppSettings {
   soundOnScan: boolean;
   autoCopy: boolean;
   keepScreenOn: boolean;
+  highRefreshRate: boolean;
 }
 
 const DEFAULTS: AppSettings = {
@@ -14,6 +15,7 @@ const DEFAULTS: AppSettings = {
   soundOnScan: false,
   autoCopy: false,
   keepScreenOn: false,
+  highRefreshRate: false,
 };
 
 export async function loadSettings(): Promise<AppSettings> {
