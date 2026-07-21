@@ -150,7 +150,7 @@ With official releases for Android, Windows, macOS, Linux, CLI, Web, and eventua
 | Navigation | Expo Router | React Router |
 | Animations | React Native Reanimated 4 | GSAP |
 | Gestures | react-native-gesture-handler | Native events |
-| Camera | react-native-vision-camera | — |
+| Camera | react-native-camera-kit | — |
 | Storage | AsyncStorage | localStorage / tauri-plugin-store |
 | Bundler | Metro | rsbuild |
 | Language | TypeScript | TypeScript |
