@@ -90,8 +90,8 @@ importers:
         specifier: 0.86.0
         version: 0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.16)(react@19.2.3)
       react-native-camera-tool:
-        specifier: ^1.0.2
-        version: 1.0.2(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.16)(react@19.2.3))(react@19.2.3)
+        specifier: ^1.0.3
+        version: 1.0.3(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.16)(react@19.2.3))(react@19.2.3)
       react-native-gesture-handler:
         specifier: ~2.32.0
         version: 2.32.0(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.16)(react@19.2.3))(react@19.2.3)
@@ -4137,8 +4137,8 @@ packages:
   react-is@19.2.7:
     resolution: {integrity: sha512-kZFnouyVv7eP/Phmrlo9FK+zcAdriZJvzxXHF1Sl1P377WSGe2G/JxVolhTrB/jeV47lKImhNUsijjHAAbcl/A==}
 
-  react-native-camera-tool@1.0.2:
-    resolution: {integrity: sha512-N2k/AefewOb+joYxiVJWNq7Rb4Uq/gEic52FPKBcmwczvvcnCqmIaVOWvPQTJ1MPhdV3iL71WHn3z/9aiC6z5g==}
+  react-native-camera-tool@1.0.3:
+    resolution: {integrity: sha512-HJFdbxHRI+ieTr4pkfOJDWa/UBYEMHBbIBX+QMRWJ6jRRGlIzaRheBELhOfByHE7PTJsy/VXMuEBMbq25p/A+Q==}
     engines: {node: '>=18'}
     peerDependencies:
       react: '*'
@@ -9944,7 +9944,7 @@ snapshots:
 
   react-is@19.2.7: {}
 
-  react-native-camera-tool@1.0.2(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.16)(react@19.2.3))(react@19.2.3):
+  react-native-camera-tool@1.0.3(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.16)(react@19.2.3))(react@19.2.3):
     dependencies:
       react: 19.2.3
       react-native: 0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.16)(react@19.2.3)
