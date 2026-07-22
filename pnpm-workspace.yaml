@@ -42,3 +42,4 @@ minimumReleaseAgeExclude:
   - expo-dev-launcher@56.0.24 || 57.0.7
   - expo-dev-menu@56.0.20 || 57.0.7
   - expo-media-library@57.0.3
+  - react-native-camera-tool@1.0.2
