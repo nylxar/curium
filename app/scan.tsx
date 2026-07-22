@@ -7,7 +7,12 @@ import {
   Linking,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
-import { Camera, CameraType } from "react-native-camera-kit";
+import {
+  Camera,
+  CameraType,
+  type CameraApi,
+  type ScannedBarcode,
+} from "react-native-camera-tool";
 import {
   check,
   request,
@@ -140,6 +145,7 @@ export default function ScanScreen() {
   const { colors, isDark } = useTheme();
   const toast = useToast();
   const scannedRef = useRef(false);
+  const cameraRef = useRef<CameraApi | null>(null);
 
   // Check camera permission on mount
   useEffect(() => {
@@ -202,7 +208,22 @@ export default function ScanScreen() {
   }));
 
   const handleGalleryScan = useCallback(async () => {
-    toast.info("Coming soon", "Gallery scanning will be available in a future update.");
+    try {
+      const barcodes = await cameraRef.current?.pickAndScan({
+        allowedBarcodeTypes: [...BARCODE_TYPES],
+      });
+      if (barcodes && barcodes.length > 0) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setResult(barcodes[0].codeStringValue);
+        setScanned(true);
+      } else {
+        toast.warning("No QR code found", "The selected image does not contain a readable QR or barcode.");
+      }
+    } catch (error: any) {
+      if (error?.code !== "E_PICKER_CANCELLED") {
+        toast.error("Scan failed", "Could not read the image. Try a clearer photo.");
+      }
+    }
   }, [toast]);
 
   const detectedType = result ? detectQRType(result).type : null;
@@ -376,6 +397,7 @@ export default function ScanScreen() {
   return (
     <View style={styles.screen}>
       <Camera
+        ref={cameraRef}
         style={StyleSheet.absoluteFill}
         cameraType={CameraType.Back}
         torchMode={torch ? "on" : "off"}
