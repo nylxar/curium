@@ -33,7 +33,6 @@
     "expo-splash-screen": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.1",
-    "high-refresh-rate": "workspace:*",
     "phosphor-react-native": "^3.0.6",
     "qrcode": "1.5.4",
     "react": "19.2.3",
