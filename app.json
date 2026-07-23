@@ -77,7 +77,6 @@
       ],
       "./plugins/withNoInternet",
       "./plugins/withShareIntent",
-      "./plugins/withHighRefreshRate",
       [
         "react-native-permissions",
         {
