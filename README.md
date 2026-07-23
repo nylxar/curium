@@ -12,7 +12,7 @@
 <p align="center">
   <img src="https://badgen.net/github/release/nylxar/curium?labelColor=111&color=555" alt="Latest Release" />
   <img src="https://badgen.net/badge/platform/Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Web/111?labelColor=111&color=555" alt="Platforms" />
-  <img src="https://badgen.net/badge/license/GPL-3.0/111?labelColor=111&color=555" alt="License" />
+  <img src="https://badgen.net/badge/license/AGPL-3.0/111?labelColor=111&color=555" alt="License" />
   <img src="https://api.visitorbadge.io/api/visitors?path=nylxar%2Fcurium&label=downloads&style=flat&countColor=%23555&labelColor=%23111" alt="Downloads" />
 </p>
 
@@ -150,7 +150,7 @@ With official releases for Android, Windows, macOS, Linux, CLI, Web, and eventua
 | Navigation | Expo Router | React Router |
 | Animations | React Native Reanimated 4 | GSAP |
 | Gestures | react-native-gesture-handler | Native events |
-| Camera | react-native-camera-kit | — |
+| Camera | react-native-camera-tool | — |
 | Storage | AsyncStorage | localStorage / tauri-plugin-store |
 | Bundler | Metro | rsbuild |
 | Language | TypeScript | TypeScript |
@@ -246,7 +246,7 @@ No microphone. No location. No network access.
 
 ## License
 
-[GNU General Public License v3.0](LICENSE)
+[GNU Affero General Public License v3.0](LICENSE)
 
 ---
 
