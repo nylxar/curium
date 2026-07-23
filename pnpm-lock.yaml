@@ -71,9 +71,6 @@ importers:
       expo-system-ui:
         specifier: ~57.0.1
         version: 57.0.1(expo@57.0.7)(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.16)(react@19.2.3))
-      high-refresh-rate:
-        specifier: workspace:*
-        version: link:modules/high-refresh-rate
       phosphor-react-native:
         specifier: ^3.0.6
         version: 3.0.6(react-native-svg@15.15.4(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.16)(react@19.2.3))(react@19.2.3))(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.16)(react@19.2.3))(react@19.2.3)
@@ -147,8 +144,6 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
-
-  modules/high-refresh-rate: {}
 
   packages/desktop:
     dependencies:
